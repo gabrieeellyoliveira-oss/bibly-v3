@@ -376,7 +376,7 @@ function MetasPage() {
   const chave = `ravenna_semana_${getInicioSemana().toISOString().slice(0,10)}`;
   const feitosEstaSemana = storageGet<number>(chave) ?? 0;
   const diasDecorridos = Math.max(diasUteisNoMes - diasUteisRest, 1);
-  const ritmoAtual = Math.round(clientesTotal / diasDecorridos * 10) / 10;
+  const ritmoAtual = Math.round(clientesTotal / diasDecorridos);
   const necM1 = Math.max(Math.ceil((metas.m1 - clientesTotal) / Math.max(diasUteisRest, 1)), 0);
   const necM3 = Math.max(Math.ceil((metas.m3 - clientesTotal) / Math.max(diasUteisRest, 1)), 0);
   const faltamM1 = Math.max(metas.m1 - clientesTotal, 0);
@@ -410,20 +410,24 @@ function MetasPage() {
     {
       label: "RITMO ATUAL", icon: Sparkles, iconBg: "rgba(139,92,246,0.12)", iconColor: "#8B5CF6",
       value: `${ritmoAtual}`, unit: "/dia", sub: `${pctSemanal}% da meta semanal`, barColor: "#8B5CF6", barPct: pctSemanal,
+      footer: `${clientesTotal} / ${metas.m3} fechamentos`,
     },
     {
       label: "NECESSÁRIO", icon: Target, iconBg: "rgba(236,72,153,0.1)", iconColor: "#EC4899",
       value: `${necM1}`, unit: "/dia", sub: "Para alcançar Meta 1", barColor: "#EC4899", barPct: 100,
+      footer: `Meta 1: ${metas.m1} fechamentos`,
     },
     {
       label: "FALTAM", icon: Rocket, iconBg: "rgba(245,158,11,0.12)", iconColor: "#F59E0B",
       value: `${faltamM1}`, unit: null, sub: "fechamentos para Meta 1", barColor: "#F59E0B", barPct: pct(faltamM1, metas.m1),
       valueColor: "#F59E0B",
+      footer: `${clientesTotal} / ${metas.m1} fechamentos`,
     },
     {
       label: "META EM", icon: Clock, iconBg: "rgba(34,197,94,0.1)", iconColor: "#22C55E",
       value: `${diasUteisRest}`, unit: " dias", sub: deadline ? `Prazo final: ${deadline.toLocaleDateString("pt-BR",{day:"2-digit",month:"long"})}` : "Fim do mês",
       barColor: "#22C55E", barPct: pct(diasUteisNoMes - diasUteisRest, diasUteisNoMes),
+      footer: `${diasUteisNoMes} dias úteis no mês`,
     },
   ];
 
@@ -435,8 +439,8 @@ function MetasPage() {
 
         {/* KPI 4 cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {kpis.map(({ label, icon: Icon, iconBg, iconColor, value, unit, sub, barColor, barPct, valueColor }) => (
-            <div key={label} style={CARD} className="px-4 pt-3 pb-2 flex flex-col gap-1.5">
+          {kpis.map(({ label, icon: Icon, iconBg, iconColor, value, unit, sub, barColor, barPct, valueColor, footer }: any) => (
+            <div key={label} style={CARD} className="px-4 pt-4 pb-3 flex flex-col gap-2">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</span>
                 <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ background: iconBg }}>
@@ -448,9 +452,10 @@ function MetasPage() {
                 {unit && <span className="text-sm font-medium text-muted-foreground">{unit}</span>}
               </div>
               <p className="text-[11px] text-muted-foreground leading-tight">{sub}</p>
-              <div className="h-0.5 w-full rounded-full overflow-hidden mt-1" style={{ background: barColor + "20" }}>
+              <div className="h-0.5 w-full rounded-full overflow-hidden" style={{ background: barColor + "20" }}>
                 <div className="h-full rounded-full transition-[width] duration-700" style={{ width: `${barPct}%`, background: barColor }} />
               </div>
+              {footer && <p className="text-[11px] text-muted-foreground/80 mt-0.5">{footer}</p>}
             </div>
           ))}
         </div>
