@@ -428,40 +428,35 @@ function MetasPage() {
   ];
 
   return (
-    <div className="space-y-5 w-full">
+    <div className="flex gap-5 w-full items-start">
 
-      {/* ── Row 1: KPI cards + Calendar ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-5 items-start">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 self-start">
+      {/* ── Coluna esquerda (conteúdo principal) ── */}
+      <div className="flex-1 min-w-0 space-y-4">
+
+        {/* KPI 4 cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {kpis.map(({ label, icon: Icon, iconBg, iconColor, value, unit, sub, barColor, barPct, valueColor }) => (
-            <div key={label} style={CARD} className="px-4 pt-3 pb-2 flex flex-col gap-1.5 relative overflow-hidden">
-              {/* Label + icon */}
+            <div key={label} style={CARD} className="px-4 pt-3 pb-2 flex flex-col gap-1.5">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</span>
                 <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ background: iconBg }}>
                   <Icon className="h-3.5 w-3.5" style={{ color: iconColor }} />
                 </div>
               </div>
-              {/* Value */}
               <div className="flex items-baseline gap-1">
                 <span className="text-2xl font-black leading-tight" style={{ color: valueColor ?? "#1A1530" }}>{value}</span>
                 {unit && <span className="text-sm font-medium text-muted-foreground">{unit}</span>}
               </div>
-              {/* Sub */}
               <p className="text-[11px] text-muted-foreground leading-tight">{sub}</p>
-              {/* Bar */}
               <div className="h-0.5 w-full rounded-full overflow-hidden mt-1" style={{ background: barColor + "20" }}>
                 <div className="h-full rounded-full transition-[width] duration-700" style={{ width: `${barPct}%`, background: barColor }} />
               </div>
             </div>
           ))}
         </div>
-        <MiniCalendar />
-      </div>
 
-      {/* ── Row 2: 3 Meta cards + Projeção Final ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-5 items-start">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 self-start">
+        {/* 3 Meta cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {[
             { label: "Meta 1", val: metas.m1, barColor: "#8B5CF6" },
             { label: "Meta 2", val: metas.m2, barColor: "#EC4899" },
@@ -491,20 +486,25 @@ function MetasPage() {
             );
           })}
         </div>
+
+        {/* Insights + Evolução */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-4">
+          <InsightsRapidos clientesTotal={clientesTotal} metas={metas} ritmoAtual={ritmoAtual} necM1={necM1} melhorDia={melhorDia} />
+          <EvolucaoChart diario={diario} metaM3={metas.m3} diasTotal={diasUteisNoMes} />
+        </div>
+
+        {/* Atividades + Metas em andamento + Ganhos */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <AtividadesRecentes registros={registros} />
+          <MetasEmAndamento clientesTotal={clientesTotal} metas={metas} />
+          <GanhosHoje clientesTotal={clientesTotal} onAdd={handleAdd} onRemove={handleRemove} onSave={handleSave} saved={saved} />
+        </div>
+      </div>
+
+      {/* ── Coluna direita fixa (calendário + projeção) ── */}
+      <div className="w-[260px] shrink-0 space-y-4">
+        <MiniCalendar />
         <ProjecaoFinal clientesTotal={clientesTotal} metas={metas} diasUteisNoMes={diasUteisNoMes} diasUteisRest={diasUteisRest} feitosEstaSemana={feitosEstaSemana} fechPorSemana={fechPorSemana} />
-      </div>
-
-      {/* ── Row 3: Insights + Evolução ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-5">
-        <InsightsRapidos clientesTotal={clientesTotal} metas={metas} ritmoAtual={ritmoAtual} necM1={necM1} melhorDia={melhorDia} />
-        <EvolucaoChart diario={diario} metaM3={metas.m3} diasTotal={diasUteisNoMes} />
-      </div>
-
-      {/* ── Row 4: Atividades + Metas em andamento + Ganhos ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        <AtividadesRecentes registros={registros} />
-        <MetasEmAndamento clientesTotal={clientesTotal} metas={metas} />
-        <GanhosHoje clientesTotal={clientesTotal} onAdd={handleAdd} onRemove={handleRemove} onSave={handleSave} saved={saved} />
       </div>
 
       {/* Edit metas dialog */}
