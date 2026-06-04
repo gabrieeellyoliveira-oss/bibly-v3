@@ -3,7 +3,7 @@ import {
   Target, BarChart2, CalendarCheck, GitBranch, Star, Sparkles,
   Rocket, Trophy, LogOut, BookOpen, Users, LayoutGrid,
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
@@ -91,7 +91,7 @@ export function AppSidebar() {
       {/* Footer */}
       <div className="p-2 pb-4">
         <button
-          onClick={async () => { await supabase.auth.signOut(); window.location.href = "/auth"; }}
+          onClick={() => { localStorage.removeItem("bibly_auth"); window.location.href = "/auth"; }}
           className={cn(
             "flex items-center gap-3 w-full rounded-xl px-3 py-2.5 text-sm font-medium text-[#B7ABC8] hover:text-white hover:bg-white/[0.05] transition-all duration-150",
             collapsed && "justify-center px-0",

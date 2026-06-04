@@ -1,13 +1,14 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Sparkles, Lock, Mail, ArrowRight } from "lucide-react";
+import { Sparkles, Lock, User, ArrowRight } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
+
+const BIBLY_AUTH_KEY = "bibly_auth";
 
 function AuthPage() {
   const navigate = useNavigate();
@@ -17,14 +18,19 @@ function AuthPage() {
     e.preventDefault();
     setLoading(true);
     const fd = new FormData(e.currentTarget);
-    const { error } = await supabase.auth.signInWithPassword({
-      email: fd.get("email") as string,
-      password: fd.get("password") as string,
-    });
+    const user = (fd.get("user") as string).trim().toLowerCase();
+    const pass = fd.get("password") as string;
+
+    await new Promise((r) => setTimeout(r, 400)); // sensação de loading
+
+    if (user === "bibi" && pass === "bibi2026") {
+      localStorage.setItem(BIBLY_AUTH_KEY, "true");
+      toast.success("Bem-vinda de volta, Gabi! 💜");
+      navigate({ to: "/metas" });
+    } else {
+      toast.error("Usuário ou senha incorretos.");
+    }
     setLoading(false);
-    if (error) return toast.error("Usuário ou senha incorretos.");
-    toast.success("Bem-vinda de volta, Gabi!");
-    navigate({ to: "/metas" });
   }
 
   return (
@@ -32,7 +38,7 @@ function AuthPage() {
       className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
       style={{ background: "#171320" }}
     >
-      {/* Background glow blobs */}
+      {/* Blobs */}
       <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full blur-[120px] opacity-20 pointer-events-none" style={{ background: "#8B5CF6" }} />
       <div className="absolute bottom-0 right-1/4 w-80 h-80 rounded-full blur-[100px] opacity-15 pointer-events-none" style={{ background: "#EC4899" }} />
 
@@ -65,23 +71,19 @@ function AuthPage() {
           <p className="text-sm mb-6" style={{ color: "#B7ABC8" }}>Acesse seu painel de performance</p>
 
           <form onSubmit={signIn} className="space-y-4">
-            {/* Email */}
+            {/* User */}
             <div className="space-y-1.5">
-              <label className="text-xs font-medium" style={{ color: "#B7ABC8" }}>Email</label>
+              <label className="text-xs font-medium" style={{ color: "#B7ABC8" }}>Usuário</label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: "#B7ABC8" }} />
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none" style={{ color: "#B7ABC8" }} />
                 <Input
-                  name="email"
-                  type="email"
-                  placeholder="bibi@email.com"
+                  name="user"
+                  type="text"
+                  placeholder="bibi"
                   required
-                  autoComplete="email"
-                  className="pl-9 h-11 rounded-xl border-0 text-sm"
-                  style={{
-                    background: "rgba(44, 34, 64, 0.8)",
-                    color: "#F2ECFA",
-                    border: "1px solid rgba(139,92,246,0.18)",
-                  }}
+                  autoComplete="username"
+                  className="pl-9 h-11 rounded-xl border-0 text-sm focus-visible:ring-1 focus-visible:ring-primary"
+                  style={{ background: "rgba(44, 34, 64, 0.8)", color: "#F2ECFA", border: "1px solid rgba(139,92,246,0.18)" }}
                 />
               </div>
             </div>
@@ -90,19 +92,15 @@ function AuthPage() {
             <div className="space-y-1.5">
               <label className="text-xs font-medium" style={{ color: "#B7ABC8" }}>Senha</label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: "#B7ABC8" }} />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none" style={{ color: "#B7ABC8" }} />
                 <Input
                   name="password"
                   type="password"
                   placeholder="••••••••"
                   required
                   autoComplete="current-password"
-                  className="pl-9 h-11 rounded-xl border-0 text-sm"
-                  style={{
-                    background: "rgba(44, 34, 64, 0.8)",
-                    color: "#F2ECFA",
-                    border: "1px solid rgba(139,92,246,0.18)",
-                  }}
+                  className="pl-9 h-11 rounded-xl border-0 text-sm focus-visible:ring-1 focus-visible:ring-primary"
+                  style={{ background: "rgba(44, 34, 64, 0.8)", color: "#F2ECFA", border: "1px solid rgba(139,92,246,0.18)" }}
                 />
               </div>
             </div>
@@ -114,11 +112,10 @@ function AuthPage() {
               className="w-full h-11 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2 mt-2 transition-all duration-200 hover:opacity-90 active:scale-[0.98] disabled:opacity-50"
               style={{ background: "linear-gradient(135deg, #8B5CF6, #EC4899)", boxShadow: "0 0 24px -4px rgba(139,92,246,0.5)" }}
             >
-              {loading ? (
-                <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-              ) : (
-                <>Entrar <ArrowRight className="h-4 w-4" /></>
-              )}
+              {loading
+                ? <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                : <> Entrar <ArrowRight className="h-4 w-4" /> </>
+              }
             </button>
           </form>
         </div>

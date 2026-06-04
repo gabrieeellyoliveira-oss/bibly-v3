@@ -1,13 +1,15 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { AppSidebar } from "@/components/app-sidebar";
 import { TopBar } from "@/components/top-bar";
-import { supabase } from "@/integrations/supabase/client";
+
+const BIBLY_AUTH_KEY = "bibly_auth";
 
 export const Route = createFileRoute("/_authenticated")({
-  beforeLoad: async () => {
-    const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user) throw redirect({ to: "/auth" });
-    return { user: data.user };
+  beforeLoad: () => {
+    if (typeof window !== "undefined") {
+      const auth = localStorage.getItem(BIBLY_AUTH_KEY);
+      if (auth !== "true") throw redirect({ to: "/auth" });
+    }
   },
   component: () => (
     <div className="flex h-screen overflow-hidden bg-background">
