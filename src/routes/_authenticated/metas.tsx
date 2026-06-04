@@ -1,20 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  Target, TrendingUp, Minus, Plus, Save, Trophy, Settings,
-  Rocket, Users, PhoneOff, CheckCircle2, Video, MessageSquare, Award, XCircle,
-} from "lucide-react";
-import { AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { Button } from "@/components/ui/button";
+import { Sparkles, Target, Rocket, Clock, ChevronLeft, ChevronRight, Save, TrendingUp, Star, Activity } from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { MetricCard } from "@/components/dashboard/PrimitivesUI";
-import { abrilFallback, abrilDiarioFallback, historico, STORAGE, type DadosAtual, type DadosDiarios, TIER_CFG } from "@/data/dashboard";
-import {
-  pct, calcDiasUteisRestantes, calcDiasUteisMesAte, calcFechamentosSemana,
-  getDeadlineMes, getInicioSemana, storageGet, storageSet, getSaudacao,
-} from "@/lib/dashboardUtils";
+import { abrilFallback, abrilDiarioFallback, STORAGE, type DadosAtual, type DadosDiarios } from "@/data/dashboard";
+import { pct, calcDiasUteisRestantes, calcDiasUteisMesAte, calcFechamentosSemana, getDeadlineMes, getInicioSemana, storageGet, storageSet } from "@/lib/dashboardUtils";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -25,348 +18,322 @@ export const Route = createFileRoute("/_authenticated/metas")({
 interface RegistroGanho { id: number; data: string; quantidade: number; obs: string; }
 let nextId = 1;
 
-const CARD = { background: "#FFFFFF", border: "1px solid #E5DDF7", boxShadow: "0 2px 16px -2px rgba(139,92,246,0.1), 0 1px 4px rgba(0,0,0,0.04)" } as const;
-const GRAD = "linear-gradient(135deg,#8B5CF6,#EC4899)";
+const CARD: React.CSSProperties = { background: "#FFFFFF", border: "1px solid #E5DDF7", borderRadius: 16, boxShadow: "0 2px 12px rgba(139,92,246,0.08)" };
 
-/* ── Progress bar slim ── */
-function SlimBar({ value, max }: { value: number; max: number }) {
-  const w = Math.min(pct(value, max), 100);
-  return (
-    <div className="h-2 w-full rounded-full overflow-hidden" style={{ background: "rgba(139,92,246,0.12)" }}>
-      <div className="h-full rounded-full transition-[width] duration-700" style={{ width: `${w}%`, background: GRAD }} />
-    </div>
-  );
-}
-
-/* ── Main progress card ── */
-function ProgressCard({ clientesTotal, dados, onEditMetas }: {
-  clientesTotal: number; dados: DadosAtual; onEditMetas: () => void;
-}) {
-  const { metas, diaAtual } = dados;
+/* ──────────────────────────────────────────
+   Mini Calendar
+────────────────────────────────────────── */
+function MiniCalendar() {
+  const hoje = new Date();
+  const [mes, setMes] = useState(hoje.getMonth());
+  const [ano, setAno] = useState(hoje.getFullYear());
   const deadline = getDeadlineMes();
-  const diasUteisRest = calcDiasUteisRestantes(deadline ?? undefined);
-  const diasUteisNoMes = calcDiasUteisMesAte(deadline ?? undefined);
-  const diasUteisDecorridos = Math.max(diasUteisNoMes - diasUteisRest, 1);
-  const projecaoFinal = Math.round((clientesTotal / diasUteisDecorridos) * diasUteisNoMes);
-  const esperadoHoje = Math.round((metas.m3 / diasUteisNoMes) * diaAtual);
-  const pctM3 = pct(clientesTotal, metas.m3);
-  const emRitmo = clientesTotal >= esperadoHoje;
-  const pctRitmo = esperadoHoje > 0 ? (clientesTotal / esperadoHoje) * 100 : 0;
-  const forecastNivel = pctRitmo >= 100 ? 3 : pctRitmo >= 80 ? 2 : 1;
-  const nec = (meta: number) => Math.max(Math.ceil((meta - clientesTotal) / Math.max(diasUteisRest, 1)), 0);
+  const deadlineDay = deadline ? deadline.getDate() : null;
+  const deadlineMes = deadline ? deadline.getMonth() : null;
 
-  const { diasRestantesSemana, fechPorSemana, semanaEncerrada } = calcFechamentosSemana(metas, diasUteisNoMes);
-  const chave = `ravenna_semana_${getInicioSemana().toISOString().slice(0, 10)}`;
-  const feitosEstaSemana = storageGet<number>(chave) ?? 0;
-  const metaSemBatida = feitosEstaSemana >= fechPorSemana;
-  const ritmoAtual = diasUteisDecorridos > 0 ? Math.ceil(clientesTotal / diasUteisDecorridos) : 0;
-
-  const marcadores = [
-    { label: "M1", val: metas.m1, color: "#F59E0B" },
-    { label: "M2", val: metas.m2, color: "#A855F7" },
-    { label: "M3", val: metas.m3, color: "#EC4899" },
-  ];
+  const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+  const primeiroDia = new Date(ano, mes, 1).getDay();
+  const totalDias = new Date(ano, mes + 1, 0).getDate();
+  const dias: (number | null)[] = Array(primeiroDia).fill(null).concat(Array.from({ length: totalDias }, (_, i) => i + 1));
 
   return (
-    <div className="rounded-2xl p-6 space-y-5" style={CARD}>
-      {/* Header row */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Target className="h-4 w-4 text-pink" />
-          <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Progresso do Mês</span>
-          <button onClick={onEditMetas} className="ml-1 p-1 rounded-lg text-muted-foreground/40 hover:text-muted-foreground hover:bg-white/5 transition-all">
-            <Settings className="h-3.5 w-3.5" />
-          </button>
-        </div>
-        <span className={cn("text-xs font-bold px-3 py-1 rounded-full border", emRitmo ? "border-success/40 bg-success/10 text-success" : "border-destructive/40 bg-destructive/10 text-destructive")}>
-          {emRitmo ? "No Ritmo" : "Atrasado"}
-        </span>
-      </div>
-
-      {/* Two-column layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left — big number */}
-        <div className="space-y-3">
-          <div className="flex items-baseline gap-3">
-            <span className="text-7xl font-black leading-none" style={{ background: GRAD, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-              {clientesTotal}
-            </span>
-            <span className="text-xl text-muted-foreground font-light">/ {metas.m3}</span>
-          </div>
-          <p className="text-sm text-muted-foreground">de {metas.m3} fechamentos</p>
-          <span className="inline-block text-xs font-semibold px-3 py-1.5 rounded-full" style={{ background: "rgba(236,72,153,0.12)", color: "#EC4899", border: "1px solid rgba(236,72,153,0.25)" }}>
-            {pctM3}% da Meta 3
-          </span>
-
-          {/* Forecast */}
-          <div className="pt-2 space-y-1">
-            <p className={cn("text-sm font-bold", forecastNivel === 3 ? "text-success" : forecastNivel === 2 ? "text-warning" : "text-pink")}>
-              {forecastNivel === 3 ? "🏆 Forecast da Meta 3" : forecastNivel === 2 ? "🎯 Forecast da Meta 2" : "🚀 Forecast da Meta 1"}
-            </p>
-          </div>
-        </div>
-
-        {/* Right — visual progress bar with trophies */}
-        <div className="space-y-4">
-          {/* Trophy markers */}
-          <div className="relative pt-8 pb-2">
-            {marcadores.map(({ label, val, color }) => {
-              const leftPct = Math.min(pct(val, metas.m3), 98);
-              return (
-                <div key={label} className="absolute top-0 flex flex-col items-center" style={{ left: `${leftPct}%`, transform: "translateX(-50%)" }}>
-                  <Trophy className="h-4 w-4 mb-0.5" style={{ color }} />
-                  <span className="text-[10px] font-bold" style={{ color }}>{label}</span>
-                  <span className="text-[10px] text-muted-foreground">{val}</span>
-                  <div className="h-3 w-px mt-0.5" style={{ background: color + "60" }} />
-                </div>
-              );
-            })}
-            {/* Current position indicator */}
-            <div
-              className="absolute top-0 z-10 flex flex-col items-center transition-[left] duration-700"
-              style={{ left: `${Math.min(pct(clientesTotal, metas.m3), 98)}%`, transform: "translateX(-50%)" }}
-            >
-              <span className="text-xs font-extrabold text-warning">{clientesTotal}</span>
-              <div className="h-3 w-px bg-warning mt-0.5" />
-            </div>
-            {/* Bar */}
-            <div className="h-3 w-full rounded-full overflow-hidden mt-3" style={{ background: "rgba(139,92,246,0.08)" }}>
-              <div className="h-full rounded-full transition-[width] duration-700 shadow-glow" style={{ width: `${pct(clientesTotal, metas.m3)}%`, background: GRAD }} />
-            </div>
-          </div>
-
-          {/* Ritmo e meta */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-xl p-3 space-y-0.5" style={{ background: "rgba(139,92,246,0.06)", border: "1px solid rgba(139,92,246,0.15)" }}>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Seu ritmo atual</p>
-              <p className="text-2xl font-extrabold text-primary">{ritmoAtual}<span className="text-sm font-normal text-muted-foreground">/dia</span></p>
-            </div>
-            <div className="rounded-xl p-3 space-y-0.5" style={{ background: "rgba(139,92,246,0.06)", border: "1px solid rgba(139,92,246,0.15)" }}>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Necessário M1</p>
-              <p className="text-2xl font-extrabold" style={{ color: nec(metas.m1) === 0 ? "#22C55E" : "#EC4899" }}>
-                {nec(metas.m1) === 0 ? "✓" : nec(metas.m1)}<span className="text-sm font-normal text-muted-foreground">/dia</span>
-              </p>
-            </div>
-          </div>
-
-          {/* Faltam para M1 */}
-          {nec(metas.m1) > 0 && (
-            <div className="flex items-center gap-2 rounded-xl px-4 py-3" style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)" }}>
-              <Rocket className="h-4 w-4 text-warning shrink-0" />
-              <div>
-                <p className="text-sm font-semibold text-foreground">Faltam <span className="text-warning font-extrabold">{Math.max(metas.m1 - clientesTotal, 0)}</span> fechamentos para a Meta 1</p>
-                <p className="text-xs text-muted-foreground">Mantendo {nec(metas.m1)}/dia, você alcança em {diasUteisRest} dias</p>
-              </div>
-            </div>
-          )}
+    <div style={CARD} className="p-4">
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-sm font-semibold text-foreground">{MESES[mes]} {ano}</span>
+        <div className="flex gap-1">
+          <button onClick={() => { if (mes === 0) { setMes(11); setAno(a => a - 1); } else setMes(m => m - 1); }} className="h-6 w-6 rounded flex items-center justify-center text-muted-foreground hover:bg-secondary transition-colors"><ChevronLeft className="h-3.5 w-3.5" /></button>
+          <button onClick={() => { if (mes === 11) { setMes(0); setAno(a => a + 1); } else setMes(m => m + 1); }} className="h-6 w-6 rounded flex items-center justify-center text-muted-foreground hover:bg-secondary transition-colors"><ChevronRight className="h-3.5 w-3.5" /></button>
         </div>
       </div>
-
-      {/* 3 meta cards */}
-      <div className="grid grid-cols-3 gap-3">
-        {[
-          { label: "Meta 1", val: metas.m1, pctVal: pct(clientesTotal, metas.m1) },
-          { label: "Meta 2", val: metas.m2, pctVal: pct(clientesTotal, metas.m2) },
-          { label: "Meta 3 ★", val: metas.m3, pctVal: pct(clientesTotal, metas.m3) },
-        ].map(({ label, val, pctVal }) => {
-          const n = Math.max(Math.ceil((val - clientesTotal) / Math.max(diasUteisRest, 1)), 0);
+      <div className="grid grid-cols-7 mb-1">
+        {["D","S","T","Q","Q","S","S"].map((d, i) => (
+          <span key={i} className="text-center text-[10px] font-semibold text-muted-foreground py-1">{d}</span>
+        ))}
+      </div>
+      <div className="grid grid-cols-7 gap-y-0.5">
+        {dias.map((d, i) => {
+          const isToday = d === hoje.getDate() && mes === hoje.getMonth() && ano === hoje.getFullYear();
+          const isDeadline = d !== null && d === deadlineDay && mes === deadlineMes;
           return (
-            <div key={label} className="rounded-xl p-4 space-y-2" style={{ background: "rgba(139,92,246,0.04)", border: "1px solid rgba(139,92,246,0.14)" }}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{label}</p>
-                  <p className="text-[11px] text-muted-foreground/70">{val} fechamentos</p>
-                </div>
-                <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(139,92,246,0.15)", color: "#A78BFA" }}>
-                  {Math.min(pctVal, 100)}%
-                </span>
-              </div>
-              <p className={cn("text-3xl font-extrabold", n === 0 ? "text-success" : "text-pink")}>
-                {n === 0 ? "✓" : n}<span className="text-base font-normal text-muted-foreground">/dia</span>
-              </p>
-              <SlimBar value={clientesTotal} max={val} />
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                {n > 0 ? <span>Falta <span className="font-bold text-pink">{Math.max(val - clientesTotal, 0)}</span> pra meta</span> : <span className="text-success font-semibold">✓ Meta atingida!</span>}
-                <span>{clientesTotal}/{val}</span>
-              </div>
+            <div key={i} className={cn("h-7 w-7 mx-auto flex items-center justify-center rounded-full text-xs font-medium transition-colors",
+              isToday ? "text-white font-bold" : isDeadline ? "text-white font-bold" : d ? "text-foreground hover:bg-secondary" : ""
+            )} style={isToday ? { background: "#8B5CF6" } : isDeadline ? { background: "#EC4899" } : {}}>
+              {d}
             </div>
           );
         })}
       </div>
-
-      {/* Bottom stats row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="rounded-xl px-4 py-3 space-y-0.5" style={{ background: "rgba(139,92,246,0.04)", border: "1px solid rgba(139,92,246,0.12)" }}>
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Projeção Final</p>
-          <div className="flex items-center gap-1.5">
-            <span className={cn("text-xl font-extrabold", projecaoFinal >= metas.m3 ? "text-success" : "text-destructive")}>{projecaoFinal}</span>
-            <span className="text-xs text-muted-foreground">/ {metas.m3}</span>
-          </div>
-          {projecaoFinal > metas.m3 && <p className="text-[10px] text-success">↑ {projecaoFinal - metas.m3} acima da Meta 3</p>}
-        </div>
-        <div className={cn("rounded-xl px-4 py-3 space-y-0.5", metaSemBatida ? "border-success/30 bg-success/8" : "")} style={{ background: metaSemBatida ? "rgba(34,197,94,0.08)" : "rgba(139,92,246,0.04)", border: metaSemBatida ? "1px solid rgba(34,197,94,0.25)" : "1px solid rgba(139,92,246,0.12)" }}>
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Meta da Semana</p>
-          <p className={cn("text-sm font-bold", metaSemBatida ? "text-success" : "text-foreground")}>
-            {semanaEncerrada ? "🎉 Fim de semana!" : metaSemBatida ? "✓ Batida!" : `${feitosEstaSemana}/${fechPorSemana}`}
-          </p>
-          {!semanaEncerrada && <p className="text-[10px] text-muted-foreground">{diasRestantesSemana} dia(s) restante(s)</p>}
-        </div>
-        <div className="rounded-xl px-4 py-3 space-y-0.5" style={{ background: "rgba(139,92,246,0.04)", border: "1px solid rgba(139,92,246,0.12)" }}>
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Dias Restantes</p>
-          <p className="text-xl font-extrabold text-foreground">{diasUteisRest} <span className="text-xs font-normal text-muted-foreground">úteis</span></p>
-        </div>
-        <div className="rounded-xl px-4 py-3 space-y-0.5" style={{ background: "rgba(139,92,246,0.04)", border: "1px solid rgba(139,92,246,0.12)" }}>
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Esta Semana</p>
-          <p className="text-xl font-extrabold text-foreground">{feitosEstaSemana}<span className="text-xs font-normal text-muted-foreground">/{fechPorSemana}</span></p>
-          <p className="text-[10px] text-muted-foreground">{diasRestantesSemana} dia(s) restante(s)</p>
-        </div>
+      <div className="flex items-center gap-4 mt-3 pt-3 border-t border-border">
+        <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground"><span className="h-2 w-2 rounded-full bg-primary inline-block" /> Dia atual</span>
+        <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground"><span className="h-2 w-2 rounded-full bg-pink inline-block" /> Data limite</span>
       </div>
     </div>
   );
 }
 
-/* ── Evolução chart ── */
-function EvolucaoChart({ diario, metaM3, diasTotal }: { diario: DadosDiarios[]; metaM3: number; diasTotal: number }) {
-  const data = diario.map((d, i) => ({
-    dia: d.dia, acumulado: d.clientes, noDia: d.noDia,
-    metaIdeal: Math.round((metaM3 / diasTotal) * (i + 1)),
-  }));
+/* ──────────────────────────────────────────
+   Projeção Final — donut
+────────────────────────────────────────── */
+function ProjecaoFinal({ clientesTotal, metas, diasUteisNoMes, diasUteisRest, feitosEstaSemana, fechPorSemana }: {
+  clientesTotal: number; metas: { m1: number; m2: number; m3: number };
+  diasUteisNoMes: number; diasUteisRest: number; feitosEstaSemana: number; fechPorSemana: number;
+}) {
+  const deadline = getDeadlineMes();
+  const deadlineStr = deadline ? `até ${deadline.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}` : "até fim do mês";
+  const diasUteisDecorridos = Math.max(diasUteisNoMes - diasUteisRest, 1);
+  const projecao = Math.round((clientesTotal / diasUteisDecorridos) * diasUteisNoMes);
+  const pctConc = Math.min(pct(clientesTotal, metas.m3), 100);
+  const metaSemPct = Math.min(pct(feitosEstaSemana, fechPorSemana), 100);
+
+  const donutData = [
+    { value: pctConc },
+    { value: 100 - pctConc },
+  ];
+
   return (
-    <div className="rounded-2xl p-6 space-y-4 h-full" style={CARD}>
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-sm font-semibold text-foreground">Evolução Diária</p>
-          <p className="text-xs text-muted-foreground">Acumulado no mês</p>
-        </div>
-        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1.5"><span className="inline-block h-0.5 w-4 rounded" style={{ background: "#8B5CF6" }} /> Acumulado</span>
-          <span className="flex items-center gap-1.5"><span className="inline-block h-0.5 w-4 rounded" style={{ background: "#EC4899" }} /> No dia</span>
+    <div style={CARD} className="p-5 space-y-4">
+      <p className="text-sm font-semibold text-foreground">Projeção final</p>
+      <div className="flex justify-center relative">
+        <PieChart width={160} height={160}>
+          <Pie data={donutData} cx={75} cy={75} innerRadius={52} outerRadius={72} startAngle={90} endAngle={-270} dataKey="value" strokeWidth={0}>
+            <Cell fill="#8B5CF6" />
+            <Cell fill="#F0ECF9" />
+          </Pie>
+        </PieChart>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-3xl font-black text-primary">{projecao}</span>
+          <span className="text-xs text-muted-foreground">/ {metas.m3}</span>
         </div>
       </div>
-      <ResponsiveContainer width="100%" height={220}>
-        <AreaChart data={data} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
-          <defs>
-            <linearGradient id="gA" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.3} />
-              <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0} />
-            </linearGradient>
-            <linearGradient id="gP" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#EC4899" stopOpacity={0.25} />
-              <stop offset="95%" stopColor="#EC4899" stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <CartesianGrid stroke="rgba(139,92,246,0.06)" strokeDasharray="3 3" vertical={false} />
+      <p className="text-xs text-center text-muted-foreground">{pctConc}% concluído</p>
+      <div className="space-y-2.5 pt-1 border-t border-border">
+        {[
+          { icon: Clock, label: "Meta da semana", value: `${feitosEstaSemana} / ${fechPorSemana}`, badge: `${metaSemPct}%`, badgeColor: "#EF4444" },
+          { icon: Target, label: "Dias restantes", value: `${diasUteisRest}`, badge: deadlineStr, badgeColor: "#7A6E8E" },
+          { icon: TrendingUp, label: "Esta semana", value: `${feitosEstaSemana} / ${fechPorSemana}`, badge: `${metaSemPct}%`, badgeColor: "#EF4444" },
+        ].map(({ icon: Icon, label, value, badge, badgeColor }) => (
+          <div key={label} className="flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2 text-muted-foreground"><Icon className="h-3.5 w-3.5" />{label}</div>
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-foreground">{value}</span>
+              <span className="text-[10px] font-bold" style={{ color: badgeColor }}>{badge}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────────
+   Evolução diária chart
+────────────────────────────────────────── */
+function EvolucaoChart({ diario, metaM3, diasTotal }: { diario: DadosDiarios[]; metaM3: number; diasTotal: number }) {
+  const [range, setRange] = useState(7);
+  const sliced = diario.slice(-range);
+  const data = sliced.map((d, i) => ({
+    dia: d.dia, acumulado: d.clientes,
+    necessario: Math.round((metaM3 / diasTotal) * (diario.length - sliced.length + i + 1)),
+  }));
+  return (
+    <div style={CARD} className="p-5 space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-semibold text-foreground">Evolução diária</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1.5"><span className="inline-block h-0.5 w-4 rounded bg-primary" /> Acumulado</span>
+            <span className="flex items-center gap-1.5"><span className="inline-block h-0.5 w-4 rounded border-t-2 border-dashed border-pink" /> Necessário</span>
+          </div>
+          <select value={range} onChange={(e) => setRange(Number(e.target.value))} className="text-xs border border-border rounded-lg px-2 py-1 bg-white text-foreground focus:outline-none focus:ring-1 focus:ring-primary">
+            <option value={7}>7 dias</option>
+            <option value={14}>14 dias</option>
+            <option value={30}>30 dias</option>
+          </select>
+        </div>
+      </div>
+      <ResponsiveContainer width="100%" height={180}>
+        <LineChart data={data} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
           <XAxis dataKey="dia" tick={{ fill: "#B7ABC8", fontSize: 10 }} axisLine={false} tickLine={false} />
           <YAxis tick={{ fill: "#B7ABC8", fontSize: 10 }} axisLine={false} tickLine={false} />
-          <Tooltip
-            contentStyle={{ background: "#FFFFFF", border: "1px solid rgba(139,92,246,0.2)", borderRadius: 12, color: "#1A1530", fontSize: 12 }}
-            labelStyle={{ color: "#B7ABC8" }}
-          />
-          <Area type="monotone" dataKey="acumulado" stroke="#8B5CF6" strokeWidth={2.5} fill="url(#gA)" dot={{ r: 3, fill: "#8B5CF6", strokeWidth: 0 }} name="Acumulado" />
-          <Area type="monotone" dataKey="noDia" stroke="#EC4899" strokeWidth={1.5} fill="url(#gP)" strokeDasharray="4 3" dot={false} name="No dia" />
-        </AreaChart>
+          <Tooltip contentStyle={{ background: "#fff", border: "1px solid #E5DDF7", borderRadius: 10, fontSize: 12 }} />
+          <Line type="monotone" dataKey="acumulado" stroke="#8B5CF6" strokeWidth={2.5} dot={{ r: 3, fill: "#8B5CF6", strokeWidth: 0 }} name="Acumulado" />
+          <Line type="monotone" dataKey="necessario" stroke="#EC4899" strokeWidth={1.5} strokeDasharray="5 3" dot={false} name="Necessário" />
+        </LineChart>
       </ResponsiveContainer>
     </div>
   );
 }
 
-/* ── Ganhos panel ── */
-function GanhosPanel({ clientesTotal, registros, onAdd, onRemove, onSave, saved }: {
-  clientesTotal: number; registros: unknown[]; onAdd: () => void; onRemove: () => void; onSave: () => void; saved: boolean;
-}) {
+/* ──────────────────────────────────────────
+   Metas em andamento
+────────────────────────────────────────── */
+function MetasEmAndamento({ clientesTotal, metas }: { clientesTotal: number; metas: { m1: number; m2: number; m3: number } }) {
+  const items = [
+    { label: "Meta 1", val: metas.m1, color: "#8B5CF6" },
+    { label: "Meta 2", val: metas.m2, color: "#EC4899" },
+    { label: "Meta 3 ★", val: metas.m3, color: "#A855F7" },
+  ];
   return (
-    <div className="rounded-2xl p-6 space-y-5 h-full flex flex-col" style={CARD}>
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-semibold text-foreground">Ganhos de Hoje</p>
-          <p className="text-xs text-muted-foreground">Registre seus ganhos e mantenha seu ritmo!</p>
-        </div>
-        <TrendingUp className="h-4 w-4 text-pink" />
-      </div>
-
-      {/* Big counter */}
-      <div className="flex items-center justify-center gap-5 py-2">
-        <button
-          onClick={onRemove}
-          className="h-12 w-12 rounded-xl border text-2xl font-bold transition-all hover:scale-105 active:scale-95 flex items-center justify-center"
-          style={{ border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.08)", color: "#EF4444" }}
-        >
-          −
-        </button>
-        <div className="text-center">
-          <p className="text-5xl font-black" style={{ background: GRAD, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-            {clientesTotal}
-          </p>
-          <p className="text-xs text-muted-foreground mt-0.5">ganhos</p>
-        </div>
-        <button
-          onClick={onAdd}
-          className="h-12 w-12 rounded-xl border text-2xl font-bold transition-all hover:scale-105 active:scale-95 flex items-center justify-center"
-          style={{ border: "1px solid rgba(139,92,246,0.3)", background: "rgba(139,92,246,0.08)", color: "#A78BFA" }}
-        >
-          +
-        </button>
-      </div>
-
-      <div className="space-y-2 mt-auto">
-        <button
-          onClick={onSave}
-          className={cn("w-full h-11 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all", saved ? "opacity-80" : "hover:opacity-90 active:scale-[0.98]")}
-          style={{ background: saved ? "rgba(34,197,94,0.2)" : GRAD, border: saved ? "1px solid rgba(34,197,94,0.4)" : "none", color: saved ? "#22C55E" : "white", boxShadow: saved ? "none" : "0 0 20px -4px rgba(139,92,246,0.4)" }}
-        >
-          <Save className="h-4 w-4" />
-          {saved ? "✓ Salvo!" : "Salvar ganhos"}
-        </button>
-        <div className="grid grid-cols-2 gap-2">
-          <button onClick={onRemove} className="h-10 rounded-xl text-xs font-semibold transition-all hover:opacity-80" style={{ border: "1px solid rgba(239,68,68,0.25)", background: "rgba(239,68,68,0.06)", color: "#EF4444" }}>
-            − 1 ganho
-          </button>
-          <button onClick={onAdd} className="h-10 rounded-xl text-xs font-semibold transition-all hover:opacity-80" style={{ border: "1px solid rgba(139,92,246,0.25)", background: "rgba(139,92,246,0.06)", color: "#A78BFA" }}>
-            + 1 ganho
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ── Performance history ── */
-function EvolucaoPerformance() {
-  const primeiro = historico[0]; const ultimo = historico[historico.length - 1];
-  const crescPct = Math.round(((ultimo.clientes - primeiro.clientes) / primeiro.clientes) * 100);
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <TrendingUp className="h-4 w-4 text-pink" />
-        <p className="text-sm font-semibold text-foreground">Evolução de Performance — <span className="text-muted-foreground">{primeiro.tier}</span><span className="mx-1 text-muted-foreground/40">→</span><span className="text-success">{ultimo.tier}</span></p>
-      </div>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        {historico.map((d) => {
-          const maxMeta = d.megaMeta ?? d.metas.m3;
-          const tierCfg = TIER_CFG[d.tier] ?? TIER_CFG["Tier 4/5"];
-          const batida = d.clientes >= d.metas.m3;
+    <div style={CARD} className="p-5 space-y-4">
+      <p className="text-sm font-semibold text-foreground">Metas em andamento</p>
+      <div className="space-y-3">
+        {items.map(({ label, val, color }) => {
+          const p = Math.min(pct(clientesTotal, val), 100);
           return (
-            <div key={d.mes} className="rounded-xl p-4 space-y-2" style={CARD}>
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-bold text-foreground">{d.mes}</p>
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: tierCfg.bg, color: tierCfg.text }}>{d.tier}</span>
+            <div key={label} className="space-y-1.5">
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-3.5 w-3.5" style={{ color }} />
+                  <span className="font-medium text-foreground">{label}</span>
+                  <span className="text-muted-foreground text-[10px]">{val} fechamentos</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "rgba(139,92,246,0.1)", color: "#8B5CF6" }}>{p}%</span>
+                  <span className="text-muted-foreground">{clientesTotal}/{val}</span>
+                </div>
               </div>
-              <p className="text-3xl font-extrabold" style={{ color: d.conclusao.cor }}>{d.clientes}</p>
-              <SlimBar value={d.clientes} max={maxMeta} />
-              <p className="text-[10px]" style={{ color: d.conclusao.cor }}>{d.conclusao.tipo === "fail" ? "✕ " : d.conclusao.tipo === "mega" ? "★ " : "✓ "}{batida ? "Meta batida" : "Não bateu"}</p>
+              <div className="h-1.5 w-full rounded-full overflow-hidden bg-secondary">
+                <div className="h-full rounded-full transition-[width] duration-700" style={{ width: `${p}%`, background: `linear-gradient(90deg, ${color}, #EC4899)` }} />
+              </div>
             </div>
           );
         })}
       </div>
-      <div className="flex items-center gap-3 rounded-xl px-5 py-3" style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.25)" }}>
-        <Award className="h-4 w-4 text-success" />
-        <p className="text-sm font-semibold text-success">{primeiro.tier} ({primeiro.clientes}) → {ultimo.tier} ({ultimo.clientes}) · <span className="text-success/80">+{crescPct}% em {historico.length} meses</span></p>
+      <button className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:text-primary/80 transition-colors mt-1">
+        <span>→</span> Ver todas as metas
+      </button>
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────────
+   Insights rápidos
+────────────────────────────────────────── */
+function InsightsRapidos({ clientesTotal, metas, ritmoAtual, necM1, melhorDia }: {
+  clientesTotal: number; metas: { m1: number; m2: number; m3: number };
+  ritmoAtual: number; necM1: number; melhorDia: number;
+}) {
+  const acimaRitmo = necM1 > 0 ? Math.round(((ritmoAtual - necM1) / necM1) * 100) : 0;
+  const mediaStr = ritmoAtual.toFixed(1).replace(".", ",");
+
+  const insights = [
+    {
+      icon: TrendingUp, color: "#22C55E", bg: "rgba(34,197,94,0.1)",
+      title: acimaRitmo >= 0
+        ? `Você está ${Math.abs(acimaRitmo)}% acima do ritmo necessário da Meta 1`
+        : `Você está ${Math.abs(acimaRitmo)}% abaixo do ritmo necessário da Meta 1`,
+      sub: acimaRitmo >= 0 ? "Continue assim!" : "Acelere o ritmo!",
+    },
+    {
+      icon: Clock, color: "#F59E0B", bg: "rgba(245,158,11,0.1)",
+      title: `Média de ${mediaStr} fechamentos por dia`,
+      sub: melhorDia > 0 ? `Seu melhor dia foi ${melhorDia} fechamentos` : "Continue registrando seus ganhos",
+    },
+    {
+      icon: Star, color: "#8B5CF6", bg: "rgba(139,92,246,0.1)",
+      title: `Meta 3 é sua melhor performance atual`,
+      sub: `Você está ${Math.max(clientesTotal - metas.m3, 0) === 0 ? necM1 : clientesTotal - metas.m3} fechamento${necM1 !== 1 ? "s" : ""} ${clientesTotal >= metas.m3 ? "acima" : "abaixo"} do necessário`,
+    },
+  ];
+
+  return (
+    <div style={CARD} className="p-5 space-y-4">
+      <p className="text-sm font-semibold text-foreground">Insights rápidos</p>
+      <div className="space-y-3">
+        {insights.map(({ icon: Icon, color, bg, title, sub }) => (
+          <div key={title} className="flex items-start gap-3">
+            <div className="h-8 w-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: bg }}>
+              <Icon className="h-4 w-4" style={{ color }} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-foreground leading-snug">
+                {title.split(/([\d,]+%?|Meta \d|Meta 1|Meta 2|Meta 3)/g).map((part, i) =>
+                  /[\d,]+%?|Meta [123]/.test(part)
+                    ? <strong key={i} className="font-bold">{part}</strong>
+                    : part
+                )}
+              </p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">{sub}</p>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
-/* ── Main page ── */
+/* ──────────────────────────────────────────
+   Atividades recentes
+────────────────────────────────────────── */
+function AtividadesRecentes({ registros }: { registros: RegistroGanho[] }) {
+  const metaColors = ["#8B5CF6", "#EC4899", "#A855F7", "#8B5CF6"];
+  const metaLabels = ["Meta 1", "Meta 2", "Meta 3", "Meta 1"];
+  const ultimosQuatro = registros.slice(-4).reverse();
+  const hoje = new Date().toLocaleDateString("pt-BR");
+
+  return (
+    <div style={CARD} className="p-5 space-y-4">
+      <p className="text-sm font-semibold text-foreground">Atividades recentes</p>
+      {ultimosQuatro.length === 0 ? (
+        <p className="text-xs text-muted-foreground text-center py-4">Nenhum ganho registrado ainda.</p>
+      ) : (
+        <div className="space-y-2.5">
+          {ultimosQuatro.map((r, i) => (
+            <div key={r.id} className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="h-7 w-7 rounded-full flex items-center justify-center shrink-0" style={{ background: metaColors[i % 4] + "18" }}>
+                  <Target className="h-3.5 w-3.5" style={{ color: metaColors[i % 4] }} />
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-foreground">{metaLabels[i % 4]} - Fechamento realizado</p>
+                </div>
+              </div>
+              <span className="text-[10px] text-muted-foreground shrink-0 ml-2">
+                {r.data === hoje ? "Hoje" : "Ontem"}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────────
+   Ganhos de hoje
+────────────────────────────────────────── */
+function GanhosHoje({ clientesTotal, onAdd, onRemove, onSave, saved }: {
+  clientesTotal: number; onAdd: () => void; onRemove: () => void; onSave: () => void; saved: boolean;
+}) {
+  return (
+    <div style={CARD} className="p-5 space-y-4">
+      <p className="text-sm font-semibold text-foreground">Ganhos de hoje</p>
+      <div className="flex items-center justify-center gap-5 py-2">
+        <button onClick={onRemove} className="h-9 w-9 rounded-xl text-lg font-bold transition-all hover:scale-105 flex items-center justify-center" style={{ border: "1px solid rgba(139,92,246,0.2)", background: "#F0ECF9", color: "#8B5CF6" }}>−</button>
+        <div className="text-center">
+          <p className="text-4xl font-black" style={{ background: "linear-gradient(135deg,#8B5CF6,#EC4899)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{clientesTotal}</p>
+          <p className="text-xs text-muted-foreground">ganhos</p>
+        </div>
+        <button onClick={onAdd} className="h-9 w-9 rounded-xl text-lg font-bold transition-all hover:scale-105 flex items-center justify-center" style={{ border: "1px solid rgba(139,92,246,0.2)", background: "#F0ECF9", color: "#8B5CF6" }}>+</button>
+      </div>
+      <div className="space-y-2">
+        <button onClick={onSave} className={cn("w-full h-10 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all hover:opacity-90")} style={{ background: saved ? "rgba(34,197,94,0.2)" : "linear-gradient(135deg,#8B5CF6,#EC4899)", color: saved ? "#22C55E" : "white", border: saved ? "1px solid rgba(34,197,94,0.4)" : "none" }}>
+          <Save className="h-3.5 w-3.5" />{saved ? "✓ Salvo!" : "Salvar ganhos"}
+        </button>
+        <div className="grid grid-cols-2 gap-2">
+          <button onClick={onRemove} className="h-9 rounded-xl text-xs font-semibold transition-all hover:opacity-80" style={{ border: "1px solid rgba(239,68,68,0.2)", background: "rgba(239,68,68,0.05)", color: "#EF4444" }}>- 1 ganho</button>
+          <button onClick={onAdd} className="h-9 rounded-xl text-xs font-semibold transition-all hover:opacity-80" style={{ border: "1px solid rgba(139,92,246,0.2)", background: "rgba(139,92,246,0.05)", color: "#8B5CF6" }}>+ 1 ganho</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────────
+   Main Page
+────────────────────────────────────────── */
 function MetasPage() {
   const dadosPlanilha = storageGet<{ atual?: Partial<DadosAtual>; metas?: { m1?: number; m2?: number; m3?: number }; diario?: DadosDiarios[] }>(STORAGE.PLANILHA);
   const [metasOverride, setMetasOverride] = useState<{ m1: number; m2: number; m3: number } | null>(null);
@@ -375,101 +342,182 @@ function MetasPage() {
   const [metasSaving, setMetasSaving] = useState(false);
 
   useEffect(() => {
-    supabase.from("dashboard_metas").select("m1, m2, m3").eq("id", "singleton").maybeSingle().then(({ data }) => {
+    supabase.from("dashboard_metas").select("m1,m2,m3").eq("id","singleton").maybeSingle().then(({ data }) => {
       if (data) setMetasOverride({ m1: data.m1, m2: data.m2, m3: data.m3 });
     });
   }, []);
 
-  const metasBase = { m1: dadosPlanilha?.metas?.m1 ?? abrilFallback.metas.m1, m2: dadosPlanilha?.metas?.m2 ?? abrilFallback.metas.m2, m3: dadosPlanilha?.metas?.m3 ?? abrilFallback.metas.m3 };
-  const metasAtivas = metasOverride ?? metasBase;
-  const dadosAtual: DadosAtual = { ...abrilFallback, ...(dadosPlanilha?.atual ?? {}), metas: metasAtivas };
-  const diarioAtual = (dadosPlanilha?.diario && dadosPlanilha.diario.length > 0) ? dadosPlanilha.diario : abrilDiarioFallback;
+  const metasBase = { m1: dadosPlanilha?.metas?.m1 ?? 0, m2: dadosPlanilha?.metas?.m2 ?? 0, m3: dadosPlanilha?.metas?.m3 ?? 0 };
+  const metas = metasOverride ?? metasBase;
+  const dadosAtual: DadosAtual = { ...abrilFallback, ...(dadosPlanilha?.atual ?? {}), metas };
+  const diario = (dadosPlanilha?.diario && dadosPlanilha.diario.length > 0) ? dadosPlanilha.diario : abrilDiarioFallback;
   const deadline = getDeadlineMes();
-  const diasUteisNoMesAtual = calcDiasUteisMesAte(deadline ?? undefined);
+  const diasUteisNoMes = calcDiasUteisMesAte(deadline ?? undefined);
+  const diasUteisRest = calcDiasUteisRestantes(deadline ?? undefined);
 
   const [registros, setRegistros] = useState<RegistroGanho[]>(() => storageGet<RegistroGanho[]>(STORAGE.GANHOS) ?? []);
   const [saved, setSaved] = useState(false);
   const syncedRef = useRef(false);
   const totalManual = registros.reduce((s, r) => s + r.quantidade, 0);
   const clientesTotal = dadosAtual.clientes + totalManual;
-  const saudacao = getSaudacao();
 
   useEffect(() => {
     if (syncedRef.current) return; syncedRef.current = true;
-    supabase.from("dashboard_ganhos").select("*").eq("perfil", "bibi").order("created_at", { ascending: true }).then(({ data }) => {
+    supabase.from("dashboard_ganhos").select("*").eq("perfil","bibi").order("created_at",{ascending:true}).then(({ data }) => {
       if (data && data.length > 0) {
-        const remoto: RegistroGanho[] = data.map((r: any) => ({ id: r.id, data: r.data_ganho, quantidade: r.quantidade, obs: r.obs ?? "" }));
-        setRegistros(remoto); storageSet(STORAGE.GANHOS, remoto);
+        const rem: RegistroGanho[] = data.map((r: any) => ({ id: r.id, data: r.data_ganho, quantidade: r.quantidade, obs: r.obs ?? "" }));
+        setRegistros(rem); storageSet(STORAGE.GANHOS, rem);
       }
     });
   }, []);
-
   useEffect(() => { storageSet(STORAGE.GANHOS, registros); }, [registros]);
+
+  const { fechPorSemana } = calcFechamentosSemana(metas, diasUteisNoMes);
+  const chave = `ravenna_semana_${getInicioSemana().toISOString().slice(0,10)}`;
+  const feitosEstaSemana = storageGet<number>(chave) ?? 0;
+  const diasDecorridos = Math.max(diasUteisNoMes - diasUteisRest, 1);
+  const ritmoAtual = Math.round(clientesTotal / diasDecorridos * 10) / 10;
+  const necM1 = Math.max(Math.ceil((metas.m1 - clientesTotal) / Math.max(diasUteisRest, 1)), 0);
+  const necM3 = Math.max(Math.ceil((metas.m3 - clientesTotal) / Math.max(diasUteisRest, 1)), 0);
+  const faltamM1 = Math.max(metas.m1 - clientesTotal, 0);
+  const melhorDia = Math.max(...diario.map(d => d.noDia), 0);
+  const pctSemanal = fechPorSemana > 0 ? Math.round((feitosEstaSemana / fechPorSemana) * 100) : 0;
 
   const handleAdd = async () => {
     const dataHoje = new Date().toLocaleDateString("pt-BR");
-    const { data } = await supabase.from("dashboard_ganhos").insert({ perfil: "bibi", data_ganho: dataHoje, quantidade: 1, obs: "Ajuste rápido" }).select().single();
-    setRegistros((prev) => [...prev, { id: data?.id ?? nextId++, data: dataHoje, quantidade: 1, obs: "" }]);
-    const chave = `ravenna_semana_${getInicioSemana().toISOString().slice(0, 10)}`;
+    const { data } = await supabase.from("dashboard_ganhos").insert({ perfil:"bibi", data_ganho:dataHoje, quantidade:1, obs:"Ajuste rápido" }).select().single();
+    setRegistros(p => [...p, { id: data?.id ?? nextId++, data: dataHoje, quantidade: 1, obs: "" }]);
     storageSet(chave, (storageGet<number>(chave) ?? 0) + 1);
   };
-
   const handleRemove = async () => {
-    if (registros.length === 0) return;
-    const ultimo = registros[registros.length - 1];
-    await supabase.from("dashboard_ganhos").delete().eq("id", ultimo.id);
-    setRegistros((prev) => prev.slice(0, -1));
-    const chave = `ravenna_semana_${getInicioSemana().toISOString().slice(0, 10)}`;
+    if (!registros.length) return;
+    const u = registros[registros.length - 1];
+    await supabase.from("dashboard_ganhos").delete().eq("id", u.id);
+    setRegistros(p => p.slice(0, -1));
     storageSet(chave, Math.max((storageGet<number>(chave) ?? 0) - 1, 0));
   };
-
   const handleSave = () => { storageSet(STORAGE.GANHOS, registros); setSaved(true); setTimeout(() => setSaved(false), 2500); };
-
   const handleSaveMetas = async () => {
-    const m1 = Number(editM1) || 0; const m2 = Number(editM2) || 0; const m3 = Number(editM3) || 0;
+    const m1 = Number(editM1)||0, m2 = Number(editM2)||0, m3 = Number(editM3)||0;
     setMetasSaving(true);
-    await supabase.from("dashboard_metas").upsert({ id: "singleton", m1, m2, m3, updated_at: new Date().toISOString() });
+    await supabase.from("dashboard_metas").upsert({ id:"singleton", m1, m2, m3, updated_at: new Date().toISOString() });
     setMetasOverride({ m1, m2, m3 }); setMetasSaving(false); setMetasDialogOpen(false);
     toast.success("Metas salvas!");
   };
 
-  return (
-    <div className="space-y-6 max-w-[1400px]">
+  /* KPI cards data */
+  const kpis = [
+    {
+      label: "RITMO ATUAL", icon: Sparkles, iconBg: "rgba(139,92,246,0.12)", iconColor: "#8B5CF6",
+      value: `${ritmoAtual}`, unit: "/dia", sub: `${pctSemanal}% da meta semanal`, barColor: "#8B5CF6", barPct: pctSemanal,
+    },
+    {
+      label: "NECESSÁRIO", icon: Target, iconBg: "rgba(236,72,153,0.1)", iconColor: "#EC4899",
+      value: `${necM1}`, unit: "/dia", sub: "Para alcançar Meta 1", barColor: "#EC4899", barPct: 100,
+    },
+    {
+      label: "FALTAM", icon: Rocket, iconBg: "rgba(245,158,11,0.12)", iconColor: "#F59E0B",
+      value: `${faltamM1}`, unit: null, sub: "fechamentos para Meta 1", barColor: "#F59E0B", barPct: pct(faltamM1, metas.m1),
+      valueColor: "#F59E0B",
+    },
+    {
+      label: "META EM", icon: Clock, iconBg: "rgba(34,197,94,0.1)", iconColor: "#22C55E",
+      value: `${diasUteisRest}`, unit: " dias", sub: deadline ? `Prazo final: ${deadline.toLocaleDateString("pt-BR",{day:"2-digit",month:"long"})}` : "Fim do mês",
+      barColor: "#22C55E", barPct: pct(diasUteisNoMes - diasUteisRest, diasUteisNoMes),
+    },
+  ];
 
-      {/* TOP: Progress (largo) + Ganhos (estreito) */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-5 items-start">
-        <ProgressCard
-          clientesTotal={clientesTotal}
-          dados={dadosAtual}
-          onEditMetas={() => {
-            setEditM1(String(metasAtivas.m1 || "")); setEditM2(String(metasAtivas.m2 || "")); setEditM3(String(metasAtivas.m3 || ""));
-            setMetasDialogOpen(true);
-          }}
-        />
-        <GanhosPanel
-          clientesTotal={clientesTotal} registros={registros}
-          onAdd={handleAdd} onRemove={handleRemove} onSave={handleSave} saved={saved}
-        />
+  return (
+    <div className="space-y-5 max-w-[1400px]">
+
+      {/* ── Row 1: KPI cards + Calendar ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-5">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {kpis.map(({ label, icon: Icon, iconBg, iconColor, value, unit, sub, barColor, barPct, valueColor }) => (
+            <div key={label} style={CARD} className="p-4 flex flex-col gap-2 relative overflow-hidden">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</span>
+                <div className="h-8 w-8 rounded-xl flex items-center justify-center" style={{ background: iconBg }}>
+                  <Icon className="h-4 w-4" style={{ color: iconColor }} />
+                </div>
+              </div>
+              <div className="flex items-baseline gap-1">
+                <span className="text-3xl font-black" style={{ color: valueColor ?? "#1A1530" }}>{value}</span>
+                {unit && <span className="text-sm font-medium text-muted-foreground">{unit}</span>}
+              </div>
+              <p className="text-xs text-muted-foreground">{sub}</p>
+              <div className="h-1 w-full rounded-full overflow-hidden mt-auto" style={{ background: barColor + "20" }}>
+                <div className="h-full rounded-full transition-[width] duration-700" style={{ width: `${barPct}%`, background: barColor }} />
+              </div>
+            </div>
+          ))}
+        </div>
+        <MiniCalendar />
       </div>
 
-      {/* Chart */}
-      <EvolucaoChart diario={diarioAtual} metaM3={dadosAtual.metas.m3} diasTotal={diasUteisNoMesAtual} />
+      {/* ── Row 2: 3 Meta cards + Projeção Final ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {[
+            { label: "Meta 1", val: metas.m1, barColor: "#8B5CF6" },
+            { label: "Meta 2", val: metas.m2, barColor: "#EC4899" },
+            { label: "Meta 3 ★", val: metas.m3, barColor: "#A855F7" },
+          ].map(({ label, val, barColor }) => {
+            const n = Math.max(Math.ceil((val - clientesTotal) / Math.max(diasUteisRest, 1)), 0);
+            const p2 = Math.min(pct(clientesTotal, val), 100);
+            return (
+              <div key={label} style={CARD} className="p-5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-bold text-foreground">{label}</span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(139,92,246,0.1)", color: "#8B5CF6" }}>{p2}%</span>
+                </div>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-4xl font-black" style={{ color: "#EC4899" }}>{n}</span>
+                  <span className="text-base text-muted-foreground">/dia</span>
+                </div>
+                <div className="h-1.5 w-full rounded-full overflow-hidden" style={{ background: barColor + "20" }}>
+                  <div className="h-full rounded-full transition-[width] duration-700" style={{ width: `${p2}%`, background: barColor }} />
+                </div>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Faltam <span className="font-bold text-pink">{Math.max(val - clientesTotal, 0)}</span> pra meta</span>
+                  <span>{clientesTotal}/{val}</span>
+                </div>
+                <p className="text-xs text-muted-foreground">{val} fechamentos</p>
+              </div>
+            );
+          })}
+        </div>
+        <ProjecaoFinal clientesTotal={clientesTotal} metas={metas} diasUteisNoMes={diasUteisNoMes} diasUteisRest={diasUteisRest} feitosEstaSemana={feitosEstaSemana} fechPorSemana={fechPorSemana} />
+      </div>
+
+      {/* ── Row 3: Insights + Evolução ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-5">
+        <InsightsRapidos clientesTotal={clientesTotal} metas={metas} ritmoAtual={ritmoAtual} necM1={necM1} melhorDia={melhorDia} />
+        <EvolucaoChart diario={diario} metaM3={metas.m3} diasTotal={diasUteisNoMes} />
+      </div>
+
+      {/* ── Row 4: Atividades + Metas em andamento + Ganhos ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+        <AtividadesRecentes registros={registros} />
+        <MetasEmAndamento clientesTotal={clientesTotal} metas={metas} />
+        <GanhosHoje clientesTotal={clientesTotal} onAdd={handleAdd} onRemove={handleRemove} onSave={handleSave} saved={saved} />
+      </div>
 
       {/* Edit metas dialog */}
       <Dialog open={metasDialogOpen} onOpenChange={setMetasDialogOpen}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader><DialogTitle>Editar Metas do Mês</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
-            {[{ label: "Meta 1", value: editM1, onChange: setEditM1 }, { label: "Meta 2", value: editM2, onChange: setEditM2 }, { label: "Meta 3 ★", value: editM3, onChange: setEditM3 }].map(({ label, value, onChange }) => (
+            {[{ label:"Meta 1",value:editM1,onChange:setEditM1 },{ label:"Meta 2",value:editM2,onChange:setEditM2 },{ label:"Meta 3 ★",value:editM3,onChange:setEditM3 }].map(({ label, value, onChange }) => (
               <div key={label} className="flex items-center gap-4">
                 <span className="w-20 text-sm font-semibold">{label}</span>
-                <Input type="number" min={0} value={value} onChange={(e) => onChange(e.target.value)} placeholder="0" className="flex-1" />
+                <Input type="number" min={0} value={value} onChange={e => onChange(e.target.value)} placeholder="0" className="flex-1" />
               </div>
             ))}
           </div>
           <DialogFooter className="gap-2">
             <DialogClose asChild><Button variant="outline" size="sm">Cancelar</Button></DialogClose>
-            <Button size="sm" onClick={handleSaveMetas} disabled={metasSaving} className="bg-gradient-primary text-white shadow-glow hover:opacity-90">{metasSaving ? "Salvando..." : "Salvar"}</Button>
+            <Button size="sm" onClick={handleSaveMetas} disabled={metasSaving} style={{ background: "linear-gradient(135deg,#8B5CF6,#EC4899)" }} className="text-white hover:opacity-90">{metasSaving ? "Salvando..." : "Salvar"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

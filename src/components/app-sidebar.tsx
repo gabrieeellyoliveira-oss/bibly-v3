@@ -79,6 +79,27 @@ export function AppSidebar() {
 
       <div className="mx-3 h-px mt-2" style={{ background: "rgba(255,255,255,0.06)" }} />
 
+      {/* Foco de hoje */}
+      {!collapsed && (
+        <div className="mx-2 my-2 rounded-xl p-3 space-y-2" style={{ background: "linear-gradient(135deg,rgba(236,72,153,0.25),rgba(139,92,246,0.2))", border: "1px solid rgba(236,72,153,0.3)" }}>
+          <div className="flex items-center gap-2">
+            <div className="h-5 w-5 rounded-lg flex items-center justify-center" style={{ background: "rgba(236,72,153,0.3)" }}>
+              <Target className="h-3 w-3 text-pink" />
+            </div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-pink">Foco de hoje</span>
+          </div>
+          <p className="text-xs font-semibold text-white">Concluir fechamentos do dia</p>
+          <div className="space-y-1">
+            <div className="h-1.5 w-full rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.15)" }}>
+              <div className="h-full rounded-full" style={{ width: "57%", background: "linear-gradient(90deg,#EC4899,#A855F7)" }} />
+            </div>
+          </div>
+          <button className="w-full h-7 rounded-lg text-[10px] font-semibold text-white transition-all hover:opacity-80" style={{ background: "linear-gradient(135deg,#8B5CF6,#EC4899)" }}>
+            Ver planos do dia
+          </button>
+        </div>
+      )}
+
       {/* Footer */}
       <div className="p-2 pb-4">
         <button
