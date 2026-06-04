@@ -1,27 +1,26 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
-  Target, BarChart2, CalendarCheck, GitBranch, Star, Sparkles,
-  Rocket, Trophy, LogOut, BookOpen, LayoutGrid,
+  Target, BarChart2, GitBranch, Star, Sparkles,
+  Rocket, Trophy, LogOut, BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
 const items = [
-  { title: "Metas",        url: "/metas",       icon: Target },
-  { title: "Planos",       url: "/planos",       icon: BookOpen },
-  { title: "Dados",        url: "/dados",        icon: BarChart2 },
-  { title: "Reuniões",     url: "/reunioes",     icon: CalendarCheck },
-  { title: "Pipeline",     url: "/pipeline",     icon: GitBranch },
-  { title: "Estudos",      url: "/estudos",      icon: Star },
-  { title: "Ravenna IA",   url: "/ravenna",      icon: Sparkles },
-  { title: "Trilha",       url: "/carreira",     icon: Rocket },
-  { title: "História",     url: "/historia",     icon: Trophy },
-  { title: "Dashboard CW", url: "/dashboard-cw", icon: LayoutGrid },
+  { title: "Metas",      url: "/metas",    icon: Target },
+  { title: "Planos",     url: "/planos",   icon: BookOpen },
+  { title: "Dados",      url: "/dados",    icon: BarChart2 },
+  { title: "Pipeline",   url: "/pipeline", icon: GitBranch },
+  { title: "Estudos",    url: "/estudos",  icon: Star },
+  { title: "Ravenna IA", url: "/ravenna",  icon: Sparkles },
+  { title: "Trilha",     url: "/carreira", icon: Rocket },
+  { title: "História",   url: "/historia", icon: Trophy },
 ];
 
 export function AppSidebar() {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const [collapsed, setCollapsed] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <aside
@@ -61,11 +60,9 @@ export function AppSidebar() {
               )}
               style={isActive ? { color: "white" } : {}}
             >
-              {/* Active background */}
               {isActive && (
                 <span className="absolute inset-0 rounded-xl" style={{ background: "linear-gradient(135deg,rgba(139,92,246,0.35) 0%,rgba(236,72,153,0.25) 100%)", border: "1px solid rgba(236,72,153,0.3)" }} />
               )}
-              {/* Left indicator */}
               {isActive && (
                 <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full" style={{ background: "linear-gradient(135deg,#8B5CF6,#EC4899)" }} />
               )}
@@ -94,7 +91,11 @@ export function AppSidebar() {
               <div className="h-full rounded-full" style={{ width: "57%", background: "linear-gradient(90deg,#EC4899,#A855F7)" }} />
             </div>
           </div>
-          <button className="w-full h-7 rounded-lg text-[10px] font-semibold text-white transition-all hover:opacity-80" style={{ background: "linear-gradient(135deg,#8B5CF6,#EC4899)" }}>
+          <button
+            onClick={() => navigate({ to: "/planos" })}
+            className="w-full h-7 rounded-lg text-[10px] font-semibold text-white transition-all hover:opacity-80 cursor-pointer"
+            style={{ background: "linear-gradient(135deg,#8B5CF6,#EC4899)" }}
+          >
             Ver planos do dia
           </button>
         </div>
