@@ -1,4 +1,4 @@
 {
-  "outputDirectory": "dist/client",
-  "rewrites": [{ "source": "/((?!assets/).*)", "destination": "/index.html" }]
+  "framework": null,
+  "buildCommand": "bun run build"
 }
