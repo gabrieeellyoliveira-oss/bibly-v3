@@ -428,25 +428,29 @@ function MetasPage() {
   ];
 
   return (
-    <div className="space-y-5 max-w-[1400px]">
+    <div className="space-y-5 w-full">
 
       {/* ── Row 1: KPI cards + Calendar ── */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-5">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {kpis.map(({ label, icon: Icon, iconBg, iconColor, value, unit, sub, barColor, barPct, valueColor }) => (
-            <div key={label} style={CARD} className="p-4 flex flex-col gap-2 relative overflow-hidden">
+            <div key={label} style={CARD} className="px-4 pt-3 pb-2 flex flex-col gap-1.5 relative overflow-hidden">
+              {/* Label + icon */}
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</span>
-                <div className="h-8 w-8 rounded-xl flex items-center justify-center" style={{ background: iconBg }}>
-                  <Icon className="h-4 w-4" style={{ color: iconColor }} />
+                <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ background: iconBg }}>
+                  <Icon className="h-3.5 w-3.5" style={{ color: iconColor }} />
                 </div>
               </div>
+              {/* Value */}
               <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-black" style={{ color: valueColor ?? "#1A1530" }}>{value}</span>
+                <span className="text-2xl font-black leading-tight" style={{ color: valueColor ?? "#1A1530" }}>{value}</span>
                 {unit && <span className="text-sm font-medium text-muted-foreground">{unit}</span>}
               </div>
-              <p className="text-xs text-muted-foreground">{sub}</p>
-              <div className="h-1 w-full rounded-full overflow-hidden mt-auto" style={{ background: barColor + "20" }}>
+              {/* Sub */}
+              <p className="text-[11px] text-muted-foreground leading-tight">{sub}</p>
+              {/* Bar */}
+              <div className="h-0.5 w-full rounded-full overflow-hidden mt-1" style={{ background: barColor + "20" }}>
                 <div className="h-full rounded-full transition-[width] duration-700" style={{ width: `${barPct}%`, background: barColor }} />
               </div>
             </div>
