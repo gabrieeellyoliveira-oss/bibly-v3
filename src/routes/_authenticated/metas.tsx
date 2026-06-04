@@ -436,8 +436,8 @@ function MetasPage() {
   return (
     <div className="space-y-6 max-w-[1400px]">
 
-      {/* TOP: Progress + Ganhos lado a lado */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-5 items-start">
+      {/* TOP: Progress (largo) + Ganhos (estreito) */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-5 items-start">
         <ProgressCard
           clientesTotal={clientesTotal}
           dados={dadosAtual}
@@ -454,22 +454,6 @@ function MetasPage() {
 
       {/* Chart */}
       <EvolucaoChart diario={diarioAtual} metaM3={dadosAtual.metas.m3} diasTotal={diasUteisNoMesAtual} />
-
-      {/* Metrics grid */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-        <MetricCard title="Novos Leads"   value={dadosAtual.leads}          sub={`Até ${dadosAtual.atualizadoAte}`} icon={Users}        />
-        <MetricCard title="OPPs"          value={dadosAtual.opps}           sub={`Até ${dadosAtual.atualizadoAte}`} icon={Target}       />
-        <MetricCard title="LTR"           value={`${dadosAtual.ltr}%`}      sub="Lead-to-reply"                    icon={TrendingUp}   trend="up"   />
-        <MetricCard title="No-show"       value={`${dadosAtual.noshow}%`}   sub="Taxa de no-show"                  icon={PhoneOff}     trend="down" />
-        <MetricCard title="Clientes"      value={dadosAtual.clientes}       sub={`Até ${dadosAtual.atualizadoAte}`} icon={CheckCircle2} />
-        <MetricCard title="Oportunidades" value={dadosAtual.oportunidades}  sub={`Até ${dadosAtual.atualizadoAte}`} icon={Award}        />
-        <MetricCard title="Vídeo Chamada" value={dadosAtual.video}          sub={`Até ${dadosAtual.atualizadoAte}`} icon={Video}        />
-        <MetricCard title="WhatsApp"      value={dadosAtual.whatsapp}       sub={`Até ${dadosAtual.atualizadoAte}`} icon={MessageSquare}/>
-        <MetricCard title="Conversão"     value={`${dadosAtual.conversao}%`} sub="Sobre OPPs"                      icon={XCircle}      />
-      </div>
-
-      {/* Performance history */}
-      <EvolucaoPerformance />
 
       {/* Edit metas dialog */}
       <Dialog open={metasDialogOpen} onOpenChange={setMetasDialogOpen}>
