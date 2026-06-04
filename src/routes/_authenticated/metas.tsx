@@ -431,8 +431,8 @@ function MetasPage() {
     <div className="space-y-5 w-full">
 
       {/* ── Row 1: KPI cards + Calendar ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-5">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-5 items-start">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 self-start">
           {kpis.map(({ label, icon: Icon, iconBg, iconColor, value, unit, sub, barColor, barPct, valueColor }) => (
             <div key={label} style={CARD} className="px-4 pt-3 pb-2 flex flex-col gap-1.5 relative overflow-hidden">
               {/* Label + icon */}
@@ -460,8 +460,8 @@ function MetasPage() {
       </div>
 
       {/* ── Row 2: 3 Meta cards + Projeção Final ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-5">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-5 items-start">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 self-start">
           {[
             { label: "Meta 1", val: metas.m1, barColor: "#8B5CF6" },
             { label: "Meta 2", val: metas.m2, barColor: "#EC4899" },
@@ -470,23 +470,23 @@ function MetasPage() {
             const n = Math.max(Math.ceil((val - clientesTotal) / Math.max(diasUteisRest, 1)), 0);
             const p2 = Math.min(pct(clientesTotal, val), 100);
             return (
-              <div key={label} style={CARD} className="p-5 space-y-3">
+              <div key={label} style={CARD} className="px-4 pt-3 pb-3 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-bold text-foreground">{label}</span>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(139,92,246,0.1)", color: "#8B5CF6" }}>{p2}%</span>
                 </div>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-black" style={{ color: "#EC4899" }}>{n}</span>
-                  <span className="text-base text-muted-foreground">/dia</span>
+                  <span className="text-3xl font-black" style={{ color: "#EC4899" }}>{n}</span>
+                  <span className="text-sm text-muted-foreground">/dia</span>
                 </div>
-                <div className="h-1.5 w-full rounded-full overflow-hidden" style={{ background: barColor + "20" }}>
+                <div className="h-1 w-full rounded-full overflow-hidden" style={{ background: barColor + "20" }}>
                   <div className="h-full rounded-full transition-[width] duration-700" style={{ width: `${p2}%`, background: barColor }} />
                 </div>
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>Faltam <span className="font-bold text-pink">{Math.max(val - clientesTotal, 0)}</span> pra meta</span>
                   <span>{clientesTotal}/{val}</span>
                 </div>
-                <p className="text-xs text-muted-foreground">{val} fechamentos</p>
+                <p className="text-[11px] text-muted-foreground">{val} fechamentos</p>
               </div>
             );
           })}
