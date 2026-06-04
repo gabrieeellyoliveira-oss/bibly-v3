@@ -1,280 +1,337 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useMemo } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { PageHeader } from "@/components/page-header";
-import { Card, CardContent } from "@/components/ui/card";
+import { Target, Calendar, TrendingUp, Plus, Minus, Save, Users, PhoneOff, CheckCircle2, Video, MessageSquare, Award, XCircle, Settings } from "lucide-react";
+import { AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Target, Settings, Plus, Minus, Save, Trophy, CalendarDays } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Bar, MetricCard } from "@/components/dashboard/PrimitivesUI";
+import { abrilFallback, abrilDiarioFallback, historico, STORAGE, type DadosAtual, type DadosDiarios, TIER_CFG } from "@/data/dashboard";
+import { pct, calcDiasUteisRestantes, calcDiasUteisMesAte, calcFechamentosSemana, getDeadlineMes, getInicioSemana, storageGet, storageSet, getSaudacao } from "@/lib/dashboardUtils";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { useProfile } from "@/hooks/use-profile";
-import {
-  calcDiasUteisRestantes, calcDiasUteisTotaisMes, calcDiasUteisDecorridos,
-  hojeISO, rangeMesAtual, saudacao, formatarDataPtBr,
-} from "@/lib/dias-uteis";
-import {
-  Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
-} from "recharts";
 
 export const Route = createFileRoute("/_authenticated/metas")({
-  head: () => ({ meta: [{ title: "Metas — Bibly" }] }),
   component: MetasPage,
 });
 
-function MetasPage() {
-  const qc = useQueryClient();
-  const { data: profile } = useProfile();
-  const nome = profile?.display_name ?? "Gabi";
+interface RegistroGanho { id: number; data: string; quantidade: number; obs: string; }
+let nextId = 1;
 
-  const { data: metas } = useQuery({
-    queryKey: ["metas"],
-    queryFn: async () => {
-      const { data } = await (supabase as any).from("dashboard_metas").select("*").eq("id", "singleton").maybeSingle();
-      return (data as any) ?? { m1: 121, m2: 135, m3: 141 };
-    },
-  });
-
-  const { data: ganhos } = useQuery({
-    queryKey: ["ganhos-mes"],
-    queryFn: async () => {
-      const { start, end } = rangeMesAtual();
-      const { data } = await supabase
-        .from("dashboard_ganhos")
-        .select("*")
-        .gte("data_ganho", start).lte("data_ganho", end)
-        .order("data_ganho");
-      return (data ?? []) as any[];
-    },
-  });
-
-  const M1 = metas?.m1 ?? 121, M2 = metas?.m2 ?? 135, M3 = metas?.m3 ?? 141;
-  const clientesTotal = (ganhos ?? []).reduce((s, g) => s + (g.quantidade ?? 1), 0);
-  const diasRest = calcDiasUteisRestantes();
-  const diasTotais = calcDiasUteisTotaisMes();
-  const diaAtual = calcDiasUteisDecorridos();
-  const projecao = diaAtual > 0 ? Math.round((clientesTotal / diaAtual) * diasTotais) : 0;
-  const esperadoHoje = (M3 / diasTotais) * diaAtual;
+function StatusMeta({ clientesTotal, dados, onAdd, onRemove, onSave, saved, onEditMetas }: {
+  clientesTotal: number; dados: DadosAtual; onAdd: () => void; onRemove: () => void;
+  onSave: () => void; saved: boolean; onEditMetas: () => void;
+}) {
+  const { metas, diaAtual } = dados;
+  const deadline = getDeadlineMes();
+  const diasUteisRest = calcDiasUteisRestantes(deadline ?? undefined);
+  const diasUteisNoMes = calcDiasUteisMesAte(deadline ?? undefined);
+  const diasUteisDecorridos = Math.max(diasUteisNoMes - diasUteisRest, 1);
+  const projecaoFinal = Math.round((clientesTotal / diasUteisDecorridos) * diasUteisNoMes);
+  const esperadoHoje = Math.round((metas.m3 / diasUteisNoMes) * diaAtual);
+  const emRitmo = clientesTotal >= esperadoHoje;
   const pctRitmo = esperadoHoje > 0 ? (clientesTotal / esperadoHoje) * 100 : 0;
-
-  let tier: { label: string; cls: string };
-  if (pctRitmo >= 100) tier = { label: "No Ritmo da Meta 3 🏆", cls: "bg-success/20 text-success border-success/40" };
-  else if (pctRitmo >= 80) tier = { label: "No Ritmo da Meta 2", cls: "bg-pink/20 text-pink border-pink/40" };
-  else if (pctRitmo >= 60) tier = { label: "No Ritmo da Meta 1", cls: "bg-primary/20 text-primary border-primary/40" };
-  else tier = { label: "Abaixo do Ritmo", cls: "bg-destructive/20 text-destructive border-destructive/40" };
-
-  const nec = (m: number) => clientesTotal >= m ? 0 : Math.ceil(((m - clientesTotal) / Math.max(diasRest, 1)) * 10) / 10;
-
-  // Chart data
-  const chartData = useMemo(() => {
-    if (!ganhos) return [];
-    const byDay: Record<string, number> = {};
-    ganhos.forEach((g) => { byDay[g.data_ganho] = (byDay[g.data_ganho] ?? 0) + (g.quantidade ?? 1); });
-    const { start, end } = rangeMesAtual();
-    const startD = new Date(start), endD = new Date(end);
-    const arr: { dia: string; diario: number; acumulado: number }[] = [];
-    let acc = 0;
-    for (let d = new Date(startD); d <= endD; d.setDate(d.getDate() + 1)) {
-      const iso = hojeISO(d);
-      const v = byDay[iso] ?? 0;
-      acc += v;
-      arr.push({ dia: iso.slice(8), diario: v, acumulado: acc });
-    }
-    return arr;
-  }, [ganhos]);
-
-  async function addGanho() {
-    const { error } = await (supabase as any).from("dashboard_ganhos").insert({ perfil: "bibi", data_ganho: hojeISO(), quantidade: 1 });
-    if (error) return toast.error(error.message);
-    toast.success("+1 ganho!");
-    qc.invalidateQueries({ queryKey: ["ganhos-mes"] });
-  }
-  async function removeGanho() {
-    const { data } = await (supabase as any).from("dashboard_ganhos").select("id").eq("data_ganho", hojeISO()).order("id", { ascending: false }).limit(1);
-    if (!data?.length) return toast.warning("Nenhum ganho hoje.");
-    const { error } = await (supabase as any).from("dashboard_ganhos").delete().eq("id", (data[0] as any).id);
-    if (error) return toast.error(error.message);
-    toast.success("-1 ganho");
-    qc.invalidateQueries({ queryKey: ["ganhos-mes"] });
-  }
-
-  async function salvarMetas(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    const { error } = await (supabase as any).from("dashboard_metas").upsert({
-      id: "singleton",
-      m1: Number(fd.get("m1")), m2: Number(fd.get("m2")), m3: Number(fd.get("m3")),
-      mes: new Date().toISOString().slice(0, 7),
-    }, { onConflict: "id" });
-    if (error) return toast.error(error.message);
-    toast.success("Metas atualizadas!");
-    qc.invalidateQueries({ queryKey: ["metas"] });
-  }
+  const forecastNivel = pctRitmo >= 100 ? 3 : pctRitmo >= 80 ? 2 : 1;
+  const nec = (meta: number) => Math.max(Math.ceil((meta - clientesTotal) / Math.max(diasUteisRest, 1)), 0);
+  const { diasRestantesSemana, fechPorSemana, semanaEncerrada } = calcFechamentosSemana(metas, diasUteisNoMes);
+  const chave = `ravenna_semana_${getInicioSemana().toISOString().slice(0, 10)}`;
+  const feitosEstaSemana = (storageGet<number>(chave) ?? 0);
+  const necessarioM3 = Math.max(Math.ceil((metas.m3 / diasUteisNoMes) * diasRestantesSemana) - feitosEstaSemana, 0);
 
   return (
-    <div className="max-w-7xl mx-auto">
-      <PageHeader
-        breadcrumb={<>METAS · {saudacao().toUpperCase()}</>}
-        title={<>{saudacao()}, <span className="text-gradient">{nome}</span> 👋</>}
-        subtitle="Acompanhe metas, forecast e ganhos do mês em tempo real."
-      />
-
-      <Card className="shadow-card border-border bg-card overflow-hidden animate-fade-in">
-        <CardContent className="p-6">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center gap-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-              <Target className="h-4 w-4 text-pink" /> Meta do Mês — Status
-              <Dialog>
-                <DialogTrigger asChild><Button size="icon" variant="ghost" className="h-6 w-6"><Settings className="h-3 w-3" /></Button></DialogTrigger>
-                <DialogContent>
-                  <DialogHeader><DialogTitle>Editar Metas</DialogTitle></DialogHeader>
-                  <form onSubmit={salvarMetas} className="space-y-3">
-                    <div><Label>Meta 1</Label><Input name="m1" type="number" defaultValue={M1} /></div>
-                    <div><Label>Meta 2</Label><Input name="m2" type="number" defaultValue={M2} /></div>
-                    <div><Label>Meta 3</Label><Input name="m3" type="number" defaultValue={M3} /></div>
-                    <DialogFooter><Button type="submit" className="bg-gradient-primary text-white">Salvar</Button></DialogFooter>
-                  </form>
-                </DialogContent>
-              </Dialog>
+    <div className="space-y-5 rounded-2xl border border-border bg-card p-6 shadow-card">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Target className="h-4 w-4 text-pink" />
+          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Meta do Mês — Status</p>
+          <button onClick={onEditMetas} className="ml-1 rounded-md p-1 text-muted-foreground/50 hover:bg-secondary hover:text-muted-foreground transition-colors">
+            <Settings className="h-3.5 w-3.5" />
+          </button>
+        </div>
+        <span className={cn("rounded-full border px-3 py-1 text-xs font-bold", emRitmo ? "border-primary bg-primary/15 text-primary" : "border-destructive bg-destructive/15 text-destructive")}>
+          {emRitmo ? "No Ritmo" : "Atrasado"}
+        </span>
+      </div>
+      <div className="flex flex-col gap-1">
+        <div className="flex items-baseline gap-3">
+          <span className="bg-gradient-hero bg-clip-text text-6xl font-extrabold text-transparent">{clientesTotal}</span>
+          <span className="text-2xl font-light text-muted-foreground">/ {metas.m3}</span>
+        </div>
+        <p className={cn("text-sm font-bold", forecastNivel === 3 ? "text-success" : forecastNivel === 2 ? "text-warning" : "text-pink")}>
+          {forecastNivel === 3 ? "Você está no forecast da Meta 3 🏆" : forecastNivel === 2 ? "Você está no forecast da Meta 2 🎯" : "Você está no forecast da Meta 1"}
+        </p>
+      </div>
+      <div className="relative pb-12 pt-7">
+        {[{ label: "M1", val: metas.m1 }, { label: "M2", val: metas.m2 }].map(({ label, val }) => (
+          <div key={label} className="absolute top-0 flex flex-col items-center" style={{ left: `${pct(val, metas.m3)}%`, transform: "translateX(-50%)" }}>
+            <span className="text-xs text-muted-foreground">{label}</span>
+            <div className="h-5 w-px bg-border" />
+          </div>
+        ))}
+        <div className="absolute top-0 z-10 flex flex-col items-center transition-[left] duration-700" style={{ left: `${Math.min(pct(clientesTotal, metas.m3), 100)}%`, transform: "translateX(-50%)" }}>
+          <span className="text-sm font-bold text-warning">{clientesTotal}</span>
+          <div className="h-5 w-px bg-warning" />
+        </div>
+        <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted">
+          <div className="h-full rounded-full bg-gradient-primary shadow-glow transition-[width] duration-700" style={{ width: `${pct(clientesTotal, metas.m3)}%` }} />
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-3">
+        {[{ label: "META 1", val: metas.m1 }, { label: "META 2", val: metas.m2 }, { label: "META 3 ★", val: metas.m3 }].map(({ label, val }) => {
+          const n = nec(val); const falta = Math.max(val - clientesTotal, 0);
+          return (
+            <div key={label} className="rounded-xl border border-border bg-card/60 p-4">
+              <p className="mb-0.5 text-xs font-bold tracking-wide text-muted-foreground">{label}</p>
+              <p className="text-xs text-muted-foreground/70">{val} fechamentos</p>
+              <p className={cn("mt-2 text-3xl font-extrabold", n === 0 ? "text-success" : "text-pink")}>
+                {n === 0 ? "✓" : n}{n > 0 && <span className="ml-1 text-base font-normal text-muted-foreground">/dia</span>}
+              </p>
+              {falta > 0 ? <p className="mt-1.5 text-xs font-semibold text-muted-foreground">Falta <span className="font-extrabold text-pink">{falta}</span> pra meta</p> : <p className="mt-1.5 text-xs font-semibold text-success">✓ Meta atingida!</p>}
             </div>
-            <Badge className={`rounded-full border ${tier.cls}`}>{tier.label}</Badge>
-          </div>
-
-          <div className="flex items-baseline gap-2">
-            <span className="text-7xl md:text-8xl font-bold text-gradient transition-all duration-700">{clientesTotal}</span>
-            <span className="text-3xl text-muted-foreground">/ {M3}</span>
-          </div>
-          <p className="mt-2 text-sm text-success font-medium">
-            Você está {pctRitmo >= 60 ? "no forecast" : "abaixo do forecast"} da Meta {pctRitmo >= 100 ? 3 : pctRitmo >= 80 ? 2 : 1} <Trophy className="inline h-4 w-4" />
+          );
+        })}
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="flex items-center gap-2 rounded-xl border border-border bg-card/60 px-3 py-2">
+          <span className="text-xs font-bold uppercase text-muted-foreground">Projeção Final</span>
+          <span className={cn("text-lg font-extrabold", projecaoFinal >= metas.m3 ? "text-success" : "text-destructive")}>{projecaoFinal}</span>
+          <span className="text-xs text-muted-foreground/70">/ {metas.m3}</span>
+        </div>
+        <div className="flex items-center gap-2 rounded-xl border border-border bg-card/60 px-3 py-2">
+          <span className="text-xs font-bold uppercase text-muted-foreground">Dias Restantes</span>
+          <span className="text-lg font-extrabold text-foreground">{diasUteisRest}</span>
+          <span className="text-xs text-muted-foreground/70">úteis</span>
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border px-4 py-3">
+        <div className="flex items-center gap-2">
+          <Calendar className={cn("h-3.5 w-3.5 flex-shrink-0", semanaEncerrada ? "text-primary" : necessarioM3 === 0 ? "text-success" : "text-pink")} />
+          <p className={cn("text-xs font-semibold", semanaEncerrada ? "text-primary" : necessarioM3 === 0 ? "text-success" : "text-foreground")}>
+            {semanaEncerrada ? "Final de semana chegou — descansa, Gabi" : necessarioM3 === 0 ? `✓ Meta da semana batida! (${feitosEstaSemana}/${fechPorSemana})` : `Faltam ${necessarioM3} fechamentos na semana pro forecast da Meta 3`}
           </p>
+        </div>
+        {!semanaEncerrada && <span className="text-xs text-muted-foreground/70">{feitosEstaSemana}/{fechPorSemana} esta semana · {diasRestantesSemana} dia(s)</span>}
+      </div>
+      <div className="space-y-2 border-t border-border pt-4">
+        <div className="grid grid-cols-2 gap-2">
+          <Button variant="outline" onClick={onRemove} className="border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20 hover:text-destructive">
+            <Minus className="mr-1.5 h-3.5 w-3.5" /> -1 ganho
+          </Button>
+          <Button onClick={onAdd} className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90">
+            <Plus className="mr-1.5 h-3.5 w-3.5" /> +1 ganho
+          </Button>
+        </div>
+        <Button variant="ghost" onClick={onSave} className={cn("w-full", saved && "bg-success/15 text-success hover:bg-success/20 hover:text-success")}>
+          <Save className="mr-1.5 h-3.5 w-3.5" />{saved ? "✓ Salvo!" : "Salvar ganhos"}
+        </Button>
+      </div>
+    </div>
+  );
+}
 
-          {/* progress bar with markers */}
-          <div className="relative h-3 bg-secondary rounded-full mt-6">
-            <div
-              className="absolute inset-y-0 left-0 bg-gradient-primary rounded-full shadow-glow transition-all duration-700"
-              style={{ width: `${Math.min(100, (clientesTotal / M3) * 100)}%` }}
-            />
-            {[
-              { v: clientesTotal, label: String(clientesTotal), color: "text-warning", pos: (clientesTotal / M3) * 100 },
-              { v: M1, label: "M1", color: "text-muted-foreground", pos: (M1 / M3) * 100 },
-              { v: M2, label: "M2", color: "text-muted-foreground", pos: (M2 / M3) * 100 },
-            ].map((m, i) => (
-              <div key={i} className="absolute -top-5" style={{ left: `${Math.min(100, m.pos)}%`, transform: "translateX(-50%)" }}>
-                <span className={`text-xs font-semibold ${m.color}`}>{m.label}</span>
+function EvolucaoChart({ diario, metaM3, diasTotal }: { diario: DadosDiarios[]; metaM3: number; diasTotal: number }) {
+  const data = diario.map((d, i) => ({ dia: d.dia, acumulado: d.clientes, noDia: d.noDia, metaIdeal: Math.round((metaM3 / diasTotal) * (i + 1)) }));
+  return (
+    <div className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-card">
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-base font-bold text-foreground">Evolução de Fechamentos</p>
+          <p className="text-xs text-muted-foreground">Acumulado diário no mês</p>
+        </div>
+        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1.5"><span className="inline-block h-0.5 w-5 rounded bg-primary" /> Acumulado</span>
+          <span className="flex items-center gap-1.5"><span className="inline-block h-0.5 w-5 rounded bg-pink" /> No dia</span>
+        </div>
+      </div>
+      <ResponsiveContainer width="100%" height={200}>
+        <AreaChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+          <defs>
+            <linearGradient id="gA" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.4} />
+              <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+            </linearGradient>
+            <linearGradient id="gP" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="hsl(var(--pink))" stopOpacity={0.3} />
+              <stop offset="95%" stopColor="hsl(var(--pink))" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" vertical={false} />
+          <XAxis dataKey="dia" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} />
+          <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, color: "hsl(var(--foreground))" }} labelStyle={{ color: "hsl(var(--muted-foreground))" }} />
+          <Area type="monotone" dataKey="acumulado" stroke="hsl(var(--primary))" strokeWidth={2.5} fill="url(#gA)" dot={{ r: 3, fill: "hsl(var(--primary))" }} name="Acumulado" />
+          <Area type="monotone" dataKey="noDia" stroke="hsl(var(--pink))" strokeWidth={1.5} fill="url(#gP)" strokeDasharray="5 3" dot={false} name="No dia" />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function EvolucaoPerformance() {
+  const primeiro = historico[0]; const ultimo = historico[historico.length - 1];
+  const crescPct = Math.round(((ultimo.clientes - primeiro.clientes) / primeiro.clientes) * 100);
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <TrendingUp className="h-4 w-4 text-pink" />
+        <p className="text-base font-bold text-foreground">Evolução de Performance — <span className="text-muted-foreground">{primeiro.tier}</span><span className="mx-1 text-muted-foreground/60">→</span><span className="text-success">{ultimo.tier}</span></p>
+      </div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {historico.map((d) => {
+          const allMetas = [{ label: "Meta 1", val: d.metas.m1 }, { label: "Meta 2", val: d.metas.m2 }, { label: "Meta 3", val: d.metas.m3 }, ...(d.megaMeta ? [{ label: "Mega Meta 1", val: d.megaMeta }] : [])];
+          const maxMeta = d.megaMeta ?? d.metas.m3;
+          const tierCfg = TIER_CFG[d.tier] ?? TIER_CFG["Tier 4/5"];
+          return (
+            <div key={d.mes} className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-card transition-all hover:border-primary/40">
+              <div className="flex flex-wrap items-start justify-between gap-1">
+                <div><p className="font-bold text-foreground">{d.mes}</p><p className="text-xs text-muted-foreground/70">{d.ano}</p></div>
+                <div className="flex flex-col items-end gap-1">
+                  <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-muted-foreground">Finalizado</span>
+                  <span className="rounded-full px-2 py-0.5 text-xs font-bold" style={{ backgroundColor: tierCfg.bg, color: tierCfg.text }}>{d.tier}</span>
+                </div>
+              </div>
+              <div className="py-1 text-center">
+                <p className="text-5xl font-extrabold leading-none" style={{ color: d.conclusao.cor }}>{d.clientes}</p>
+                <p className="mt-1 text-xs text-muted-foreground">clientes entregues</p>
+              </div>
+              <div className="space-y-1">
+                <Bar value={d.clientes} max={maxMeta} />
+                <div className="flex justify-between text-xs text-muted-foreground/70"><span>0</span><span>{d.megaMeta ? "Mega Meta 1" : "Meta 3"}: {maxMeta}</span></div>
+              </div>
+              <div className="flex-1 space-y-1.5">
+                {allMetas.map(({ label, val }) => {
+                  const batida = d.clientes >= val;
+                  return (
+                    <div key={label} className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1">{batida ? <CheckCircle2 className="h-3 w-3 text-success" /> : <XCircle className="h-3 w-3 text-destructive" />}{label}: {val}</span>
+                      <span className={batida ? "text-success" : "text-destructive"}>{d.clientes}/{val}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="rounded-lg px-3 py-2 text-center" style={{ backgroundColor: `${d.conclusao.cor}22`, border: `1px solid ${d.conclusao.cor}55` }}>
+                <p className="text-xs font-semibold" style={{ color: d.conclusao.cor }}>{d.conclusao.tipo === "fail" ? "✕ " : d.conclusao.tipo === "mega" ? "★ " : "✓ "}{d.conclusao.texto}</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex items-center gap-3 rounded-xl border border-success/40 bg-success/10 px-5 py-3">
+        <Award className="h-4 w-4 text-success" />
+        <p className="text-sm font-semibold text-success">De {primeiro.tier} ({primeiro.clientes} clientes)<span className="text-success/80"> → </span>{ultimo.tier} ({ultimo.clientes} clientes)<span className="text-success/80"> · +{crescPct}% em {historico.length} meses</span></p>
+      </div>
+    </div>
+  );
+}
+
+function MetasPage() {
+  const dadosPlanilha = storageGet<{ atual?: Partial<DadosAtual>; metas?: { m1?: number; m2?: number; m3?: number }; diario?: DadosDiarios[] }>(STORAGE.PLANILHA);
+  const [metasOverride, setMetasOverride] = useState<{ m1: number; m2: number; m3: number } | null>(null);
+  const [metasDialogOpen, setMetasDialogOpen] = useState(false);
+  const [editM1, setEditM1] = useState(""); const [editM2, setEditM2] = useState(""); const [editM3, setEditM3] = useState("");
+  const [metasSaving, setMetasSaving] = useState(false);
+
+  useEffect(() => {
+    supabase.from("dashboard_metas").select("m1, m2, m3").eq("id", "singleton").maybeSingle().then(({ data }) => {
+      if (data) setMetasOverride({ m1: data.m1, m2: data.m2, m3: data.m3 });
+    });
+  }, []);
+
+  const metasBase = { m1: dadosPlanilha?.metas?.m1 ?? abrilFallback.metas.m1, m2: dadosPlanilha?.metas?.m2 ?? abrilFallback.metas.m2, m3: dadosPlanilha?.metas?.m3 ?? abrilFallback.metas.m3 };
+  const metasAtivas = metasOverride ?? metasBase;
+  const dadosAtual: DadosAtual = { ...abrilFallback, ...(dadosPlanilha?.atual ?? {}), metas: metasAtivas };
+  const diarioAtual = (dadosPlanilha?.diario && dadosPlanilha.diario.length > 0) ? dadosPlanilha.diario : abrilDiarioFallback;
+
+  const handleSaveMetas = async () => {
+    const m1 = Number(editM1) || 0; const m2 = Number(editM2) || 0; const m3 = Number(editM3) || 0;
+    setMetasSaving(true);
+    await supabase.from("dashboard_metas").upsert({ id: "singleton", m1, m2, m3, updated_at: new Date().toISOString() });
+    setMetasOverride({ m1, m2, m3 }); setMetasSaving(false); setMetasDialogOpen(false);
+    toast.success("Metas salvas!");
+  };
+
+  const deadlineMes = getDeadlineMes();
+  const diasUteisNoMesAtual = calcDiasUteisMesAte(deadlineMes ?? undefined);
+  const [registros, setRegistros] = useState<RegistroGanho[]>(() => storageGet<RegistroGanho[]>(STORAGE.GANHOS) ?? []);
+  const [saved, setSaved] = useState(false);
+  const totalManual = registros.reduce((s, r) => s + r.quantidade, 0);
+  const clientesTotal = dadosAtual.clientes + totalManual;
+  const saudacao = getSaudacao();
+  const syncedRef = useRef(false);
+
+  useEffect(() => {
+    if (syncedRef.current) return; syncedRef.current = true;
+    supabase.from("dashboard_ganhos").select("*").eq("perfil", "bibi").order("created_at", { ascending: true }).then(({ data }) => {
+      if (data && data.length > 0) {
+        const remoto: RegistroGanho[] = data.map((r: any) => ({ id: r.id, data: r.data_ganho, quantidade: r.quantidade, obs: r.obs ?? "" }));
+        setRegistros(remoto); storageSet(STORAGE.GANHOS, remoto);
+      }
+    });
+  }, []);
+
+  useEffect(() => { storageSet(STORAGE.GANHOS, registros); }, [registros]);
+
+  const handleAdd = async () => {
+    const dataHoje = new Date().toLocaleDateString("pt-BR");
+    const { data } = await supabase.from("dashboard_ganhos").insert({ perfil: "bibi", data_ganho: dataHoje, quantidade: 1, obs: "Ajuste rápido" }).select().single();
+    const novoId = data?.id ?? nextId++;
+    setRegistros((prev) => [...prev, { id: novoId, data: dataHoje, quantidade: 1, obs: "Ajuste rápido" }]);
+    const chave = `ravenna_semana_${getInicioSemana().toISOString().slice(0, 10)}`;
+    storageSet(chave, (storageGet<number>(chave) ?? 0) + 1);
+  };
+
+  const handleRemove = async () => {
+    if (registros.length === 0) return;
+    const ultimo = registros[registros.length - 1];
+    await supabase.from("dashboard_ganhos").delete().eq("id", ultimo.id);
+    setRegistros((prev) => prev.slice(0, -1));
+    const chave = `ravenna_semana_${getInicioSemana().toISOString().slice(0, 10)}`;
+    storageSet(chave, Math.max((storageGet<number>(chave) ?? 0) - 1, 0));
+  };
+
+  const handleSave = () => { storageSet(STORAGE.GANHOS, registros); setSaved(true); setTimeout(() => setSaved(false), 2500); };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-widest text-pink">Metas · {saudacao}</p>
+          <h1 className="text-2xl font-black tracking-tight text-foreground">Olá, Gabi</h1>
+          <p className="text-sm text-muted-foreground">Acompanhe metas, forecast e ganhos do mês em tempo real.</p>
+        </div>
+      </div>
+      <StatusMeta clientesTotal={clientesTotal} dados={dadosAtual} onAdd={handleAdd} onRemove={handleRemove} onSave={handleSave} saved={saved} onEditMetas={() => { setEditM1(String(metasAtivas.m1 || "")); setEditM2(String(metasAtivas.m2 || "")); setEditM3(String(metasAtivas.m3 || "")); setMetasDialogOpen(true); }} />
+      <Dialog open={metasDialogOpen} onOpenChange={setMetasDialogOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader><DialogTitle>Editar Metas do Mês</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-2">
+            {[{ label: "Meta 1", value: editM1, onChange: setEditM1 }, { label: "Meta 2", value: editM2, onChange: setEditM2 }, { label: "Meta 3 ★", value: editM3, onChange: setEditM3 }].map(({ label, value, onChange }) => (
+              <div key={label} className="flex items-center gap-4">
+                <span className="w-20 text-sm font-semibold text-foreground">{label}</span>
+                <Input type="number" min={0} value={value} onChange={(e) => onChange(e.target.value)} placeholder="0" className="flex-1" />
               </div>
             ))}
           </div>
-
-          {/* 3 metas */}
-          <div className="grid md:grid-cols-3 gap-4 mt-8">
-            {[{ n: 1, m: M1, fech: "121 fechamentos" }, { n: 2, m: M2, fech: "135 fechamentos" }, { n: 3, m: M3, fech: "141 fechamentos", star: true }].map((c) => {
-              const v = nec(c.m);
-              const batida = v === 0;
-              return (
-                <Card key={c.n} className="bg-secondary/40 border-border">
-                  <CardContent className="p-4">
-                    <div className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">META {c.n} {c.star && "★"}</div>
-                    <div className="text-xs text-muted-foreground mt-1">{c.fech}</div>
-                    {batida ? (
-                      <div className="text-2xl font-bold text-success mt-3">✓ Batida</div>
-                    ) : (
-                      <div className="mt-3">
-                        <span className="text-4xl font-bold text-pink">{v}</span>
-                        <span className="text-muted-foreground"> /dia</span>
-                      </div>
-                    )}
-                    <div className="text-xs text-muted-foreground mt-2">Falta <b className="text-foreground">{Math.max(0, c.m - clientesTotal)}</b> pra meta</div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-
-          {/* projeção + dias */}
-          <div className="grid md:grid-cols-2 gap-4 mt-4">
-            <Card className="bg-secondary/40 border-border">
-              <CardContent className="p-4 flex items-center justify-between">
-                <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">PROJEÇÃO FINAL</span>
-                <div><span className="text-2xl font-bold text-destructive">{projecao}</span><span className="text-muted-foreground"> / {M3}</span></div>
-              </CardContent>
-            </Card>
-            <Card className="bg-secondary/40 border-border">
-              <CardContent className="p-4 flex items-center justify-between">
-                <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">DIAS RESTANTES</span>
-                <div><span className="text-2xl font-bold">{diasRest}</span><span className="text-muted-foreground"> úteis</span></div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* banner semanal */}
-          <Card className="mt-4 border-success/30 bg-success/10">
-            <CardContent className="p-3 flex items-center gap-2 text-sm">
-              <CalendarDays className="h-4 w-4 text-success" />
-              <span className="text-success font-medium">Meta da semana batida! ({clientesTotal}/34)</span>
-              <span className="ml-auto text-xs text-muted-foreground">{clientesTotal}/34 esta semana</span>
-            </CardContent>
-          </Card>
-
-          {/* botões */}
-          <div className="grid grid-cols-2 gap-3 mt-6">
-            <Button onClick={removeGanho} variant="outline" className="h-12 border-destructive/40 text-destructive hover:bg-destructive/10">
-              <Minus className="h-4 w-4" /> -1 ganho
-            </Button>
-            <Button onClick={addGanho} className="h-12 bg-gradient-primary text-white shadow-glow">
-              <Plus className="h-4 w-4" /> +1 ganho
-            </Button>
-          </div>
-          <div className="text-center mt-3">
-            <Button variant="ghost" size="sm" onClick={() => toast.success("Salvo!")}><Save className="h-3 w-3" /> Salvar ganhos</Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Chart */}
-      <Card className="mt-6 shadow-card animate-fade-in">
-        <CardContent className="p-6">
-          <h2 className="text-lg font-semibold mb-1">Evolução do Mês</h2>
-          <p className="text-sm text-muted-foreground mb-4">Acumulado e diário · {formatarDataPtBr(hojeISO())}</p>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData}>
-                <defs>
-                  <linearGradient id="acc" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="oklch(0.62 0.24 295)" stopOpacity={0.6} />
-                    <stop offset="100%" stopColor="oklch(0.62 0.24 295)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.28 0.04 290 / 0.4)" />
-                <XAxis dataKey="dia" stroke="oklch(0.68 0.04 290)" />
-                <YAxis stroke="oklch(0.68 0.04 290)" />
-                <Tooltip contentStyle={{ background: "oklch(0.18 0.03 290)", border: "1px solid oklch(0.28 0.04 290)", borderRadius: 12 }} />
-                <Area type="monotone" dataKey="acumulado" stroke="oklch(0.62 0.24 295)" fill="url(#acc)" strokeWidth={2} />
-                <Area type="monotone" dataKey="diario" stroke="oklch(0.72 0.27 350)" fill="transparent" strokeWidth={2} strokeDasharray="4 4" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 9 metrics grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mt-6">
-        {[
-          { l: "Novos Leads", v: 0 }, { l: "OPPs", v: 0 }, { l: "LTR%", v: "0%" },
-          { l: "No-show%", v: "0%" }, { l: "Clientes", v: clientesTotal },
-          { l: "Oportunidades", v: 0 }, { l: "Vídeo Chamada", v: 0 },
-          { l: "WhatsApp OPPs", v: 0 }, { l: "Conversão%", v: "0%" },
-        ].map((m) => (
-          <Card key={m.l} className="bg-card border-border">
-            <CardContent className="p-4">
-              <div className="text-xs text-muted-foreground">{m.l}</div>
-              <div className="text-2xl font-bold mt-1 text-gradient">{m.v}</div>
-            </CardContent>
-          </Card>
-        ))}
+          <DialogFooter className="gap-2">
+            <DialogClose asChild><Button variant="outline" size="sm">Cancelar</Button></DialogClose>
+            <Button size="sm" onClick={handleSaveMetas} disabled={metasSaving} className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90">{metasSaving ? "Salvando..." : "Salvar"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <EvolucaoChart diario={diarioAtual} metaM3={dadosAtual.metas.m3} diasTotal={diasUteisNoMesAtual} />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <MetricCard title="Novos Leads" value={dadosAtual.leads} sub={`Até ${dadosAtual.atualizadoAte}`} icon={Users} />
+        <MetricCard title="OPPs" value={dadosAtual.opps} sub={`Até ${dadosAtual.atualizadoAte}`} icon={Target} />
+        <MetricCard title="LTR" value={`${dadosAtual.ltr}%`} sub="Lead-to-reply" icon={TrendingUp} trend="up" />
+        <MetricCard title="No-show" value={`${dadosAtual.noshow}%`} sub="↓ Taxa de no-show" icon={PhoneOff} trend="down" />
+        <MetricCard title="Clientes" value={dadosAtual.clientes} sub={`Até ${dadosAtual.atualizadoAte}`} icon={CheckCircle2} />
+        <MetricCard title="Oportunidades" value={dadosAtual.oportunidades} sub={`Até ${dadosAtual.atualizadoAte}`} icon={Calendar} />
+        <MetricCard title="Vídeo Chamada" value={dadosAtual.video} sub={`Até ${dadosAtual.atualizadoAte}`} icon={Video} />
+        <MetricCard title="WhatsApp Opps" value={dadosAtual.whatsapp} sub={`Até ${dadosAtual.atualizadoAte}`} icon={MessageSquare} />
+        <MetricCard title="Conversão" value={`${dadosAtual.conversao}%`} sub="Sobre OPPs" icon={Award} />
       </div>
+      <EvolucaoPerformance />
     </div>
   );
 }
