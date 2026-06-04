@@ -435,31 +435,25 @@ function MetasPage() {
 
   return (
     <div className="space-y-6 max-w-[1400px]">
-      {/* Page header */}
-      <div>
-        <p className="text-xs font-bold uppercase tracking-widest text-pink">Metas · {saudacao}</p>
-        <h1 className="text-3xl font-black tracking-tight text-foreground mt-0.5">Olá, Gabi</h1>
-        <p className="text-sm text-muted-foreground mt-1">Acompanhe metas, forecast e ganhos do mês em tempo real.</p>
-      </div>
 
-      {/* Progress card */}
-      <ProgressCard
-        clientesTotal={clientesTotal}
-        dados={dadosAtual}
-        onEditMetas={() => {
-          setEditM1(String(metasAtivas.m1 || "")); setEditM2(String(metasAtivas.m2 || "")); setEditM3(String(metasAtivas.m3 || ""));
-          setMetasDialogOpen(true);
-        }}
-      />
-
-      {/* Chart + Ganhos side by side */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5">
-        <EvolucaoChart diario={diarioAtual} metaM3={dadosAtual.metas.m3} diasTotal={diasUteisNoMesAtual} />
+      {/* TOP: Progress + Ganhos lado a lado */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-5 items-start">
+        <ProgressCard
+          clientesTotal={clientesTotal}
+          dados={dadosAtual}
+          onEditMetas={() => {
+            setEditM1(String(metasAtivas.m1 || "")); setEditM2(String(metasAtivas.m2 || "")); setEditM3(String(metasAtivas.m3 || ""));
+            setMetasDialogOpen(true);
+          }}
+        />
         <GanhosPanel
           clientesTotal={clientesTotal} registros={registros}
           onAdd={handleAdd} onRemove={handleRemove} onSave={handleSave} saved={saved}
         />
       </div>
+
+      {/* Chart */}
+      <EvolucaoChart diario={diarioAtual} metaM3={dadosAtual.metas.m3} diasTotal={diasUteisNoMesAtual} />
 
       {/* Metrics grid */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
