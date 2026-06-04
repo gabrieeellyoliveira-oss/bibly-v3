@@ -25,7 +25,7 @@ export const Route = createFileRoute("/_authenticated/metas")({
 interface RegistroGanho { id: number; data: string; quantidade: number; obs: string; }
 let nextId = 1;
 
-const CARD = { background: "#241C33", border: "1px solid rgba(139,92,246,0.14)", boxShadow: "0 4px 24px -4px rgba(0,0,0,0.45), 0 1px 0 0 rgba(255,255,255,0.03) inset" } as const;
+const CARD = { background: "#FFFFFF", border: "1px solid #E5DDF7", boxShadow: "0 2px 16px -2px rgba(139,92,246,0.1), 0 1px 4px rgba(0,0,0,0.04)" } as const;
 const GRAD = "linear-gradient(135deg,#8B5CF6,#EC4899)";
 
 /* ── Progress bar slim ── */
@@ -130,18 +130,18 @@ function ProgressCard({ clientesTotal, dados, onEditMetas }: {
               <div className="h-3 w-px bg-warning mt-0.5" />
             </div>
             {/* Bar */}
-            <div className="h-3 w-full rounded-full overflow-hidden mt-3" style={{ background: "rgba(139,92,246,0.1)" }}>
+            <div className="h-3 w-full rounded-full overflow-hidden mt-3" style={{ background: "rgba(139,92,246,0.08)" }}>
               <div className="h-full rounded-full transition-[width] duration-700 shadow-glow" style={{ width: `${pct(clientesTotal, metas.m3)}%`, background: GRAD }} />
             </div>
           </div>
 
           {/* Ritmo e meta */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-xl p-3 space-y-0.5" style={{ background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.15)" }}>
+            <div className="rounded-xl p-3 space-y-0.5" style={{ background: "rgba(139,92,246,0.06)", border: "1px solid rgba(139,92,246,0.15)" }}>
               <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Seu ritmo atual</p>
               <p className="text-2xl font-extrabold text-primary">{ritmoAtual}<span className="text-sm font-normal text-muted-foreground">/dia</span></p>
             </div>
-            <div className="rounded-xl p-3 space-y-0.5" style={{ background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.15)" }}>
+            <div className="rounded-xl p-3 space-y-0.5" style={{ background: "rgba(139,92,246,0.06)", border: "1px solid rgba(139,92,246,0.15)" }}>
               <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Necessário M1</p>
               <p className="text-2xl font-extrabold" style={{ color: nec(metas.m1) === 0 ? "#22C55E" : "#EC4899" }}>
                 {nec(metas.m1) === 0 ? "✓" : nec(metas.m1)}<span className="text-sm font-normal text-muted-foreground">/dia</span>
@@ -171,7 +171,7 @@ function ProgressCard({ clientesTotal, dados, onEditMetas }: {
         ].map(({ label, val, pctVal }) => {
           const n = Math.max(Math.ceil((val - clientesTotal) / Math.max(diasUteisRest, 1)), 0);
           return (
-            <div key={label} className="rounded-xl p-4 space-y-2" style={{ background: "rgba(139,92,246,0.06)", border: "1px solid rgba(139,92,246,0.14)" }}>
+            <div key={label} className="rounded-xl p-4 space-y-2" style={{ background: "rgba(139,92,246,0.04)", border: "1px solid rgba(139,92,246,0.14)" }}>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{label}</p>
@@ -196,7 +196,7 @@ function ProgressCard({ clientesTotal, dados, onEditMetas }: {
 
       {/* Bottom stats row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="rounded-xl px-4 py-3 space-y-0.5" style={{ background: "rgba(139,92,246,0.06)", border: "1px solid rgba(139,92,246,0.12)" }}>
+        <div className="rounded-xl px-4 py-3 space-y-0.5" style={{ background: "rgba(139,92,246,0.04)", border: "1px solid rgba(139,92,246,0.12)" }}>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Projeção Final</p>
           <div className="flex items-center gap-1.5">
             <span className={cn("text-xl font-extrabold", projecaoFinal >= metas.m3 ? "text-success" : "text-destructive")}>{projecaoFinal}</span>
@@ -204,18 +204,18 @@ function ProgressCard({ clientesTotal, dados, onEditMetas }: {
           </div>
           {projecaoFinal > metas.m3 && <p className="text-[10px] text-success">↑ {projecaoFinal - metas.m3} acima da Meta 3</p>}
         </div>
-        <div className={cn("rounded-xl px-4 py-3 space-y-0.5", metaSemBatida ? "border-success/30 bg-success/8" : "")} style={{ background: metaSemBatida ? "rgba(34,197,94,0.08)" : "rgba(139,92,246,0.06)", border: metaSemBatida ? "1px solid rgba(34,197,94,0.25)" : "1px solid rgba(139,92,246,0.12)" }}>
+        <div className={cn("rounded-xl px-4 py-3 space-y-0.5", metaSemBatida ? "border-success/30 bg-success/8" : "")} style={{ background: metaSemBatida ? "rgba(34,197,94,0.08)" : "rgba(139,92,246,0.04)", border: metaSemBatida ? "1px solid rgba(34,197,94,0.25)" : "1px solid rgba(139,92,246,0.12)" }}>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Meta da Semana</p>
           <p className={cn("text-sm font-bold", metaSemBatida ? "text-success" : "text-foreground")}>
             {semanaEncerrada ? "🎉 Fim de semana!" : metaSemBatida ? "✓ Batida!" : `${feitosEstaSemana}/${fechPorSemana}`}
           </p>
           {!semanaEncerrada && <p className="text-[10px] text-muted-foreground">{diasRestantesSemana} dia(s) restante(s)</p>}
         </div>
-        <div className="rounded-xl px-4 py-3 space-y-0.5" style={{ background: "rgba(139,92,246,0.06)", border: "1px solid rgba(139,92,246,0.12)" }}>
+        <div className="rounded-xl px-4 py-3 space-y-0.5" style={{ background: "rgba(139,92,246,0.04)", border: "1px solid rgba(139,92,246,0.12)" }}>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Dias Restantes</p>
           <p className="text-xl font-extrabold text-foreground">{diasUteisRest} <span className="text-xs font-normal text-muted-foreground">úteis</span></p>
         </div>
-        <div className="rounded-xl px-4 py-3 space-y-0.5" style={{ background: "rgba(139,92,246,0.06)", border: "1px solid rgba(139,92,246,0.12)" }}>
+        <div className="rounded-xl px-4 py-3 space-y-0.5" style={{ background: "rgba(139,92,246,0.04)", border: "1px solid rgba(139,92,246,0.12)" }}>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Esta Semana</p>
           <p className="text-xl font-extrabold text-foreground">{feitosEstaSemana}<span className="text-xs font-normal text-muted-foreground">/{fechPorSemana}</span></p>
           <p className="text-[10px] text-muted-foreground">{diasRestantesSemana} dia(s) restante(s)</p>
@@ -255,11 +255,11 @@ function EvolucaoChart({ diario, metaM3, diasTotal }: { diario: DadosDiarios[]; 
               <stop offset="95%" stopColor="#EC4899" stopOpacity={0} />
             </linearGradient>
           </defs>
-          <CartesianGrid stroke="rgba(139,92,246,0.08)" strokeDasharray="3 3" vertical={false} />
+          <CartesianGrid stroke="rgba(139,92,246,0.06)" strokeDasharray="3 3" vertical={false} />
           <XAxis dataKey="dia" tick={{ fill: "#B7ABC8", fontSize: 10 }} axisLine={false} tickLine={false} />
           <YAxis tick={{ fill: "#B7ABC8", fontSize: 10 }} axisLine={false} tickLine={false} />
           <Tooltip
-            contentStyle={{ background: "#241C33", border: "1px solid rgba(139,92,246,0.2)", borderRadius: 12, color: "#F2ECFA", fontSize: 12 }}
+            contentStyle={{ background: "#FFFFFF", border: "1px solid rgba(139,92,246,0.2)", borderRadius: 12, color: "#1A1530", fontSize: 12 }}
             labelStyle={{ color: "#B7ABC8" }}
           />
           <Area type="monotone" dataKey="acumulado" stroke="#8B5CF6" strokeWidth={2.5} fill="url(#gA)" dot={{ r: 3, fill: "#8B5CF6", strokeWidth: 0 }} name="Acumulado" />
@@ -302,7 +302,7 @@ function GanhosPanel({ clientesTotal, registros, onAdd, onRemove, onSave, saved 
         <button
           onClick={onAdd}
           className="h-12 w-12 rounded-xl border text-2xl font-bold transition-all hover:scale-105 active:scale-95 flex items-center justify-center"
-          style={{ border: "1px solid rgba(139,92,246,0.3)", background: "rgba(139,92,246,0.1)", color: "#A78BFA" }}
+          style={{ border: "1px solid rgba(139,92,246,0.3)", background: "rgba(139,92,246,0.08)", color: "#A78BFA" }}
         >
           +
         </button>
@@ -321,7 +321,7 @@ function GanhosPanel({ clientesTotal, registros, onAdd, onRemove, onSave, saved 
           <button onClick={onRemove} className="h-10 rounded-xl text-xs font-semibold transition-all hover:opacity-80" style={{ border: "1px solid rgba(239,68,68,0.25)", background: "rgba(239,68,68,0.06)", color: "#EF4444" }}>
             − 1 ganho
           </button>
-          <button onClick={onAdd} className="h-10 rounded-xl text-xs font-semibold transition-all hover:opacity-80" style={{ border: "1px solid rgba(139,92,246,0.25)", background: "rgba(139,92,246,0.08)", color: "#A78BFA" }}>
+          <button onClick={onAdd} className="h-10 rounded-xl text-xs font-semibold transition-all hover:opacity-80" style={{ border: "1px solid rgba(139,92,246,0.25)", background: "rgba(139,92,246,0.06)", color: "#A78BFA" }}>
             + 1 ganho
           </button>
         </div>
