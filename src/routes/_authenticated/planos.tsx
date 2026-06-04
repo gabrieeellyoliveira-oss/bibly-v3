@@ -127,77 +127,77 @@ function PlanoCard({ p, periodo }: { p: typeof PLANOS[0]; periodo: Periodo }) {
         boxShadow: p.id === "premium" ? `0 4px 24px ${p.cor}18, 0 2px 8px rgba(139,92,246,0.06)` : "0 2px 8px rgba(139,92,246,0.07)",
       }}>
       {/* Barra de cor */}
-      <div className="h-1 w-full flex-shrink-0" style={{ background: `linear-gradient(90deg,${p.cor},#EC4899)` }} />
+      <div className="h-1.5 w-full flex-shrink-0" style={{ background: `linear-gradient(90deg,${p.cor},#EC4899)` }} />
 
       {/* Cabeçalho */}
-      <div className="px-4 pt-3 pb-2 flex-shrink-0">
-        <div className="flex items-start justify-between gap-2 mb-1">
-          <div className="flex items-center gap-1.5">
-            <span className="text-base">{p.emoji}</span>
+      <div className="px-5 pt-4 pb-3 flex-shrink-0">
+        <div className="flex items-start justify-between gap-2 mb-1.5">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">{p.emoji}</span>
             <div>
-              <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground leading-none">{p.id.toUpperCase()}</p>
-              <p className="text-base font-bold text-foreground leading-tight">{p.nome}</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground leading-none">{p.id.toUpperCase()}</p>
+              <p className="text-lg font-bold text-foreground leading-tight">{p.nome}</p>
             </div>
           </div>
-          <span className="text-[9px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap shrink-0 mt-0.5"
+          <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap shrink-0 mt-0.5"
             style={{ background: p.cor + "18", color: p.cor, border: `1px solid ${p.cor}35` }}>
             ✦ {p.badge}
           </span>
         </div>
-        <p className="text-[10px] text-muted-foreground">{p.desc}</p>
+        <p className="text-xs text-muted-foreground">{p.desc}</p>
       </div>
 
       {/* Preço */}
-      <div className="px-4 pb-2.5 border-b border-border flex-shrink-0">
-        {meses > 1 && <p className="text-[9px] text-muted-foreground leading-none mb-0.5">{meses}x de</p>}
-        <div className="flex items-baseline gap-0.5">
-          <span className="text-2xl font-black leading-tight" style={{ color: p.cor }}>R$ {fmt(mensal)}</span>
-          <span className="text-xs text-muted-foreground">/mês</span>
+      <div className="px-5 pb-3 border-b border-border flex-shrink-0">
+        {meses > 1 && <p className="text-xs text-muted-foreground leading-none mb-0.5">{meses}x de</p>}
+        <div className="flex items-baseline gap-1">
+          <span className="text-3xl font-black leading-tight" style={{ color: p.cor }}>R$ {fmt(mensal)}</span>
+          <span className="text-sm text-muted-foreground">/mês</span>
         </div>
-        <p className="text-[10px] text-muted-foreground mt-0.5">
+        <p className="text-xs text-muted-foreground mt-0.5">
           Total {label.toLowerCase()}: R$ {fmt(total)}
           {desconto > 0 && <span className="ml-1.5 font-bold text-success">ECONOMIZE {desconto}%</span>}
         </p>
       </div>
 
       {/* Funcionalidades em 2 colunas */}
-      <div className="px-4 py-2.5 flex-1">
-        <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Funcionalidades</p>
-        <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+      <div className="px-5 py-3 flex-1">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2.5">Funcionalidades</p>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-2">
           {p.features.map(f => (
-            <div key={f} className="flex items-start gap-1">
-              <Check className="h-2.5 w-2.5 mt-0.5 shrink-0" style={{ color: p.cor }} />
-              <span className="text-[10px] text-foreground/75 leading-snug">{f}</span>
+            <div key={f} className="flex items-start gap-1.5">
+              <Check className="h-3.5 w-3.5 mt-0.5 shrink-0" style={{ color: p.cor }} />
+              <span className="text-xs text-foreground/80 leading-snug">{f}</span>
             </div>
           ))}
         </div>
       </div>
 
       {/* Integrações colapsável */}
-      <div className="px-4 pb-2">
+      <div className="px-5 pb-3">
         <button onClick={() => setOpen(v => !v)}
-          className="flex items-center justify-between w-full text-[10px] font-semibold text-muted-foreground hover:text-foreground transition-colors py-1.5 border-t border-border">
+          className="flex items-center justify-between w-full text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors py-2 border-t border-border">
           <span>🔗 Integrações</span>
-          {open ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+          {open ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
         </button>
         {open && (
-          <ul className="space-y-0.5 mt-1">
+          <ul className="space-y-1 mt-1.5">
             {p.integracoes.map(i => (
-              <li key={i} className="text-[10px] text-foreground/70 leading-snug">• {i}</li>
+              <li key={i} className="text-xs text-foreground/70 leading-snug">• {i}</li>
             ))}
           </ul>
         )}
       </div>
 
       {/* Footer */}
-      <div className="px-4 pb-4 flex gap-2 flex-shrink-0">
-        <button className="flex-1 h-9 rounded-xl text-xs font-bold text-white transition-all hover:opacity-90 active:scale-[0.98]"
+      <div className="px-5 pb-5 flex gap-2 flex-shrink-0">
+        <button className="flex-1 h-11 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90 active:scale-[0.98]"
           style={{ background: `linear-gradient(135deg,${p.cor},#EC4899)` }}>
           Ver detalhes do plano →
         </button>
         <button onClick={handleCopy} title="Copiar resumo"
-          className="h-9 w-9 rounded-xl flex items-center justify-center border border-border text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-secondary transition-all shrink-0">
-          <Copy className="h-3.5 w-3.5" />
+          className="h-11 w-11 rounded-xl flex items-center justify-center border border-border text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-secondary transition-all shrink-0">
+          <Copy className="h-4 w-4" />
         </button>
       </div>
     </div>
@@ -211,20 +211,20 @@ function ModuloCard({ m, periodo }: { m: typeof MODULOS[0]; periodo: Periodo }) 
   const total  = Math.round(mensal * meses * 100) / 100;
 
   return (
-    <div className="rounded-2xl bg-card border border-border p-4 flex flex-col gap-2.5" style={{ boxShadow: "0 2px 8px rgba(139,92,246,0.07)" }}>
-      <div>
-        <p className="text-[9px] font-bold uppercase tracking-widest text-primary mb-1">Módulo opcional</p>
-        <p className="text-sm font-bold text-foreground">{m.nome}</p>
-        <p className="text-[10px] text-muted-foreground mt-1 leading-relaxed">{m.desc}</p>
-        {m.por && <p className="text-[10px] text-primary mt-1 font-semibold">💡 Cobrado por {m.por}</p>}
+    <div className="rounded-2xl bg-card border border-border p-5 flex flex-col gap-3" style={{ boxShadow: "0 2px 8px rgba(139,92,246,0.07)" }}>
+      <div className="flex-1">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-primary mb-1.5">Módulo opcional</p>
+        <p className="text-base font-bold text-foreground">{m.nome}</p>
+        <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">{m.desc}</p>
+        {m.por && <p className="text-xs text-primary mt-2 font-semibold">💡 Cobrado por {m.por}</p>}
       </div>
-      <div className="border-t border-border pt-2.5">
-        {meses > 1 && <p className="text-[9px] text-muted-foreground leading-none mb-0.5">{meses}x de</p>}
+      <div className="border-t border-border pt-3">
+        {meses > 1 && <p className="text-xs text-muted-foreground leading-none mb-0.5">{meses}x de</p>}
         <div className="flex items-baseline gap-1">
-          <span className="text-xl font-black text-foreground">R$ {fmt(mensal)}</span>
-          <span className="text-[10px] text-muted-foreground">/mês{m.por ? `/${m.por}` : ""}</span>
+          <span className="text-2xl font-black text-foreground">R$ {fmt(mensal)}</span>
+          <span className="text-xs text-muted-foreground">/mês{m.por ? `/${m.por}` : ""}</span>
         </div>
-        <p className="text-[10px] text-muted-foreground mt-0.5">
+        <p className="text-xs text-muted-foreground mt-0.5">
           Total {label.toLowerCase()}: R$ {fmt(total)}
           {desconto > 0 && <span className="ml-1.5 font-bold text-success">-{desconto}%</span>}
         </p>
