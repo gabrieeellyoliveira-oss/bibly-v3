@@ -238,7 +238,7 @@ function PlanosPage() {
   const [periodo, setPeriodo] = useState<Periodo>("anual");
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="h-full flex flex-col gap-4">
       {/* Header compacto */}
       <div className="flex items-center justify-between">
         <div>
@@ -282,11 +282,11 @@ function PlanosPage() {
 
       {/* Grid de conteúdo */}
       {tab === "planos" ? (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-4 flex-1 min-h-0">
           {PLANOS.map(p => <PlanoCard key={p.id} p={p} periodo={periodo} />)}
         </div>
       ) : (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-4 flex-1 min-h-0">
           {MODULOS.map(m => <ModuloCard key={m.id} m={m} periodo={periodo} />)}
         </div>
       )}
