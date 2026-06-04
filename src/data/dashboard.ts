@@ -62,10 +62,10 @@ export const abrilFallback: DadosAtual = {
 };
 
 export const TIER_CFG: Record<string, { bg: string; text: string }> = {
-  "Tier 4/5": { bg: "hsl(var(--muted))", text: "hsl(var(--muted-foreground))" },
-  "Tier 3":   { bg: "hsl(38 90% 15%)",   text: "hsl(38 95% 60%)" },
-  "Tier 2":   { bg: "hsl(245 60% 18%)",  text: "hsl(245 90% 75%)" },
-  "Tier 1":   { bg: "hsl(142 60% 12%)",  text: "hsl(142 70% 60%)" },
+  "Tier 4/5": { bg: "hsl(var(--muted))",  text: "hsl(var(--muted-foreground))" },
+  "Tier 3":   { bg: "hsl(38 95% 90%)",    text: "hsl(38 80% 30%)" },
+  "Tier 2":   { bg: "hsl(245 80% 92%)",   text: "hsl(245 70% 40%)" },
+  "Tier 1":   { bg: "hsl(142 60% 88%)",   text: "hsl(142 50% 28%)" },
 };
 
 export const historico: HistoricoMes[] = [
@@ -142,7 +142,7 @@ export const STORAGE = {
 export type StatusEstudo = "concluido" | "andamento" | "nao_iniciado";
 
 export const STATUS_CFG: Record<StatusEstudo, { label: string; bg: string; text: string }> = {
-  concluido:    { label: "concluído",     bg: "hsl(142 60% 12%)",         text: "hsl(var(--success))" },
+  concluido:    { label: "concluído",     bg: "hsl(142 60% 88%)",         text: "hsl(142 50% 28%)" },
   andamento:    { label: "em andamento",  bg: "hsl(var(--secondary))",     text: "hsl(var(--primary))" },
   nao_iniciado: { label: "não iniciado",  bg: "hsl(var(--muted))",         text: "hsl(var(--muted-foreground))" },
 };
