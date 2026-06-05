@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Sparkles, Target, Rocket, Clock, ChevronLeft, ChevronRight, Save, TrendingUp, Star, Pencil, Check as CheckIcon } from "lucide-react";
+import { Sparkles, Target, Rocket, Clock, ChevronLeft, ChevronRight, Save, TrendingUp, Star } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { pct, calcDiasUteisRestantes, calcDiasUteisMesAte, calcFechamentosSemana
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useEditMode } from "@/hooks/useEditMode";
+import { useEditModeContext } from "@/hooks/useEditModeContext";
 import { EditableCard } from "@/components/dashboard/EditableCard";
 
 const DEFAULT_CARDS = {
@@ -323,7 +324,8 @@ function AgendFechCard({ metas, clientesTotal, diasUteisRest, conversaoPct }: {
    Main Page
 ────────────────────────────────────────── */
 function MetasPage() {
-  const { editMode, toggleEditMode, cardConfigs, updateCard, saveLayout, saving } = useEditMode(DEFAULT_CARDS);
+  const { editMode } = useEditModeContext();
+  const { cardConfigs, updateCard, saveLayout, saving } = useEditMode(DEFAULT_CARDS);
 
   const dadosPlanilha = storageGet<{ atual?: Partial<DadosAtual>; metas?: { m1?: number; m2?: number; m3?: number }; diario?: DadosDiarios[] }>(STORAGE.PLANILHA);
   const [metasOverride, setMetasOverride] = useState<{ m1: number; m2: number; m3: number } | null>(null);
@@ -426,29 +428,6 @@ function MetasPage() {
 
       {/* ── Coluna esquerda ── */}
       <div className="flex-1 min-w-0 space-y-3">
-
-        {/* Botão modo editor */}
-        <div className="flex justify-end relative z-30">
-          {editMode ? (
-            <button
-              onClick={saveLayout}
-              disabled={saving}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white transition-all hover:opacity-90"
-              style={{ background: "linear-gradient(135deg,#59327A,#FFB600)", boxShadow: "0 2px 10px rgba(89,50,122,0.3)" }}
-            >
-              <CheckIcon className="h-3.5 w-3.5" />
-              {saving ? "Salvando..." : "Concluído"}
-            </button>
-          ) : (
-            <button
-              onClick={toggleEditMode}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-muted-foreground border border-border bg-card hover:border-primary/40 hover:text-foreground transition-all"
-            >
-              <Pencil className="h-3 w-3" />
-              Editar dashboard
-            </button>
-          )}
-        </div>
 
         {/* KPI 4 cards */}
         <EditableCard cardId="kpis" config={cardConfigs.kpis} editMode={editMode} onUpdate={updateCard} defaultColSpan="col-span-full">

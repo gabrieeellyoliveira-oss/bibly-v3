@@ -1,10 +1,11 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   Target, BarChart2, GitBranch, Star, Sparkles,
-  Rocket, Trophy, LogOut, BookOpen,
+  Rocket, Trophy, LogOut, BookOpen, Pencil, CheckCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { useEditModeContext } from "@/hooks/useEditModeContext";
 
 const items = [
   { title: "Metas",    url: "/metas",    icon: Target },
@@ -19,6 +20,7 @@ const items = [
 export function AppSidebar() {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const [collapsed, setCollapsed] = useState(false);
+  const { editMode, toggleEditMode } = useEditModeContext();
 
   return (
     <aside
@@ -98,7 +100,26 @@ export function AppSidebar() {
       )}
 
       {/* Footer */}
-      <div className="p-2 pb-4">
+      <div className="p-2 pb-4 space-y-1">
+        {/* Botão editar dashboard */}
+        <button
+          onClick={toggleEditMode}
+          className={cn(
+            "flex items-center gap-3 w-full rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
+            collapsed && "justify-center px-0",
+            editMode
+              ? "text-white"
+              : "text-white/50 hover:text-white/90 hover:bg-white/[0.06]"
+          )}
+          style={editMode ? { background: "linear-gradient(135deg,rgba(89,50,122,0.6),rgba(255,182,0,0.3))", border: "1px solid rgba(255,182,0,0.4)" } : {}}
+        >
+          {editMode
+            ? <CheckCheck className="h-4 w-4 shrink-0 text-yellow-300" />
+            : <Pencil className="h-4 w-4 shrink-0" />
+          }
+          {!collapsed && <span>{editMode ? "Concluir edição" : "Editar dashboard"}</span>}
+        </button>
+
         <button
           onClick={() => { localStorage.removeItem("bibly_auth"); window.location.href = "/auth"; }}
           className={cn("flex items-center gap-3 w-full rounded-xl px-3 py-2.5 text-sm font-medium text-white/40 hover:text-white/80 hover:bg-white/[0.06] transition-all", collapsed && "justify-center px-0")}
