@@ -428,7 +428,7 @@ function MetasPage() {
       <div className="flex-1 min-w-0 space-y-3">
 
         {/* Botão modo editor */}
-        <div className="flex justify-end">
+        <div className="flex justify-end relative z-30">
           {editMode ? (
             <button
               onClick={saveLayout}
