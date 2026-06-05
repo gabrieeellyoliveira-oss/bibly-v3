@@ -1,13 +1,14 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   Target, BarChart2, GitBranch, Star, Sparkles,
-  Rocket, Trophy, LogOut,
+  Rocket, Trophy, LogOut, BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
 const items = [
   { title: "Metas",    url: "/metas",    icon: Target },
+  { title: "Planos",   url: "/planos",   icon: BookOpen },
   { title: "Dados",    url: "/dados",    icon: BarChart2 },
   { title: "Pipeline", url: "/pipeline", icon: GitBranch },
   { title: "Estudos",  url: "/estudos",  icon: Star },
