@@ -324,8 +324,13 @@ function AgendFechCard({ metas, clientesTotal, diasUteisRest, conversaoPct }: {
    Main Page
 ────────────────────────────────────────── */
 function MetasPage() {
-  const { editMode } = useEditModeContext();
+  const { editMode, registerSave } = useEditModeContext();
   const { cardConfigs, updateCard, saveLayout, saving } = useEditMode(DEFAULT_CARDS);
+
+  // Registra saveLayout no contexto global para o sidebar poder chamar
+  useEffect(() => {
+    registerSave(saveLayout);
+  }, [saveLayout, registerSave]);
 
   const dadosPlanilha = storageGet<{ atual?: Partial<DadosAtual>; metas?: { m1?: number; m2?: number; m3?: number }; diario?: DadosDiarios[] }>(STORAGE.PLANILHA);
   const [metasOverride, setMetasOverride] = useState<{ m1: number; m2: number; m3: number } | null>(null);

@@ -45,7 +45,25 @@ export function useEditMode(defaultConfigs: CardConfigs) {
     }));
   }, []);
 
+  const LS_KEY = "bibly_card_configs";
+
   const loadLayout = useCallback(async () => {
+    // 1. Tentar carregar do localStorage primeiro (sempre disponível)
+    try {
+      const local = localStorage.getItem(LS_KEY);
+      if (local) {
+        const saved = JSON.parse(local) as CardConfigs;
+        setCardConfigs((prev) => {
+          const next = { ...prev };
+          for (const [id, cfg] of Object.entries(saved)) {
+            if (next[id]) next[id] = { ...next[id], ...cfg };
+          }
+          return next;
+        });
+      }
+    } catch { /* ignore */ }
+
+    // 2. Tentar Supabase se autenticado
     const userId = await getCurrentUserId();
     if (!userId) return;
 
@@ -76,30 +94,31 @@ export function useEditMode(defaultConfigs: CardConfigs) {
   }, []);
 
   const saveLayout = useCallback(async () => {
-    const userId = await getCurrentUserId();
-    if (!userId) return;
-
     setSaving(true);
     try {
-      const rows = Object.entries(cardConfigs).map(([cardId, cfg]) => ({
-        user_id: userId,
-        card_id: cardId,
-        card_name: cfg.name,
-        size: cfg.size,
-        visible: cfg.visible,
-        position: cfg.position,
-        updated_at: new Date().toISOString(),
-      }));
+      // 1. Sempre salvar no localStorage (funciona sem Supabase Auth)
+      localStorage.setItem(LS_KEY, JSON.stringify(cardConfigs));
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any)
-        .from("dashboard_layout")
-        .upsert(rows, { onConflict: "user_id,card_id" });
+      // 2. Tentar Supabase se autenticado
+      const userId = await getCurrentUserId();
+      if (userId) {
+        const rows = Object.entries(cardConfigs).map(([cardId, cfg]) => ({
+          user_id: userId,
+          card_id: cardId,
+          card_name: cfg.name,
+          size: cfg.size,
+          visible: cfg.visible,
+          position: cfg.position,
+          updated_at: new Date().toISOString(),
+        }));
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any)
+          .from("dashboard_layout")
+          .upsert(rows, { onConflict: "user_id,card_id" });
+      }
     } finally {
       setSaving(false);
     }
-
-    setEditMode(false);
   }, [cardConfigs]);
 
   useEffect(() => {
