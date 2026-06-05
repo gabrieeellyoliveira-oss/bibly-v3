@@ -1,21 +1,18 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
-  Target, BarChart2, CalendarCheck, GitBranch, Star, Sparkles,
-  Rocket, Trophy, LogOut, BookOpen, LayoutGrid,
+  Target, BarChart2, GitBranch, Star, Sparkles,
+  Rocket, Trophy, LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
 const items = [
-  { title: "Metas",        url: "/metas",       icon: Target },
-  { title: "Planos",       url: "/planos",       icon: BookOpen },
-  { title: "Dados",        url: "/dados",        icon: BarChart2 },
-  { title: "Reuniões",     url: "/reunioes",     icon: CalendarCheck },
-  { title: "Pipeline",     url: "/pipeline",     icon: GitBranch },
-  { title: "Estudos",      url: "/estudos",      icon: Star },
-  { title: "Trilha",       url: "/carreira",     icon: Rocket },
-  { title: "História",     url: "/historia",     icon: Trophy },
-  { title: "Dashboard CW", url: "/dashboard-cw", icon: LayoutGrid },
+  { title: "Metas",    url: "/metas",    icon: Target },
+  { title: "Dados",    url: "/dados",    icon: BarChart2 },
+  { title: "Pipeline", url: "/pipeline", icon: GitBranch },
+  { title: "Estudos",  url: "/estudos",  icon: Star },
+  { title: "Trilha",   url: "/carreira", icon: Rocket },
+  { title: "História", url: "/historia", icon: Trophy },
 ];
 
 export function AppSidebar() {
@@ -27,7 +24,7 @@ export function AppSidebar() {
       className={cn("relative flex flex-col h-screen sticky top-0 shrink-0 transition-all duration-300 ease-in-out")}
       style={{
         width: collapsed ? 64 : 220,
-        background: "#120D22",
+        background: "#1B0B30",
         borderRight: "1px solid rgba(255,255,255,0.06)",
       }}
     >

@@ -18,7 +18,7 @@ export const Route = createFileRoute("/_authenticated/metas")({
 interface RegistroGanho { id: number; data: string; quantidade: number; obs: string; }
 let nextId = 1;
 
-const CARD: React.CSSProperties = { background: "#FFFFFF", border: "1px solid #E5DDF7", borderRadius: 16, boxShadow: "0 2px 12px rgba(139,92,246,0.08)" };
+const CARD: React.CSSProperties = { background: "#FFFFFF", border: "1px solid rgba(89,50,122,0.14)", borderRadius: 14, boxShadow: "0 2px 10px rgba(89,50,122,0.08)" };
 
 /* ──────────────────────────────────────────
    Mini Calendar
@@ -255,6 +255,60 @@ function GanhosHoje({ clientesTotal, onAdd, onRemove, onSave, saved }: {
 }
 
 /* ──────────────────────────────────────────
+   Agendamentos & Fechamentos por Meta
+────────────────────────────────────────── */
+function AgendFechCard({ metas, clientesTotal, diasUteisRest, conversaoPct }: {
+  metas: { m1: number; m2: number; m3: number };
+  clientesTotal: number;
+  diasUteisRest: number;
+  conversaoPct: number;
+}) {
+  const taxa = conversaoPct > 0 && conversaoPct <= 100 ? conversaoPct / 100 : 0.5;
+  const rows = [
+    { label: "Meta 1", val: metas.m1, color: "#59327A", bg: "rgba(89,50,122,0.07)" },
+    { label: "Meta 2", val: metas.m2, color: "#EC4899", bg: "rgba(236,72,153,0.07)" },
+    { label: "Meta 3 ★", val: metas.m3, color: "#8B35C0", bg: "rgba(139,53,192,0.07)" },
+  ].map(({ label, val, color, bg }) => {
+    const faltam = Math.max(val - clientesTotal, 0);
+    const fechDia = Math.ceil(faltam / Math.max(diasUteisRest, 1));
+    const agendDia = taxa > 0 ? Math.ceil(fechDia / taxa) : 0;
+    return { label, val, color, bg, fechDia, agendDia, concluida: clientesTotal >= val };
+  });
+  return (
+    <div style={CARD} className="p-4">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-sm font-bold text-foreground">📅 Ritmo Diário por Meta</p>
+        <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold"
+          style={{ background: "rgba(255,182,0,0.15)", color: "#9A6600", border: "1px solid rgba(255,182,0,0.3)" }}>
+          {Math.round(taxa * 100)}% conversão
+        </span>
+      </div>
+      <div className="space-y-2">
+        {rows.map(({ label, val, color, bg, fechDia, agendDia, concluida }) => (
+          <div key={label} className="flex items-center justify-between rounded-xl px-3 py-2.5"
+            style={{ background: bg, border: `1px solid ${color}22` }}>
+            <div>
+              <p className="text-xs font-bold" style={{ color }}>{label}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">{val} fechamentos</p>
+            </div>
+            {concluida ? (
+              <span className="text-xs font-bold" style={{ color: "#22C55E" }}>✓ Atingida!</span>
+            ) : (
+              <div className="text-right space-y-0.5">
+                <p className="text-sm font-black leading-tight" style={{ color }}>
+                  {fechDia} <span className="text-[10px] font-medium text-muted-foreground">fech/dia</span>
+                </p>
+                <p className="text-[11px] text-muted-foreground">{agendDia} agend/dia</p>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────────
    Main Page
 ────────────────────────────────────────── */
 function MetasPage() {
@@ -336,8 +390,8 @@ function MetasPage() {
       footer: `${clientesTotal} / ${metas.m3} fechamentos`,
     },
     {
-      label: "NECESSÁRIO", icon: Target, iconBg: "rgba(236,72,153,0.1)", iconColor: "#EC4899",
-      value: `${necM1}`, unit: "/dia", sub: "Para alcançar Meta 1", barColor: "#EC4899", barPct: 100,
+      label: "NECESSÁRIO", icon: Target, iconBg: "rgba(255,182,0,0.12)", iconColor: "#B8860B",
+      value: `${necM1}`, unit: "/dia", sub: "Para alcançar Meta 1", barColor: "#FFB600", barPct: 100,
       footer: `Meta 1: ${metas.m1} fechamentos`,
     },
     {
@@ -415,14 +469,22 @@ function MetasPage() {
           })}
         </div>
 
+        {/* Agend & Fech por Meta */}
+        <AgendFechCard
+          metas={metas}
+          clientesTotal={clientesTotal}
+          diasUteisRest={diasUteisRest}
+          conversaoPct={dadosAtual.conversao ?? 50}
+        />
+
         {/* Insights + Evolução */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-3">
           <InsightsRapidos clientesTotal={clientesTotal} metas={metas} ritmoAtual={ritmoAtual} necM1={necM1} melhorDia={melhorDia} />
           <EvolucaoChart diario={diario} metaM3={metas.m3} diasTotal={diasUteisNoMes} />
         </div>
 
         {/* Ganhos */}
-        <div className="w-full max-w-2xl">
+        <div className="w-full">
           <GanhosHoje clientesTotal={clientesTotal} onAdd={handleAdd} onRemove={handleRemove} onSave={handleSave} saved={saved} />
         </div>
       </div>
