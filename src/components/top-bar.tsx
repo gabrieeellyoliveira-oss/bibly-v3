@@ -21,11 +21,16 @@ export function TopBar() {
       style={{ background: "rgba(244,240,251,0.85)", backdropFilter: "blur(16px)", borderColor: "#E5DDF7" }}
     >
       {/* Greeting */}
-      <div className="flex flex-col min-w-0 mr-auto">
-        <p className="text-sm font-semibold text-foreground leading-tight truncate">
-          {saudacao}, {name} 👋
-        </p>
-        <p className="text-xs text-muted-foreground capitalize truncate">{hoje}</p>
+      <div className="flex items-center gap-3 mr-auto min-w-0">
+        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center shadow-md shrink-0">
+          <span className="text-white font-bold text-lg">B</span>
+        </div>
+        <div className="flex flex-col min-w-0">
+          <p className="text-sm font-semibold text-foreground leading-tight truncate">
+            {saudacao}, {name} 👋
+          </p>
+          <p className="text-xs text-muted-foreground capitalize truncate">{hoje}</p>
+        </div>
       </div>
 
       {/* Notifications */}

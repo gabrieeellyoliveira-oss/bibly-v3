@@ -171,6 +171,13 @@ html, body {
 @utility animate-slide-up  { animation: slide-up 0.35s ease-out both; }
 @utility animate-pulse-dot { animation: pulse-dot 1.8s ease-in-out infinite; }
 
+@keyframes jiggle {
+  0%, 100% { transform: rotate(-1.5deg); }
+  50%       { transform: rotate(1.5deg); }
+}
+
+@utility animate-jiggle { animation: jiggle 0.3s ease-in-out infinite; }
+
 /* ─── Base ── */
 @layer base {
   * { border-color: var(--border); }

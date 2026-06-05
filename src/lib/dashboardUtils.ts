@@ -34,8 +34,8 @@ export function isDiaUtil(d: Date): boolean {
 
 export function getDeadlineMes(): Date | null {
   const hoje = new Date();
-  if (hoje.getFullYear() === 2026 && hoje.getMonth() === 4) {
-    return new Date(2026, 4, 23);
+  if (hoje.getFullYear() === 2026 && hoje.getMonth() === 5) {
+    return new Date(2026, 5, 19);
   }
   return null;
 }

@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Sparkles, Lock, User, ArrowRight } from "lucide-react";
+import { Lock, User, ArrowRight } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
@@ -46,8 +46,8 @@ function AuthPage() {
 
         {/* Logo */}
         <div className="flex flex-col items-center mb-10">
-          <div className="h-14 w-14 rounded-2xl flex items-center justify-center mb-4 shadow-glow" style={{ background: "linear-gradient(135deg, #8B5CF6, #EC4899)" }}>
-            <Sparkles className="h-7 w-7 text-white" />
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center shadow-lg mb-4">
+            <span className="text-white font-bold text-3xl">B</span>
           </div>
           <h1 className="text-4xl font-bold tracking-tight" style={{ color: "#F2ECFA" }}>
             Bi<span className="text-gradient">bly</span>

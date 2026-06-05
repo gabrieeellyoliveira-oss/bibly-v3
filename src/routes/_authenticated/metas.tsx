@@ -20,7 +20,9 @@ let nextId = 1;
 
 const CARD: React.CSSProperties = { background: "#FFFFFF", border: "1px solid #E5DDF7", borderRadius: 16, boxShadow: "0 2px 12px rgba(139,92,246,0.08)" };
 
-/* ── Mini Calendar ── */
+/* ──────────────────────────────────────────
+   Mini Calendar
+────────────────────────────────────────── */
 function MiniCalendar() {
   const hoje = new Date();
   const [mes, setMes] = useState(hoje.getMonth());
@@ -45,10 +47,10 @@ function MiniCalendar() {
       </div>
       <div className="grid grid-cols-7 mb-1">
         {["D","S","T","Q","Q","S","S"].map((d, i) => (
-          <span key={i} className="text-center text-[10px] font-semibold text-muted-foreground py-0.5">{d}</span>
+          <span key={i} className="text-center text-[10px] font-semibold text-muted-foreground py-1">{d}</span>
         ))}
       </div>
-      <div className="grid grid-cols-7 gap-y-px">
+      <div className="grid grid-cols-7 gap-y-0.5">
         {dias.map((d, i) => {
           const isToday = d === hoje.getDate() && mes === hoje.getMonth() && ano === hoje.getFullYear();
           const isDeadline = d !== null && d === deadlineDay && mes === deadlineMes;
@@ -61,7 +63,7 @@ function MiniCalendar() {
           );
         })}
       </div>
-      <div className="flex items-center gap-4 mt-2 pt-2 border-t border-border">
+      <div className="flex items-center gap-4 mt-3 pt-3 border-t border-border">
         <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground"><span className="h-2 w-2 rounded-full bg-primary inline-block" /> Dia atual</span>
         <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground"><span className="h-2 w-2 rounded-full bg-pink inline-block" /> Data limite</span>
       </div>
@@ -69,7 +71,9 @@ function MiniCalendar() {
   );
 }
 
-/* ── Projeção Final ── */
+/* ──────────────────────────────────────────
+   Projeção Final — donut
+────────────────────────────────────────── */
 function ProjecaoFinal({ clientesTotal, metas, diasUteisNoMes, diasUteisRest, feitosEstaSemana, fechPorSemana }: {
   clientesTotal: number; metas: { m1: number; m2: number; m3: number };
   diasUteisNoMes: number; diasUteisRest: number; feitosEstaSemana: number; fechPorSemana: number;
@@ -80,25 +84,29 @@ function ProjecaoFinal({ clientesTotal, metas, diasUteisNoMes, diasUteisRest, fe
   const projecao = Math.round((clientesTotal / diasUteisDecorridos) * diasUteisNoMes);
   const pctConc = Math.min(pct(clientesTotal, metas.m3), 100);
   const metaSemPct = Math.min(pct(feitosEstaSemana, fechPorSemana), 100);
-  const donutData = [{ value: pctConc }, { value: 100 - pctConc }];
+
+  const donutData = [
+    { value: pctConc },
+    { value: 100 - pctConc },
+  ];
 
   return (
-    <div style={CARD} className="p-4 space-y-3">
+    <div style={CARD} className="p-3 space-y-2">
       <p className="text-sm font-semibold text-foreground">Projeção final</p>
       <div className="flex justify-center relative">
-        <PieChart width={130} height={130}>
-          <Pie data={donutData} cx={61} cy={61} innerRadius={42} outerRadius={58} startAngle={90} endAngle={-270} dataKey="value" strokeWidth={0}>
+        <PieChart width={120} height={120}>
+          <Pie data={donutData} cx={60} cy={60} innerRadius={40} outerRadius={55} startAngle={90} endAngle={-270} dataKey="value" strokeWidth={0}>
             <Cell fill="#8B5CF6" />
             <Cell fill="#F0ECF9" />
           </Pie>
         </PieChart>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-2xl font-black text-primary">{projecao}</span>
+          <span className="text-3xl font-black text-primary">{projecao}</span>
           <span className="text-xs text-muted-foreground">/ {metas.m3}</span>
         </div>
       </div>
       <p className="text-xs text-center text-muted-foreground">{pctConc}% concluído</p>
-      <div className="space-y-2 pt-1 border-t border-border">
+      <div className="space-y-2.5 pt-1 border-t border-border">
         {[
           { icon: Clock, label: "Meta da semana", value: `${feitosEstaSemana} / ${fechPorSemana}`, badge: `${metaSemPct}%`, badgeColor: "#EF4444" },
           { icon: Target, label: "Dias restantes", value: `${diasUteisRest}`, badge: deadlineStr, badgeColor: "#7A6E8E" },
@@ -108,7 +116,7 @@ function ProjecaoFinal({ clientesTotal, metas, diasUteisNoMes, diasUteisRest, fe
             <div className="flex items-center gap-2 text-muted-foreground"><Icon className="h-3.5 w-3.5" />{label}</div>
             <div className="flex items-center gap-2">
               <span className="font-semibold text-foreground">{value}</span>
-              <span className="text-[11px] font-bold" style={{ color: badgeColor }}>{badge}</span>
+              <span className="text-[10px] font-bold" style={{ color: badgeColor }}>{badge}</span>
             </div>
           </div>
         ))}
@@ -117,7 +125,9 @@ function ProjecaoFinal({ clientesTotal, metas, diasUteisNoMes, diasUteisRest, fe
   );
 }
 
-/* ── Evolução diária ── */
+/* ──────────────────────────────────────────
+   Evolução diária chart
+────────────────────────────────────────── */
 function EvolucaoChart({ diario, metaM3, diasTotal }: { diario: DadosDiarios[]; metaM3: number; diasTotal: number }) {
   const [range, setRange] = useState(7);
   const sliced = diario.slice(-range);
@@ -126,9 +136,11 @@ function EvolucaoChart({ diario, metaM3, diasTotal }: { diario: DadosDiarios[]; 
     necessario: Math.round((metaM3 / diasTotal) * (diario.length - sliced.length + i + 1)),
   }));
   return (
-    <div style={CARD} className="p-4 space-y-3">
+    <div style={CARD} className="p-3 space-y-2">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold text-foreground">Evolução diária</p>
+        <div>
+          <p className="text-sm font-semibold text-foreground">Evolução diária</p>
+        </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5"><span className="inline-block h-0.5 w-4 rounded bg-primary" /> Acumulado</span>
@@ -141,7 +153,7 @@ function EvolucaoChart({ diario, metaM3, diasTotal }: { diario: DadosDiarios[]; 
           </select>
         </div>
       </div>
-      <ResponsiveContainer width="100%" height={150}>
+      <ResponsiveContainer width="100%" height={130}>
         <LineChart data={data} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
           <XAxis dataKey="dia" tick={{ fill: "#B7ABC8", fontSize: 10 }} axisLine={false} tickLine={false} />
           <YAxis tick={{ fill: "#B7ABC8", fontSize: 10 }} axisLine={false} tickLine={false} />
@@ -154,47 +166,10 @@ function EvolucaoChart({ diario, metaM3, diasTotal }: { diario: DadosDiarios[]; 
   );
 }
 
-/* ── Metas em andamento ── */
-function MetasEmAndamento({ clientesTotal, metas }: { clientesTotal: number; metas: { m1: number; m2: number; m3: number } }) {
-  const items = [
-    { label: "Meta 1", val: metas.m1, color: "#8B5CF6" },
-    { label: "Meta 2", val: metas.m2, color: "#EC4899" },
-    { label: "Meta 3 ★", val: metas.m3, color: "#A855F7" },
-  ];
-  return (
-    <div style={CARD} className="p-4 space-y-3">
-      <p className="text-sm font-semibold text-foreground">Metas em andamento</p>
-      <div className="space-y-2.5">
-        {items.map(({ label, val, color }) => {
-          const p = Math.min(pct(clientesTotal, val), 100);
-          return (
-            <div key={label} className="space-y-1.5">
-              <div className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="h-3.5 w-3.5" style={{ color }} />
-                  <span className="font-medium text-foreground">{label}</span>
-                  <span className="text-muted-foreground text-[10px]">{val} fechamentos</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "rgba(139,92,246,0.1)", color: "#8B5CF6" }}>{p}%</span>
-                  <span className="text-muted-foreground">{clientesTotal}/{val}</span>
-                </div>
-              </div>
-              <div className="h-1.5 w-full rounded-full overflow-hidden bg-secondary">
-                <div className="h-full rounded-full transition-[width] duration-700" style={{ width: `${p}%`, background: `linear-gradient(90deg, ${color}, #EC4899)` }} />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      <button className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:text-primary/80 transition-colors">
-        <span>→</span> Ver todas as metas
-      </button>
-    </div>
-  );
-}
 
-/* ── Insights rápidos ── */
+/* ──────────────────────────────────────────
+   Insights rápidos
+────────────────────────────────────────── */
 function InsightsRapidos({ clientesTotal, metas, ritmoAtual, necM1, melhorDia }: {
   clientesTotal: number; metas: { m1: number; m2: number; m3: number };
   ritmoAtual: number; necM1: number; melhorDia: number;
@@ -223,7 +198,7 @@ function InsightsRapidos({ clientesTotal, metas, ritmoAtual, necM1, melhorDia }:
   ];
 
   return (
-    <div style={CARD} className="p-4 space-y-3">
+    <div style={CARD} className="p-3 space-y-2">
       <p className="text-sm font-semibold text-foreground">Insights rápidos</p>
       <div className="space-y-3">
         {insights.map(({ icon: Icon, color, bg, title, sub }) => (
@@ -233,8 +208,10 @@ function InsightsRapidos({ clientesTotal, metas, ritmoAtual, necM1, melhorDia }:
             </div>
             <div className="min-w-0">
               <p className="text-xs font-semibold text-foreground leading-snug">
-                {title.split(/([\d,]+%?|Meta \d)/g).map((part, i) =>
-                  /[\d,]+%?|Meta [123]/.test(part) ? <strong key={i}>{part}</strong> : part
+                {title.split(/([\d,]+%?|Meta \d|Meta 1|Meta 2|Meta 3)/g).map((part, i) =>
+                  /[\d,]+%?|Meta [123]/.test(part)
+                    ? <strong key={i} className="font-bold">{part}</strong>
+                    : part
                 )}
               </p>
               <p className="text-[11px] text-muted-foreground mt-0.5">{sub}</p>
@@ -246,60 +223,40 @@ function InsightsRapidos({ clientesTotal, metas, ritmoAtual, necM1, melhorDia }:
   );
 }
 
-/* ── Atividades recentes ── */
-function AtividadesRecentes({ registros }: { registros: RegistroGanho[] }) {
-  const metaColors = ["#8B5CF6", "#EC4899", "#A855F7", "#8B5CF6"];
-  const metaLabels = ["Meta 1", "Meta 2", "Meta 3", "Meta 1"];
-  const ultimos = registros.slice(-4).reverse();
-  const hoje = new Date().toLocaleDateString("pt-BR");
 
-  return (
-    <div style={CARD} className="p-4 space-y-3">
-      <p className="text-sm font-semibold text-foreground">Atividades recentes</p>
-      {ultimos.length === 0 ? (
-        <p className="text-xs text-muted-foreground text-center py-3">Nenhum ganho registrado ainda.</p>
-      ) : (
-        <div className="space-y-2.5">
-          {ultimos.map((r, i) => (
-            <div key={r.id} className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="h-7 w-7 rounded-full flex items-center justify-center shrink-0" style={{ background: metaColors[i % 4] + "18" }}>
-                  <Target className="h-3.5 w-3.5" style={{ color: metaColors[i % 4] }} />
-                </div>
-                <p className="text-xs font-medium text-foreground">{metaLabels[i % 4]} - Fechamento realizado</p>
-              </div>
-              <span className="text-[10px] text-muted-foreground shrink-0 ml-2">{r.data === hoje ? "Hoje" : "Ontem"}</span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ── Ganhos de hoje ── */
+/* ──────────────────────────────────────────
+   Ganhos de hoje
+────────────────────────────────────────── */
 function GanhosHoje({ clientesTotal, onAdd, onRemove, onSave, saved }: {
   clientesTotal: number; onAdd: () => void; onRemove: () => void; onSave: () => void; saved: boolean;
 }) {
   return (
-    <div style={CARD} className="p-4 flex flex-col gap-3">
+    <div style={CARD} className="p-3 space-y-2">
       <p className="text-sm font-semibold text-foreground">Ganhos de hoje</p>
-      <div className="flex items-center justify-center gap-6 py-2">
-        <button onClick={onRemove} className="h-9 w-9 rounded-xl text-lg font-bold transition-all hover:scale-105 flex items-center justify-center" style={{ border: "1px solid rgba(139,92,246,0.2)", background: "#F0ECF9", color: "#8B5CF6" }}>−</button>
+      <div className="flex items-center justify-center gap-4 py-1">
+        <button onClick={onRemove} className="h-8 w-8 rounded-xl text-base font-bold transition-all hover:scale-105 flex items-center justify-center" style={{ border: "1px solid rgba(139,92,246,0.2)", background: "#F0ECF9", color: "#8B5CF6" }}>−</button>
         <div className="text-center">
-          <p className="text-4xl font-black" style={{ background: "linear-gradient(135deg,#8B5CF6,#EC4899)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{clientesTotal}</p>
+          <p className="text-3xl font-black" style={{ background: "linear-gradient(135deg,#8B5CF6,#EC4899)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{clientesTotal}</p>
           <p className="text-xs text-muted-foreground">ganhos</p>
         </div>
-        <button onClick={onAdd} className="h-9 w-9 rounded-xl text-lg font-bold transition-all hover:scale-105 flex items-center justify-center" style={{ border: "1px solid rgba(139,92,246,0.2)", background: "#F0ECF9", color: "#8B5CF6" }}>+</button>
+        <button onClick={onAdd} className="h-8 w-8 rounded-xl text-base font-bold transition-all hover:scale-105 flex items-center justify-center" style={{ border: "1px solid rgba(139,92,246,0.2)", background: "#F0ECF9", color: "#8B5CF6" }}>+</button>
       </div>
-      <button onClick={onSave} className={cn("w-full h-10 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all hover:opacity-90")} style={{ background: saved ? "rgba(34,197,94,0.2)" : "linear-gradient(135deg,#8B5CF6,#EC4899)", color: saved ? "#22C55E" : "white", border: saved ? "1px solid rgba(34,197,94,0.4)" : "none" }}>
-        <Save className="h-3.5 w-3.5" />{saved ? "✓ Salvo!" : "Salvar ganhos"}
-      </button>
+      <div className="space-y-2">
+        <button onClick={onSave} className={cn("w-full h-10 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all hover:opacity-90")} style={{ background: saved ? "rgba(34,197,94,0.2)" : "linear-gradient(135deg,#8B5CF6,#EC4899)", color: saved ? "#22C55E" : "white", border: saved ? "1px solid rgba(34,197,94,0.4)" : "none" }}>
+          <Save className="h-3.5 w-3.5" />{saved ? "✓ Salvo!" : "Salvar ganhos"}
+        </button>
+        <div className="grid grid-cols-2 gap-2">
+          <button onClick={onRemove} className="h-9 rounded-xl text-xs font-semibold transition-all hover:opacity-80" style={{ border: "1px solid rgba(239,68,68,0.2)", background: "rgba(239,68,68,0.05)", color: "#EF4444" }}>- 1 ganho</button>
+          <button onClick={onAdd} className="h-9 rounded-xl text-xs font-semibold transition-all hover:opacity-80" style={{ border: "1px solid rgba(139,92,246,0.2)", background: "rgba(139,92,246,0.05)", color: "#8B5CF6" }}>+ 1 ganho</button>
+        </div>
+      </div>
     </div>
   );
 }
 
-/* ── Main Page ── */
+/* ──────────────────────────────────────────
+   Main Page
+────────────────────────────────────────── */
 function MetasPage() {
   const dadosPlanilha = storageGet<{ atual?: Partial<DadosAtual>; metas?: { m1?: number; m2?: number; m3?: number }; diario?: DadosDiarios[] }>(STORAGE.PLANILHA);
   const [metasOverride, setMetasOverride] = useState<{ m1: number; m2: number; m3: number } | null>(null);
@@ -342,9 +299,9 @@ function MetasPage() {
   const chave = `ravenna_semana_${getInicioSemana().toISOString().slice(0,10)}`;
   const feitosEstaSemana = storageGet<number>(chave) ?? 0;
   const diasDecorridos = Math.max(diasUteisNoMes - diasUteisRest, 1);
-  const ritmoAtual = clientesTotal / diasDecorridos;
-  const ritmoArred = Math.round(ritmoAtual);
+  const ritmoAtual = Math.round(clientesTotal / diasDecorridos);
   const necM1 = Math.max(Math.ceil((metas.m1 - clientesTotal) / Math.max(diasUteisRest, 1)), 0);
+  const necM3 = Math.max(Math.ceil((metas.m3 - clientesTotal) / Math.max(diasUteisRest, 1)), 0);
   const faltamM1 = Math.max(metas.m1 - clientesTotal, 0);
   const melhorDia = Math.max(...diario.map(d => d.noDia), 0);
   const pctSemanal = fechPorSemana > 0 ? Math.round((feitosEstaSemana / fechPorSemana) * 100) : 0;
@@ -371,10 +328,11 @@ function MetasPage() {
     toast.success("Metas salvas!");
   };
 
+  /* KPI cards data */
   const kpis = [
     {
       label: "RITMO ATUAL", icon: Sparkles, iconBg: "rgba(139,92,246,0.12)", iconColor: "#8B5CF6",
-      value: `${ritmoArred}`, unit: "/dia", sub: `${pctSemanal}% da meta semanal`, barColor: "#8B5CF6", barPct: pctSemanal,
+      value: `${ritmoAtual}`, unit: "/dia", sub: `${pctSemanal}% da meta semanal`, barColor: "#8B5CF6", barPct: pctSemanal,
       footer: `${clientesTotal} / ${metas.m3} fechamentos`,
     },
     {
@@ -385,104 +343,97 @@ function MetasPage() {
     {
       label: "FALTAM", icon: Rocket, iconBg: "rgba(245,158,11,0.12)", iconColor: "#F59E0B",
       value: `${faltamM1}`, unit: null, sub: "fechamentos para Meta 1", barColor: "#F59E0B", barPct: pct(faltamM1, metas.m1),
-      valueColor: "#F59E0B", footer: `${clientesTotal} / ${metas.m1} fechamentos`,
+      valueColor: "#F59E0B",
+      footer: `${clientesTotal} / ${metas.m1} fechamentos`,
     },
     {
       label: "META EM", icon: Clock, iconBg: "rgba(34,197,94,0.1)", iconColor: "#22C55E",
-      value: `${diasUteisRest}`, unit: " dias", sub: deadline ? `Prazo: ${deadline.toLocaleDateString("pt-BR",{day:"2-digit",month:"long"})}` : "Fim do mês",
+      value: `${diasUteisRest}`, unit: " dias", sub: deadline ? `Prazo final: ${deadline.toLocaleDateString("pt-BR",{day:"2-digit",month:"long"})}` : "Fim do mês",
       barColor: "#22C55E", barPct: pct(diasUteisNoMes - diasUteisRest, diasUteisNoMes),
       footer: `${diasUteisNoMes} dias úteis no mês`,
     },
   ];
 
   return (
-    <>
-      {/* Grid principal: col esquerda + sidebar. Linha de baixo abrange as duas colunas. */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 260px", gridTemplateRows: "auto auto auto auto", gap: 16 }}>
+    <div className="flex gap-4 w-full items-start">
 
-        {/* Row 1 — KPI cards (col 1) */}
-        <div style={{ gridColumn: 1, gridRow: 1 }}>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {kpis.map(({ label, icon: Icon, iconBg, iconColor, value, unit, sub, barColor, barPct, valueColor, footer }: any) => (
-              <div key={label} style={CARD} className="px-4 pt-4 pb-3 flex flex-col gap-2">
+      {/* ── Coluna esquerda (conteúdo principal) ── */}
+      <div className="flex-1 min-w-0 space-y-3">
+
+        {/* KPI 4 cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {kpis.map(({ label, icon: Icon, iconBg, iconColor, value, unit, sub, barColor, barPct, valueColor, footer }: any) => (
+            <div key={label} style={CARD} className="px-3 pt-3 pb-2 flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</span>
+                <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ background: iconBg }}>
+                  <Icon className="h-3.5 w-3.5" style={{ color: iconColor }} />
+                </div>
+              </div>
+              <div className="flex items-baseline gap-1">
+                <span className="text-2xl font-black leading-tight" style={{ color: valueColor ?? "#1A1530" }}>{value}</span>
+                {unit && <span className="text-sm font-medium text-muted-foreground">{unit}</span>}
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-tight">{sub}</p>
+              <div className="h-0.5 w-full rounded-full overflow-hidden" style={{ background: barColor + "20" }}>
+                <div className="h-full rounded-full transition-[width] duration-700" style={{ width: `${barPct}%`, background: barColor }} />
+              </div>
+              {footer && <p className="text-[11px] text-muted-foreground/80 mt-0.5">{footer}</p>}
+            </div>
+          ))}
+        </div>
+
+        {/* 3 Meta cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {[
+            { label: "Meta 1", val: metas.m1, barColor: "#8B5CF6" },
+            { label: "Meta 2", val: metas.m2, barColor: "#EC4899" },
+            { label: "Meta 3 ★", val: metas.m3, barColor: "#A855F7" },
+          ].map(({ label, val, barColor }) => {
+            const n = Math.max(Math.ceil((val - clientesTotal) / Math.max(diasUteisRest, 1)), 0);
+            const p2 = Math.min(pct(clientesTotal, val), 100);
+            return (
+              <div key={label} style={CARD} className="px-3 pt-2.5 pb-2.5 space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</span>
-                  <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ background: iconBg }}>
-                    <Icon className="h-3.5 w-3.5" style={{ color: iconColor }} />
-                  </div>
+                  <span className="text-sm font-bold text-foreground">{label}</span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(139,92,246,0.1)", color: "#8B5CF6" }}>{p2}%</span>
                 </div>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-2xl font-black leading-tight" style={{ color: valueColor ?? "#1A1530" }}>{value}</span>
-                  {unit && <span className="text-sm font-medium text-muted-foreground">{unit}</span>}
+                  <span className="text-3xl font-black" style={{ color: "#EC4899" }}>{n}</span>
+                  <span className="text-sm text-muted-foreground">/dia</span>
                 </div>
-                <p className="text-[11px] text-muted-foreground leading-tight">{sub}</p>
-                <div className="h-0.5 w-full rounded-full overflow-hidden" style={{ background: barColor + "20" }}>
-                  <div className="h-full rounded-full transition-[width] duration-700" style={{ width: `${barPct}%`, background: barColor }} />
+                <div className="h-1 w-full rounded-full overflow-hidden" style={{ background: barColor + "20" }}>
+                  <div className="h-full rounded-full transition-[width] duration-700" style={{ width: `${p2}%`, background: barColor }} />
                 </div>
-                {footer && <p className="text-[11px] text-muted-foreground/80 mt-0.5">{footer}</p>}
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Faltam <span className="font-bold text-pink">{Math.max(val - clientesTotal, 0)}</span> pra meta</span>
+                  <span>{clientesTotal}/{val}</span>
+                </div>
+                <p className="text-[11px] text-muted-foreground">{val} fechamentos</p>
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
 
-        {/* Row 2 — 3 Meta cards (col 1) */}
-        <div style={{ gridColumn: 1, gridRow: 2 }}>
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { label: "Meta 1", val: metas.m1, barColor: "#8B5CF6" },
-              { label: "Meta 2", val: metas.m2, barColor: "#EC4899" },
-              { label: "Meta 3 ★", val: metas.m3, barColor: "#A855F7" },
-            ].map(({ label, val, barColor }) => {
-              const n = Math.max(Math.ceil((val - clientesTotal) / Math.max(diasUteisRest, 1)), 0);
-              const p2 = Math.min(pct(clientesTotal, val), 100);
-              return (
-                <div key={label} style={CARD} className="px-4 pt-3 pb-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-bold text-foreground">{label}</span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(139,92,246,0.1)", color: "#8B5CF6" }}>{p2}%</span>
-                  </div>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-black" style={{ color: "#EC4899" }}>{n}</span>
-                    <span className="text-sm text-muted-foreground">/dia</span>
-                  </div>
-                  <div className="h-1 w-full rounded-full overflow-hidden" style={{ background: barColor + "20" }}>
-                    <div className="h-full rounded-full transition-[width] duration-700" style={{ width: `${p2}%`, background: barColor }} />
-                  </div>
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>Faltam <span className="font-bold text-pink">{Math.max(val - clientesTotal, 0)}</span> pra meta</span>
-                    <span>{clientesTotal}/{val}</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+        {/* Insights + Evolução */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-4">
+          <InsightsRapidos clientesTotal={clientesTotal} metas={metas} ritmoAtual={ritmoAtual} necM1={necM1} melhorDia={melhorDia} />
+          <EvolucaoChart diario={diario} metaM3={metas.m3} diasTotal={diasUteisNoMes} />
         </div>
 
-        {/* Row 3 — Insights + Evolução (col 1) */}
-        <div style={{ gridColumn: 1, gridRow: 3 }}>
-          <div className="grid grid-cols-[1fr_2fr] gap-4">
-            <InsightsRapidos clientesTotal={clientesTotal} metas={metas} ritmoAtual={ritmoAtual} necM1={necM1} melhorDia={melhorDia} />
-            <EvolucaoChart diario={diario} metaM3={metas.m3} diasTotal={diasUteisNoMes} />
-          </div>
-        </div>
-
-        {/* Sidebar — rows 1-3, col 2 */}
-        <div style={{ gridColumn: 2, gridRow: "1 / 4", display: "flex", flexDirection: "column", gap: 16 }}>
-          <MiniCalendar />
-          <ProjecaoFinal clientesTotal={clientesTotal} metas={metas} diasUteisNoMes={diasUteisNoMes} diasUteisRest={diasUteisRest} feitosEstaSemana={feitosEstaSemana} fechPorSemana={fechPorSemana} />
-        </div>
-
-        {/* Row 4 — Atividades + Metas + Ganhos (abrange as 2 colunas, Ganhos mais largo) */}
-        <div style={{ gridColumn: "1 / 3", gridRow: 4 }}>
-          <div className="grid gap-4" style={{ gridTemplateColumns: "1fr 1fr 1.6fr" }}>
-            <AtividadesRecentes registros={registros} />
-            <MetasEmAndamento clientesTotal={clientesTotal} metas={metas} />
-            <GanhosHoje clientesTotal={clientesTotal} onAdd={handleAdd} onRemove={handleRemove} onSave={handleSave} saved={saved} />
-          </div>
+        {/* Ganhos */}
+        <div className="w-full max-w-2xl">
+          <GanhosHoje clientesTotal={clientesTotal} onAdd={handleAdd} onRemove={handleRemove} onSave={handleSave} saved={saved} />
         </div>
       </div>
 
-      {/* Dialog editar metas */}
+      {/* ── Coluna direita fixa (calendário + projeção) ── */}
+      <div className="w-[260px] shrink-0 space-y-4">
+        <MiniCalendar />
+        <ProjecaoFinal clientesTotal={clientesTotal} metas={metas} diasUteisNoMes={diasUteisNoMes} diasUteisRest={diasUteisRest} feitosEstaSemana={feitosEstaSemana} fechPorSemana={fechPorSemana} />
+      </div>
+
+      {/* Edit metas dialog */}
       <Dialog open={metasDialogOpen} onOpenChange={setMetasDialogOpen}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader><DialogTitle>Editar Metas do Mês</DialogTitle></DialogHeader>
@@ -500,6 +451,6 @@ function MetasPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
 }
