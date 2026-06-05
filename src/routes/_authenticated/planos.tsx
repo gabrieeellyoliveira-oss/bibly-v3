@@ -161,7 +161,7 @@ function PlanoCard({ p, periodo }: { p: typeof PLANOS[0]; periodo: Periodo }) {
       </div>
 
       {/* Funcionalidades em 2 colunas */}
-      <div className="px-4 py-2 flex-1">
+      <div className="px-4 py-2">
         <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Funcionalidades</p>
         <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
           {p.features.map(f => (
@@ -282,7 +282,7 @@ function PlanosPage() {
 
       {/* Grid de conteúdo */}
       {tab === "planos" ? (
-        <div className="grid grid-cols-3 gap-4 flex-1 min-h-0">
+        <div className="grid grid-cols-3 gap-4 items-start">
           {PLANOS.map(p => <PlanoCard key={p.id} p={p} periodo={periodo} />)}
         </div>
       ) : (
