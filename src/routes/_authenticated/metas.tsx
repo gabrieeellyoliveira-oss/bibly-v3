@@ -483,16 +483,13 @@ function MetasPage() {
           <EvolucaoChart diario={diario} metaM3={metas.m3} diasTotal={diasUteisNoMes} />
         </div>
 
-        {/* Ganhos */}
-        <div className="w-full">
-          <GanhosHoje clientesTotal={clientesTotal} onAdd={handleAdd} onRemove={handleRemove} onSave={handleSave} saved={saved} />
-        </div>
       </div>
 
-      {/* ── Coluna direita fixa (calendário + projeção) ── */}
-      <div className="w-[260px] shrink-0 space-y-4">
+      {/* ── Coluna direita fixa (calendário + projeção + ganhos) ── */}
+      <div className="w-[280px] shrink-0 space-y-3">
         <MiniCalendar />
         <ProjecaoFinal clientesTotal={clientesTotal} metas={metas} diasUteisNoMes={diasUteisNoMes} diasUteisRest={diasUteisRest} feitosEstaSemana={feitosEstaSemana} fechPorSemana={fechPorSemana} />
+        <GanhosHoje clientesTotal={clientesTotal} onAdd={handleAdd} onRemove={handleRemove} onSave={handleSave} saved={saved} />
       </div>
 
       {/* Edit metas dialog */}
