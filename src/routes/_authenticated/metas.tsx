@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Sparkles, Target, Rocket, Clock, ChevronLeft, ChevronRight, Save, TrendingUp, Star } from "lucide-react";
+import { Sparkles, Target, Rocket, Clock, ChevronLeft, ChevronRight, Save, TrendingUp, Star, Pencil, Check as CheckIcon } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,17 @@ import { abrilFallback, abrilDiarioFallback, STORAGE, type DadosAtual, type Dado
 import { pct, calcDiasUteisRestantes, calcDiasUteisMesAte, calcFechamentosSemana, getDeadlineMes, getInicioSemana, storageGet, storageSet } from "@/lib/dashboardUtils";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useEditMode } from "@/hooks/useEditMode";
+import { EditableCard } from "@/components/dashboard/EditableCard";
+
+const DEFAULT_CARDS = {
+  kpis:      { name: "KPIs",            size: "G" as const, visible: true, position: 0 },
+  metas:     { name: "Metas",           size: "G" as const, visible: true, position: 1 },
+  ritmo:     { name: "Ritmo Diário",    size: "G" as const, visible: true, position: 2 },
+  insights:  { name: "Insights",        size: "P" as const, visible: true, position: 3 },
+  evolucao:  { name: "Evolução Diária", size: "M" as const, visible: true, position: 4 },
+  ganhos:    { name: "Ganhos de Hoje",  size: "G" as const, visible: true, position: 5 },
+};
 
 export const Route = createFileRoute("/_authenticated/metas")({
   component: MetasPage,
@@ -312,6 +323,8 @@ function AgendFechCard({ metas, clientesTotal, diasUteisRest, conversaoPct }: {
    Main Page
 ────────────────────────────────────────── */
 function MetasPage() {
+  const { editMode, toggleEditMode, cardConfigs, updateCard, saveLayout, saving } = useEditMode(DEFAULT_CARDS);
+
   const dadosPlanilha = storageGet<{ atual?: Partial<DadosAtual>; metas?: { m1?: number; m2?: number; m3?: number }; diario?: DadosDiarios[] }>(STORAGE.PLANILHA);
   const [metasOverride, setMetasOverride] = useState<{ m1: number; m2: number; m3: number } | null>(null);
   const [metasDialogOpen, setMetasDialogOpen] = useState(false);
@@ -411,85 +424,120 @@ function MetasPage() {
   return (
     <div className="flex gap-4 w-full items-start">
 
-      {/* ── Coluna esquerda (conteúdo principal) ── */}
+      {/* ── Coluna esquerda ── */}
       <div className="flex-1 min-w-0 space-y-3">
 
-        {/* KPI 4 cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {kpis.map(({ label, icon: Icon, iconBg, iconColor, value, unit, sub, barColor, barPct, valueColor, footer }: any) => (
-            <div key={label} style={CARD} className="px-3 pt-3 pb-2 flex flex-col gap-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</span>
-                <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ background: iconBg }}>
-                  <Icon className="h-3.5 w-3.5" style={{ color: iconColor }} />
-                </div>
-              </div>
-              <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-black leading-tight" style={{ color: valueColor ?? "#1A1530" }}>{value}</span>
-                {unit && <span className="text-sm font-medium text-muted-foreground">{unit}</span>}
-              </div>
-              <p className="text-[11px] text-muted-foreground leading-tight">{sub}</p>
-              <div className="h-0.5 w-full rounded-full overflow-hidden" style={{ background: barColor + "20" }}>
-                <div className="h-full rounded-full transition-[width] duration-700" style={{ width: `${barPct}%`, background: barColor }} />
-              </div>
-              {footer && <p className="text-[11px] text-muted-foreground/80 mt-0.5">{footer}</p>}
-            </div>
-          ))}
+        {/* Botão modo editor */}
+        <div className="flex justify-end">
+          {editMode ? (
+            <button
+              onClick={saveLayout}
+              disabled={saving}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white transition-all hover:opacity-90"
+              style={{ background: "linear-gradient(135deg,#59327A,#FFB600)", boxShadow: "0 2px 10px rgba(89,50,122,0.3)" }}
+            >
+              <CheckIcon className="h-3.5 w-3.5" />
+              {saving ? "Salvando..." : "Concluído"}
+            </button>
+          ) : (
+            <button
+              onClick={toggleEditMode}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-muted-foreground border border-border bg-card hover:border-primary/40 hover:text-foreground transition-all"
+            >
+              <Pencil className="h-3 w-3" />
+              Editar dashboard
+            </button>
+          )}
         </div>
 
-        {/* 3 Meta cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {[
-            { label: "Meta 1", val: metas.m1, barColor: "#8B5CF6" },
-            { label: "Meta 2", val: metas.m2, barColor: "#EC4899" },
-            { label: "Meta 3 ★", val: metas.m3, barColor: "#A855F7" },
-          ].map(({ label, val, barColor }) => {
-            const n = Math.max(Math.ceil((val - clientesTotal) / Math.max(diasUteisRest, 1)), 0);
-            const p2 = Math.min(pct(clientesTotal, val), 100);
-            return (
-              <div key={label} style={CARD} className="px-3 pt-2.5 pb-2.5 space-y-1.5">
+        {/* KPI 4 cards */}
+        <EditableCard cardId="kpis" config={cardConfigs.kpis} editMode={editMode} onUpdate={updateCard} defaultColSpan="col-span-full">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {kpis.map(({ label, icon: Icon, iconBg, iconColor, value, unit, sub, barColor, barPct, valueColor, footer }: any) => (
+              <div key={label} style={CARD} className="px-3 pt-3 pb-2 flex flex-col gap-1.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-bold text-foreground">{label}</span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(139,92,246,0.1)", color: "#8B5CF6" }}>{p2}%</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</span>
+                  <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ background: iconBg }}>
+                    <Icon className="h-3.5 w-3.5" style={{ color: iconColor }} />
+                  </div>
                 </div>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-3xl font-black" style={{ color: "#EC4899" }}>{n}</span>
-                  <span className="text-sm text-muted-foreground">/dia</span>
+                  <span className="text-2xl font-black leading-tight" style={{ color: valueColor ?? "#1A1530" }}>{value}</span>
+                  {unit && <span className="text-sm font-medium text-muted-foreground">{unit}</span>}
                 </div>
-                <div className="h-1 w-full rounded-full overflow-hidden" style={{ background: barColor + "20" }}>
-                  <div className="h-full rounded-full transition-[width] duration-700" style={{ width: `${p2}%`, background: barColor }} />
+                <p className="text-[11px] text-muted-foreground leading-tight">{sub}</p>
+                <div className="h-0.5 w-full rounded-full overflow-hidden" style={{ background: barColor + "20" }}>
+                  <div className="h-full rounded-full transition-[width] duration-700" style={{ width: `${barPct}%`, background: barColor }} />
                 </div>
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Faltam <span className="font-bold text-pink">{Math.max(val - clientesTotal, 0)}</span> pra meta</span>
-                  <span>{clientesTotal}/{val}</span>
-                </div>
-                <p className="text-[11px] text-muted-foreground">{val} fechamentos</p>
+                {footer && <p className="text-[11px] text-muted-foreground/80 mt-0.5">{footer}</p>}
               </div>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        </EditableCard>
+
+        {/* 3 Meta cards */}
+        <EditableCard cardId="metas" config={cardConfigs.metas} editMode={editMode} onUpdate={updateCard} defaultColSpan="col-span-full">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {[
+              { label: "Meta 1", val: metas.m1, barColor: "#8B5CF6" },
+              { label: "Meta 2", val: metas.m2, barColor: "#EC4899" },
+              { label: "Meta 3 ★", val: metas.m3, barColor: "#A855F7" },
+            ].map(({ label, val, barColor }) => {
+              const n = Math.max(Math.ceil((val - clientesTotal) / Math.max(diasUteisRest, 1)), 0);
+              const p2 = Math.min(pct(clientesTotal, val), 100);
+              return (
+                <div key={label} style={CARD} className="px-3 pt-2.5 pb-2.5 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-foreground">{label}</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(139,92,246,0.1)", color: "#8B5CF6" }}>{p2}%</span>
+                  </div>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-3xl font-black" style={{ color: "#EC4899" }}>{n}</span>
+                    <span className="text-sm text-muted-foreground">/dia</span>
+                  </div>
+                  <div className="h-1 w-full rounded-full overflow-hidden" style={{ background: barColor + "20" }}>
+                    <div className="h-full rounded-full transition-[width] duration-700" style={{ width: `${p2}%`, background: barColor }} />
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>Faltam <span className="font-bold text-pink">{Math.max(val - clientesTotal, 0)}</span> pra meta</span>
+                    <span>{clientesTotal}/{val}</span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">{val} fechamentos</p>
+                </div>
+              );
+            })}
+          </div>
+        </EditableCard>
 
         {/* Agend & Fech por Meta */}
-        <AgendFechCard
-          metas={metas}
-          clientesTotal={clientesTotal}
-          diasUteisRest={diasUteisRest}
-          conversaoPct={dadosAtual.conversao ?? 50}
-        />
+        <EditableCard cardId="ritmo" config={cardConfigs.ritmo} editMode={editMode} onUpdate={updateCard} defaultColSpan="col-span-full">
+          <AgendFechCard
+            metas={metas}
+            clientesTotal={clientesTotal}
+            diasUteisRest={diasUteisRest}
+            conversaoPct={dadosAtual.conversao ?? 50}
+          />
+        </EditableCard>
 
         {/* Insights + Evolução */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-3">
-          <InsightsRapidos clientesTotal={clientesTotal} metas={metas} ritmoAtual={ritmoAtual} necM1={necM1} melhorDia={melhorDia} />
-          <EvolucaoChart diario={diario} metaM3={metas.m3} diasTotal={diasUteisNoMes} />
+          <EditableCard cardId="insights" config={cardConfigs.insights} editMode={editMode} onUpdate={updateCard}>
+            <InsightsRapidos clientesTotal={clientesTotal} metas={metas} ritmoAtual={ritmoAtual} necM1={necM1} melhorDia={melhorDia} />
+          </EditableCard>
+          <EditableCard cardId="evolucao" config={cardConfigs.evolucao} editMode={editMode} onUpdate={updateCard}>
+            <EvolucaoChart diario={diario} metaM3={metas.m3} diasTotal={diasUteisNoMes} />
+          </EditableCard>
         </div>
 
       </div>
 
-      {/* ── Coluna direita fixa (calendário + projeção + ganhos) ── */}
+      {/* ── Coluna direita ── */}
       <div className="w-[280px] shrink-0 space-y-3">
         <MiniCalendar />
         <ProjecaoFinal clientesTotal={clientesTotal} metas={metas} diasUteisNoMes={diasUteisNoMes} diasUteisRest={diasUteisRest} feitosEstaSemana={feitosEstaSemana} fechPorSemana={fechPorSemana} />
-        <GanhosHoje clientesTotal={clientesTotal} onAdd={handleAdd} onRemove={handleRemove} onSave={handleSave} saved={saved} />
+        <EditableCard cardId="ganhos" config={cardConfigs.ganhos} editMode={editMode} onUpdate={updateCard} defaultColSpan="col-span-full">
+          <GanhosHoje clientesTotal={clientesTotal} onAdd={handleAdd} onRemove={handleRemove} onSave={handleSave} saved={saved} />
+        </EditableCard>
       </div>
 
       {/* Edit metas dialog */}
