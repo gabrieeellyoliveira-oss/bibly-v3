@@ -24,7 +24,7 @@ export function AppSidebar() {
       className={cn("relative flex flex-col h-screen sticky top-0 shrink-0 transition-all duration-300 ease-in-out")}
       style={{
         width: collapsed ? 64 : 220,
-        background: "#120D22",
+        background: "#1B0B30",
         borderRight: "1px solid rgba(255,255,255,0.06)",
       }}
     >

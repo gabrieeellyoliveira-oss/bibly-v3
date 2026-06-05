@@ -46,7 +46,8 @@ function AuthPage() {
 
         {/* Logo */}
         <div className="flex flex-col items-center mb-10">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center shadow-lg mb-4">
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg mb-4"
+               style={{ background: "linear-gradient(135deg, #59327A, #FFB600)" }}>
             <span className="text-white font-bold text-3xl">B</span>
           </div>
           <h1 className="text-4xl font-bold tracking-tight" style={{ color: "#F2ECFA" }}>
@@ -110,7 +111,7 @@ function AuthPage() {
               type="submit"
               disabled={loading}
               className="w-full h-11 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2 mt-2 transition-all duration-200 hover:opacity-90 active:scale-[0.98] disabled:opacity-50"
-              style={{ background: "linear-gradient(135deg, #8B5CF6, #EC4899)", boxShadow: "0 0 24px -4px rgba(139,92,246,0.5)" }}
+              style={{ background: "linear-gradient(135deg, #59327A, #FFB600)", boxShadow: "0 0 24px -4px rgba(89,50,122,0.5)" }}
             >
               {loading
                 ? <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />

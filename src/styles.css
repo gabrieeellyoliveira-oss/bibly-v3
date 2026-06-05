@@ -54,73 +54,79 @@
 :root {
   --radius: 1rem;
 
-  /* ── Page background: lavanda muito claro ── */
-  --background:           #F4F0FB;
-  --foreground:           #1A1530;
+  /* ── Cardápio Web Brand Colors ── */
+  --cw-purple:            #59327A;   /* Eminence */
+  --cw-yellow:            #FFB600;   /* Selective Yellow */
+  --cw-magnolia:          #F4EDF7;   /* Magnolia */
+  --cw-carnation:         #FF5959;   /* Carnation */
 
-  /* ── Cards: brancos com sombra suave ── */
+  /* ── Page background: CW Magnolia ── */
+  --background:           #F4EDF7;
+  --foreground:           #1A0D2E;
+
+  /* ── Cards: brancos com sombra CW ── */
   --card:                 #FFFFFF;
-  --card-foreground:      #1A1530;
+  --card-foreground:      #1A0D2E;
 
   --popover:              #FFFFFF;
-  --popover-foreground:   #1A1530;
+  --popover-foreground:   #1A0D2E;
 
-  /* ── Purple principal ── */
-  --primary:              #8B5CF6;
+  /* ── Purple principal CW (Eminence) ── */
+  --primary:              #59327A;
   --primary-foreground:   #FFFFFF;
 
   /* ── Rosa/Pink destaque ── */
   --pink:                 #EC4899;
   --pink-foreground:      #FFFFFF;
 
-  /* ── Secondary: lavanda suave ── */
-  --secondary:            #EDE8FA;
-  --secondary-foreground: #1A1530;
+  /* ── Secondary: CW Magnolia suave ── */
+  --secondary:            #EDE8F4;
+  --secondary-foreground: #1A0D2E;
 
   /* ── Muted ── */
-  --muted:                #F0ECF9;
+  --muted:                #F0EBF6;
   --muted-foreground:     #7A6E8E;
 
   /* ── Accent ── */
-  --accent:               #EDE8FA;
-  --accent-foreground:    #1A1530;
+  --accent:               #EDE8F4;
+  --accent-foreground:    #1A0D2E;
 
   /* ── Semânticos ── */
-  --destructive:          #EF4444;
+  --destructive:          #FF5959;
   --destructive-foreground: #FFFFFF;
   --success:              #22C55E;
   --success-foreground:   #FFFFFF;
-  --warning:              #F59E0B;
-  --warning-foreground:   #FFFFFF;
+  --warning:              #FFB600;
+  --warning-foreground:   #1A0D2E;
 
   /* ── Borda e inputs ── */
-  --border:               #E5DDF7;
-  --input:                #EDE8FA;
-  --ring:                 #8B5CF6;
+  --border:               rgba(89,50,122,0.16);
+  --input:                #EDE8F4;
+  --ring:                 #59327A;
 
-  /* ── Sidebar: escura com roxo profundo ── */
-  --sidebar:              #120D22;
-  --sidebar-foreground:   #EDE8FA;
-  --sidebar-primary:      #EC4899;
-  --sidebar-primary-foreground: #FFFFFF;
+  /* ── Sidebar: CW deep purple ── */
+  --sidebar:              #1B0B30;
+  --sidebar-foreground:   #EDE8F4;
+  --sidebar-primary:      #FFB600;
+  --sidebar-primary-foreground: #1A0D2E;
   --sidebar-accent:       rgba(255,255,255,0.07);
-  --sidebar-accent-foreground: #EDE8FA;
+  --sidebar-accent-foreground: #EDE8F4;
   --sidebar-border:       rgba(255,255,255,0.06);
-  --sidebar-ring:         #EC4899;
+  --sidebar-ring:         #FFB600;
 
-  /* ── Gradientes ── */
-  --gradient-primary: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+  /* ── Gradientes CW ── */
+  --gradient-primary: linear-gradient(135deg, #59327A 0%, #8B35C0 100%);
   --gradient-pink:    linear-gradient(135deg, #EC4899 0%, #F472B6 100%);
-  --gradient-text:    linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
-  --gradient-hero:    linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
-  --gradient-card:    linear-gradient(145deg, #FFFFFF 0%, #F9F6FE 100%);
-  --gradient-subtle:  linear-gradient(135deg, rgba(139,92,246,0.08) 0%, rgba(236,72,153,0.06) 100%);
+  --gradient-text:    linear-gradient(135deg, #59327A 0%, #8B35C0 100%);
+  --gradient-hero:    linear-gradient(135deg, #59327A 0%, #FFB600 100%);
+  --gradient-card:    linear-gradient(145deg, #FFFFFF 0%, #FAF7FE 100%);
+  --gradient-subtle:  linear-gradient(135deg, rgba(89,50,122,0.07) 0%, rgba(255,182,0,0.05) 100%);
 
   /* ── Sombras ── */
-  --shadow-card:    0 2px 16px -2px rgba(139,92,246,0.12), 0 1px 4px -1px rgba(0,0,0,0.06);
-  --shadow-glow:    0 0 32px -4px rgba(236,72,153,0.35);
-  --shadow-purple:  0 4px 24px -4px rgba(139,92,246,0.25);
-  --shadow-elevated: 0 8px 32px -4px rgba(139,92,246,0.2), 0 2px 8px -2px rgba(0,0,0,0.08);
+  --shadow-card:    0 2px 12px -2px rgba(89,50,122,0.1), 0 1px 4px -1px rgba(0,0,0,0.05);
+  --shadow-glow:    0 0 28px -4px rgba(89,50,122,0.4);
+  --shadow-purple:  0 4px 20px -4px rgba(89,50,122,0.22);
+  --shadow-elevated: 0 8px 28px -4px rgba(89,50,122,0.18), 0 2px 8px -2px rgba(0,0,0,0.07);
 }
 
 /* ─── Remove dark class override — app roda no light ─── */
