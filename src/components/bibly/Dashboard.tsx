@@ -9,7 +9,6 @@ import {
   Calendar,
   CheckCircle2,
   Download,
-  Flower2,
   LineChart as LineChartIcon,
   PhoneCall,
   Sparkles,
@@ -233,9 +232,11 @@ export function Dashboard() {
         <div className="flex">
           {/* Sidebar compacta — só ícones */}
           <aside className="hidden md:flex w-[72px] flex-col items-center gap-1 border-r border-sidebar-border bg-sidebar py-6 sticky top-0 h-screen">
-            <div className="mb-6 grid h-10 w-10 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-[var(--shadow-soft)]">
-              <Flower2 className="h-5 w-5" />
-            </div>
+            <img
+              src="/bibly-mascot.png"
+              alt="Bibly"
+              className="mb-6 h-11 w-11 rounded-2xl object-cover shadow-[var(--shadow-soft)]"
+            />
             {NAV_ITEMS.map((item) => {
               const active = secao === item.id;
               return (
