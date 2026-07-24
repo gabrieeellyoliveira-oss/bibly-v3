@@ -1,20 +1,14 @@
 import { useMemo, useState } from "react";
 import {
-  Activity,
-  ArrowDownRight,
-  ArrowUpRight,
   BadgeCheck,
-  BookOpen,
+  Building2,
   DollarSign,
   Flower2,
-  Heart,
   LayoutDashboard,
-  LineChart as LineChartIcon,
+  MapPin,
+  Package,
   PiggyBank,
-  Repeat,
   Settings,
-  Sparkles,
-  Target,
   TrendingUp,
   Users,
 } from "lucide-react";
@@ -25,8 +19,10 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
-  Line,
-  LineChart,
+  Funnel,
+  FunnelChart,
+  LabelList,
+  Legend,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -40,88 +36,148 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
-type Trend = "up" | "down";
+// ---------------------------------------------------------------------------
+// Dados de exemplo — Programa de Representantes CardápioWeb
+// ---------------------------------------------------------------------------
 
-type Kpi = {
-  label: string;
-  value: string;
-  delta: string;
-  trend: Trend;
-  hint: string;
-  icon: React.ComponentType<{ className?: string }>;
+const TICKET_MEDIO = 219; // R$/mês por cliente ativo (média entre planos)
+
+type StatusLead = "novo" | "contatado" | "visitado" | "fechado" | "cancelado";
+
+type Representante = {
+  nome: string;
+  cidade: string;
+  regiao: "Sudeste" | "Sul" | "Nordeste" | "Centro-Oeste" | "Norte";
+  leads: Record<StatusLead, number>;
+  clientesAtivos: number;
+  churn: number;
+  vendasPorMes: number;
 };
 
-const funnelData = [
-  { etapa: "Leads", valor: 480 },
-  { etapa: "Qualificados", valor: 312 },
-  { etapa: "Reunião", valor: 184 },
-  { etapa: "Proposta", valor: 96 },
-  { etapa: "Fechados", valor: 42 },
+const representantes: Representante[] = [
+  { nome: "Marina Alves", cidade: "São Paulo, SP", regiao: "Sudeste", leads: { novo: 18, contatado: 14, visitado: 9, fechado: 12, cancelado: 2 }, clientesAtivos: 58, churn: 3.4, vendasPorMes: 6 },
+  { nome: "Diego Ferreira", cidade: "Belo Horizonte, MG", regiao: "Sudeste", leads: { novo: 15, contatado: 10, visitado: 7, fechado: 9, cancelado: 3 }, clientesAtivos: 52, churn: 5.1, vendasPorMes: 5 },
+  { nome: "Camila Rocha", cidade: "Porto Alegre, RS", regiao: "Sul", leads: { novo: 11, contatado: 9, visitado: 6, fechado: 8, cancelado: 1 }, clientesAtivos: 41, churn: 2.8, vendasPorMes: 4 },
+  { nome: "Thiago Nunes", cidade: "Curitiba, PR", regiao: "Sul", leads: { novo: 9, contatado: 6, visitado: 4, fechado: 5, cancelado: 2 }, clientesAtivos: 27, churn: 7.2, vendasPorMes: 3 },
+  { nome: "Larissa Costa", cidade: "Recife, PE", regiao: "Nordeste", leads: { novo: 14, contatado: 11, visitado: 8, fechado: 10, cancelado: 2 }, clientesAtivos: 46, churn: 4.6, vendasPorMes: 5 },
+  { nome: "Bruno Salgado", cidade: "Salvador, BA", regiao: "Nordeste", leads: { novo: 8, contatado: 5, visitado: 3, fechado: 4, cancelado: 3 }, clientesAtivos: 19, churn: 9.4, vendasPorMes: 2 },
+  { nome: "Fernanda Lima", cidade: "Goiânia, GO", regiao: "Centro-Oeste", leads: { novo: 7, contatado: 5, visitado: 4, fechado: 6, cancelado: 1 }, clientesAtivos: 33, churn: 3.9, vendasPorMes: 3 },
+  { nome: "Rafael Teixeira", cidade: "Manaus, AM", regiao: "Norte", leads: { novo: 5, contatado: 3, visitado: 2, fechado: 3, cancelado: 1 }, clientesAtivos: 14, churn: 6.5, vendasPorMes: 2 },
 ];
 
-const revenueData = [
-  { mes: "Jan", MRR: 42, Comissoes: 8 },
-  { mes: "Fev", MRR: 46, Comissoes: 9 },
-  { mes: "Mar", MRR: 51, Comissoes: 10 },
-  { mes: "Abr", MRR: 55, Comissoes: 11 },
-  { mes: "Mai", MRR: 62, Comissoes: 12 },
-  { mes: "Jun", MRR: 68, Comissoes: 13 },
-  { mes: "Jul", MRR: 74, Comissoes: 14 },
+function comissaoDoRepresentante(r: Representante) {
+  const base = 10;
+  const implementacao = 10;
+  const suporte = 10;
+  const bonusPerformance = r.clientesAtivos >= 50 && r.churn < 8 ? 10 : 0;
+  const total = Math.min(base + implementacao + suporte + bonusPerformance, 40);
+  return { base, implementacao, suporte, bonusPerformance, total };
+}
+
+const planosVendidos = [
+  { plano: "Delivery", vendas: 34 },
+  { plano: "Mesas", vendas: 21 },
+  { plano: "Premium", vendas: 16 },
 ];
 
-const onboardingData = [
-  { semana: "S1", dias: 14 },
-  { semana: "S2", dias: 12 },
-  { semana: "S3", dias: 11 },
-  { semana: "S4", dias: 9 },
-  { semana: "S5", dias: 8 },
-  { semana: "S6", dias: 7 },
+const modulosAdicionais = [
+  { modulo: "Cardápio Digital (QR Code)", vendas: 41 },
+  { modulo: "Integração iFood", vendas: 29 },
+  { modulo: "Autoatendimento / Totem", vendas: 18 },
+  { modulo: "Gestão de Estoque", vendas: 15 },
+  { modulo: "Split de Comandas", vendas: 9 },
 ];
 
-const channelMix = [
-  { name: "Revendas", value: 42 },
-  { name: "Consultorias", value: 28 },
-  { name: "Agências", value: 18 },
-  { name: "Referral", value: 12 },
+const comissaoMensal = [
+  { mes: "Fev", base: 3200, implementacao: 2900, suporte: 2600, bonus: 1100 },
+  { mes: "Mar", base: 3400, implementacao: 3100, suporte: 2800, bonus: 1300 },
+  { mes: "Abr", base: 3700, implementacao: 3300, suporte: 3000, bonus: 1500 },
+  { mes: "Mai", base: 3900, implementacao: 3500, suporte: 3200, bonus: 1700 },
+  { mes: "Jun", base: 4200, implementacao: 3800, suporte: 3400, bonus: 2000 },
+  { mes: "Jul", base: 4500, implementacao: 4100, suporte: 3700, bonus: 2300 },
 ];
 
-const partners = [
-  { nome: "Rosa & Co.", status: "Ativo", treino: 92, leads: 38, mrr: "R$ 14.2k", churn: 2.1 },
-  { nome: "Petal Digital", status: "Ativo", treino: 88, leads: 31, mrr: "R$ 11.8k", churn: 1.4 },
-  { nome: "Blossom Tech", status: "Onboarding", treino: 46, leads: 9, mrr: "R$ 2.1k", churn: 0 },
-  { nome: "Camélia Ltda", status: "Ativo", treino: 74, leads: 22, mrr: "R$ 7.6k", churn: 3.2 },
-  { nome: "Magnólia Sales", status: "Em risco", treino: 34, leads: 4, mrr: "R$ 1.4k", churn: 8.7 },
-  { nome: "Peônia Partners", status: "Ativo", treino: 81, leads: 27, mrr: "R$ 9.3k", churn: 2.6 },
-];
+const chartColors = ["#2563eb", "#059669", "#d97706", "#dc2626", "#7c3aed"];
 
-const chartColors = ["#f4a8c4", "#f5c2d0", "#e8b4c8", "#f7d1dc", "#d8a3bd"];
-
-const activationKpis: Kpi[] = [
-  { label: "Tempo médio de onboarding", value: "8 dias", delta: "-3d", trend: "up", hint: "meta: 10d", icon: Sparkles },
-  { label: "% do canal treinado", value: "76%", delta: "+9pp", trend: "up", hint: "meta: 80%", icon: BookOpen },
-  { label: "Acesso ao portal", value: "68%", delta: "+4pp", trend: "up", hint: "últimos 30d", icon: Activity },
-  { label: "Ações de co-marketing", value: "23", delta: "+6", trend: "up", hint: "este trimestre", icon: Target },
-];
-
-const commercialKpis: Kpi[] = [
-  { label: "Leads indicados", value: "480", delta: "+18%", trend: "up", hint: "vs. mês anterior", icon: Users },
-  { label: "Taxa de conversão", value: "8,7%", delta: "+1,2pp", trend: "up", hint: "lead → fechado", icon: TrendingUp },
-  { label: "Volume de vendas", value: "R$ 1,2M", delta: "+22%", trend: "up", hint: "YTD", icon: LineChartIcon },
-  { label: "Ticket médio", value: "R$ 28,4k", delta: "-2%", trend: "down", hint: "trimestre", icon: BadgeCheck },
-];
-
-const financeKpis: Kpi[] = [
-  { label: "MRR do canal", value: "R$ 74k", delta: "+9%", trend: "up", hint: "recorrente", icon: Repeat },
-  { label: "Comissões pagas", value: "R$ 14k", delta: "+1,8k", trend: "up", hint: "mês atual", icon: DollarSign },
-  { label: "Churn dos clientes", value: "3,1%", delta: "-0,4pp", trend: "up", hint: "meta: <4%", icon: Heart },
-  { label: "CLV médio", value: "R$ 42k", delta: "+6%", trend: "up", hint: "por parceiro", icon: PiggyBank },
-];
+// ---------------------------------------------------------------------------
 
 export function Dashboard() {
   const [tab, setTab] = useState("visao");
 
-  const totalPartners = partners.length;
-  const ativos = useMemo(() => partners.filter((p) => p.status === "Ativo").length, []);
+  const totalRepresentantes = representantes.length;
+  const totalLeads = useMemo(
+    () => representantes.reduce((acc, r) => acc + Object.values(r.leads).reduce((a, b) => a + b, 0), 0),
+    [],
+  );
+  const totalClientesFechados = useMemo(
+    () => representantes.reduce((acc, r) => acc + r.leads.fechado, 0),
+    [],
+  );
+  const faturamentoMensal = useMemo(
+    () => representantes.reduce((acc, r) => acc + r.clientesAtivos * TICKET_MEDIO, 0),
+    [],
+  );
+  const comissaoTotalMes = useMemo(
+    () =>
+      representantes.reduce((acc, r) => {
+        const { total } = comissaoDoRepresentante(r);
+        return acc + r.clientesAtivos * TICKET_MEDIO * (total / 100);
+      }, 0),
+    [],
+  );
+
+  const funilData = useMemo(() => {
+    const soma = (status: StatusLead) => representantes.reduce((acc, r) => acc + r.leads[status], 0);
+    return [
+      { etapa: "Novo", valor: soma("novo") + soma("contatado") + soma("visitado") + soma("fechado") },
+      { etapa: "Contatado", valor: soma("contatado") + soma("visitado") + soma("fechado") },
+      { etapa: "Visitado", valor: soma("visitado") + soma("fechado") },
+      { etapa: "Cliente fechado", valor: soma("fechado") },
+    ];
+  }, []);
+  const totalCancelados = useMemo(() => representantes.reduce((acc, r) => acc + r.leads.cancelado, 0), []);
+
+  const porRegiao = useMemo(() => {
+    const map = new Map<string, { regiao: string; leads: number; clientes: number }>();
+    for (const r of representantes) {
+      const leadsTotal = Object.values(r.leads).reduce((a, b) => a + b, 0);
+      const atual = map.get(r.regiao) ?? { regiao: r.regiao, leads: 0, clientes: 0 };
+      atual.leads += leadsTotal;
+      atual.clientes += r.clientesAtivos;
+      map.set(r.regiao, atual);
+    }
+    return Array.from(map.values()).sort((a, b) => b.leads - a.leads);
+  }, []);
+
+  const porCidade = useMemo(
+    () =>
+      [...representantes]
+        .map((r) => ({
+          cidade: r.cidade,
+          regiao: r.regiao,
+          leads: Object.values(r.leads).reduce((a, b) => a + b, 0),
+          clientes: r.clientesAtivos,
+        }))
+        .sort((a, b) => b.leads - a.leads),
+    [],
+  );
+
+  const projecao = useMemo(() => {
+    const retencaoMeses = 14;
+    let acumulado = 0;
+    return Array.from({ length: 6 }, (_, i) => {
+      const mesIndex = i + 1;
+      const novosClientesMes = representantes.reduce((acc, r) => acc + r.vendasPorMes, 0);
+      const receitaNovaMes = novosClientesMes * TICKET_MEDIO * mesIndex;
+      acumulado = faturamentoMensal * mesIndex + receitaNovaMes * (mesIndex / 2);
+      const ganhoEstimado = acumulado * 0.18; // comissão média ponderada ~18%
+      return {
+        mes: `M+${mesIndex}`,
+        ganhoProjetado: Math.round(ganhoEstimado / 1000),
+        retencaoMeses,
+      };
+    });
+  }, [faturamentoMensal]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -133,15 +189,14 @@ export function Dashboard() {
             </div>
             <div>
               <div className="text-lg font-semibold tracking-tight text-sidebar-foreground">Bibly</div>
-              <div className="text-[11px] text-muted-foreground">PSM Jr. TR3</div>
+              <div className="text-[11px] text-muted-foreground">Programa de Representantes</div>
             </div>
           </div>
           {[
             { icon: LayoutDashboard, label: "Visão geral", active: true },
-            { icon: Users, label: "Parceiros" },
-            { icon: TrendingUp, label: "Pipeline" },
-            { icon: PiggyBank, label: "Financeiro" },
-            { icon: BookOpen, label: "Capacitação" },
+            { icon: Users, label: "Representantes" },
+            { icon: TrendingUp, label: "Funil de vendas" },
+            { icon: PiggyBank, label: "Comissões" },
             { icon: Settings, label: "Configurações" },
           ].map((item) => (
             <button
@@ -158,8 +213,8 @@ export function Dashboard() {
             </button>
           ))}
           <div className="mt-auto rounded-xl border border-sidebar-border bg-card p-3 text-xs text-muted-foreground">
-            <div className="font-medium text-foreground mb-1">Dica da semana 🌸</div>
-            Escolha 3–5 KPIs fixos e revise sempre no mesmo dia. Consistência {'>'} volume.
+            <div className="font-medium text-foreground mb-1">CardápioWeb</div>
+            Programa de representantes: plataforma de gestão para restaurantes.
           </div>
         </aside>
 
@@ -168,63 +223,70 @@ export function Dashboard() {
             <div>
               <div className="text-xs uppercase tracking-widest text-muted-foreground">Dashboard</div>
               <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-                Olá 🌷 vamos ver como está o canal hoje
+                Programa de Representantes — CardápioWeb
               </h1>
             </div>
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="bg-secondary text-secondary-foreground">
-                {ativos}/{totalPartners} parceiros ativos
+                {totalRepresentantes} representantes ativos
               </Badge>
               <Badge className="bg-primary/80 text-primary-foreground hover:bg-primary/80">Q3 · 2026</Badge>
             </div>
           </header>
 
           <div className="px-6 py-6 space-y-6">
-            <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <HeroCard title="MRR do canal" value="R$ 74.320" delta="+9,4%" trend="up" caption="Receita recorrente" />
-              <HeroCard title="Leads indicados" value="480" delta="+18%" trend="up" caption="Últimos 30 dias" />
-              <HeroCard title="Conversão do funil" value="8,7%" delta="+1,2pp" trend="up" caption="Lead → fechado" />
-              <HeroCard title="Churn do canal" value="3,1%" delta="-0,4pp" trend="up" caption="Meta: abaixo de 4%" />
+            <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+              <HeroCard icon={Users} title="Representantes ativos" value={String(totalRepresentantes)} caption="No programa" />
+              <HeroCard icon={BadgeCheck} title="Leads cadastrados" value={String(totalLeads)} caption="Todas as etapas" />
+              <HeroCard icon={Building2} title="Clientes fechados" value={String(totalClientesFechados)} caption="Total acumulado" />
+              <HeroCard
+                icon={DollarSign}
+                title="Faturamento mensal"
+                value={faturamentoMensal.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })}
+                caption="Carteira ativa"
+              />
+              <HeroCard
+                icon={PiggyBank}
+                title="Comissão do mês"
+                value={comissaoTotalMes.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })}
+                caption="Total pago aos reps"
+              />
             </section>
 
             <Tabs value={tab} onValueChange={setTab} className="space-y-6">
-              <TabsList className="bg-secondary/70">
+              <TabsList className="w-full flex-wrap justify-start gap-1 bg-secondary/70 h-auto">
                 <TabsTrigger value="visao">Visão geral</TabsTrigger>
-                <TabsTrigger value="ativacao">Ativação & engajamento</TabsTrigger>
-                <TabsTrigger value="comercial">Performance comercial</TabsTrigger>
-                <TabsTrigger value="financeiro">Financeiro & retenção</TabsTrigger>
+                <TabsTrigger value="representantes">Por representante</TabsTrigger>
+                <TabsTrigger value="funil">Funil de vendas</TabsTrigger>
+                <TabsTrigger value="comissoes">Comissões</TabsTrigger>
+                <TabsTrigger value="planos">Planos vendidos</TabsTrigger>
+                <TabsTrigger value="mapa">Mapa de oportunidades</TabsTrigger>
+                <TabsTrigger value="projecoes">Projeções</TabsTrigger>
               </TabsList>
 
+              {/* VISÃO GERAL */}
               <TabsContent value="visao" className="space-y-6">
                 <div className="grid gap-4 lg:grid-cols-3">
-                  <Panel title="Receita recorrente vs. comissões" subtitle="R$ mil · últimos 7 meses" className="lg:col-span-2">
-                    <ResponsiveContainer width="100%" height={260}>
-                      <AreaChart data={revenueData} margin={{ left: -10, right: 8, top: 8 }}>
-                        <defs>
-                          <linearGradient id="mrr" x1="0" x2="0" y1="0" y2="1">
-                            <stop offset="0%" stopColor="#f4a8c4" stopOpacity={0.9} />
-                            <stop offset="100%" stopColor="#f4a8c4" stopOpacity={0.05} />
-                          </linearGradient>
-                          <linearGradient id="com" x1="0" x2="0" y1="0" y2="1">
-                            <stop offset="0%" stopColor="#e8b4c8" stopOpacity={0.8} />
-                            <stop offset="100%" stopColor="#e8b4c8" stopOpacity={0.05} />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid stroke="#f3dfe8" vertical={false} />
-                        <XAxis dataKey="mes" stroke="#a97a92" fontSize={12} tickLine={false} axisLine={false} />
-                        <YAxis stroke="#a97a92" fontSize={12} tickLine={false} axisLine={false} />
+                  <Panel title="Funil comercial" subtitle="Leads → clientes fechados" className="lg:col-span-2">
+                    <ResponsiveContainer width="100%" height={240}>
+                      <BarChart data={funilData} margin={{ left: -10, right: 8, top: 8 }}>
+                        <CartesianGrid stroke="#e5e7eb" vertical={false} />
+                        <XAxis dataKey="etapa" stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} />
+                        <YAxis stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} />
                         <Tooltip content={<PrettyTooltip />} />
-                        <Area type="monotone" dataKey="MRR" stroke="#e0759a" strokeWidth={2} fill="url(#mrr)" />
-                        <Area type="monotone" dataKey="Comissoes" stroke="#c98aa8" strokeWidth={2} fill="url(#com)" />
-                      </AreaChart>
+                        <Bar dataKey="valor" radius={[8, 8, 0, 0]}>
+                          {funilData.map((_, i) => (
+                            <Cell key={i} fill={chartColors[i % chartColors.length]} />
+                          ))}
+                        </Bar>
+                      </BarChart>
                     </ResponsiveContainer>
                   </Panel>
-
-                  <Panel title="Mix por tipo de canal" subtitle="Participação na receita">
-                    <ResponsiveContainer width="100%" height={220}>
+                  <Panel title="Planos vendidos" subtitle="Distribuição por tipo">
+                    <ResponsiveContainer width="100%" height={200}>
                       <PieChart>
-                        <Pie data={channelMix} dataKey="value" nameKey="name" innerRadius={55} outerRadius={85} paddingAngle={4}>
-                          {channelMix.map((_, i) => (
+                        <Pie data={planosVendidos} dataKey="vendas" nameKey="plano" innerRadius={50} outerRadius={80} paddingAngle={4}>
+                          {planosVendidos.map((_, i) => (
                             <Cell key={i} fill={chartColors[i % chartColors.length]} stroke="none" />
                           ))}
                         </Pie>
@@ -232,135 +294,261 @@ export function Dashboard() {
                       </PieChart>
                     </ResponsiveContainer>
                     <ul className="mt-2 space-y-1.5 text-sm">
-                      {channelMix.map((c, i) => (
-                        <li key={c.name} className="flex items-center justify-between">
+                      {planosVendidos.map((p, i) => (
+                        <li key={p.plano} className="flex items-center justify-between">
                           <span className="flex items-center gap-2 text-muted-foreground">
                             <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: chartColors[i % chartColors.length] }} />
-                            {c.name}
+                            {p.plano}
                           </span>
-                          <span className="font-medium text-foreground">{c.value}%</span>
+                          <span className="font-medium text-foreground">{p.vendas}</span>
                         </li>
                       ))}
                     </ul>
                   </Panel>
                 </div>
+                <RepresentantesTable />
+              </TabsContent>
 
+              {/* POR REPRESENTANTE */}
+              <TabsContent value="representantes">
+                <RepresentantesTable detalhado />
+              </TabsContent>
+
+              {/* FUNIL DE VENDAS */}
+              <TabsContent value="funil" className="space-y-6">
                 <div className="grid gap-4 lg:grid-cols-2">
-                  <Panel title="Funil comercial" subtitle="Últimos 30 dias">
-                    <ResponsiveContainer width="100%" height={260}>
-                      <BarChart data={funnelData} layout="vertical" margin={{ left: 10, right: 20 }}>
-                        <CartesianGrid stroke="#f3dfe8" horizontal={false} />
-                        <XAxis type="number" stroke="#a97a92" fontSize={12} tickLine={false} axisLine={false} />
-                        <YAxis type="category" dataKey="etapa" stroke="#a97a92" fontSize={12} tickLine={false} axisLine={false} width={90} />
+                  <Panel title="Funil de vendas" subtitle="Novo → contatado → visitado → cliente fechado">
+                    <ResponsiveContainer width="100%" height={280}>
+                      <FunnelChart>
                         <Tooltip content={<PrettyTooltip />} />
-                        <Bar dataKey="valor" radius={[0, 10, 10, 0]}>
-                          {funnelData.map((_, i) => (
+                        <Funnel dataKey="valor" data={funilData} isAnimationActive={false}>
+                          <LabelList position="right" dataKey="etapa" fill="#374151" stroke="none" />
+                          {funilData.map((_, i) => (
+                            <Cell key={i} fill={chartColors[i % chartColors.length]} />
+                          ))}
+                        </Funnel>
+                      </FunnelChart>
+                    </ResponsiveContainer>
+                  </Panel>
+                  <Panel title="Taxa de conversão por etapa" subtitle={`${totalCancelados} leads cancelados no período`}>
+                    <ul className="space-y-3 text-sm">
+                      {funilData.slice(1).map((etapa, i) => {
+                        const anterior = funilData[i].valor;
+                        const taxa = anterior > 0 ? (etapa.valor / anterior) * 100 : 0;
+                        return (
+                          <li key={etapa.etapa} className="flex items-center justify-between rounded-lg bg-secondary/60 px-3 py-2">
+                            <span className="text-foreground">
+                              {funilData[i].etapa} → {etapa.etapa}
+                            </span>
+                            <span
+                              className={cn(
+                                "rounded-full px-2.5 py-0.5 text-xs font-medium",
+                                taxa >= 60 ? "bg-emerald-500/15 text-emerald-700" : "bg-amber-500/15 text-amber-700",
+                              )}
+                            >
+                              {taxa.toFixed(0)}%
+                            </span>
+                          </li>
+                        );
+                      })}
+                      <li className="flex items-center justify-between rounded-lg bg-red-500/10 px-3 py-2">
+                        <span className="text-foreground">Total cancelados</span>
+                        <span className="rounded-full bg-red-500/15 px-2.5 py-0.5 text-xs font-medium text-red-700">
+                          {totalCancelados}
+                        </span>
+                      </li>
+                    </ul>
+                  </Panel>
+                </div>
+              </TabsContent>
+
+              {/* COMISSÕES */}
+              <TabsContent value="comissoes" className="space-y-6">
+                <Panel title="Evolução mensal de comissões" subtitle="Composição por faixa — base 10% + implementação 10% + suporte 10% + bônus até 10% (teto 40%)">
+                  <ResponsiveContainer width="100%" height={280}>
+                    <AreaChart data={comissaoMensal} margin={{ left: -10, right: 8, top: 8 }}>
+                      <CartesianGrid stroke="#e5e7eb" vertical={false} />
+                      <XAxis dataKey="mes" stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} />
+                      <YAxis stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} />
+                      <Tooltip content={<PrettyTooltip />} />
+                      <Legend />
+                      <Area type="monotone" dataKey="base" stackId="1" name="Base (10%)" stroke="#2563eb" fill="#2563eb" fillOpacity={0.7} />
+                      <Area type="monotone" dataKey="implementacao" stackId="1" name="Implementação (10%)" stroke="#059669" fill="#059669" fillOpacity={0.7} />
+                      <Area type="monotone" dataKey="suporte" stackId="1" name="Suporte (10%)" stroke="#d97706" fill="#d97706" fillOpacity={0.7} />
+                      <Area type="monotone" dataKey="bonus" stackId="1" name="Bônus performance (10%)" stroke="#7c3aed" fill="#7c3aed" fillOpacity={0.7} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </Panel>
+                <Panel title="Comissão atual por representante" subtitle="Bônus de performance: 50+ clientes ativos e churn abaixo de 8%">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground">
+                          <th className="pb-3 font-medium">Representante</th>
+                          <th className="pb-3 font-medium">Base</th>
+                          <th className="pb-3 font-medium">Implementação</th>
+                          <th className="pb-3 font-medium">Suporte</th>
+                          <th className="pb-3 font-medium">Bônus</th>
+                          <th className="pb-3 font-medium">Total</th>
+                          <th className="pb-3 font-medium">A receber</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {representantes.map((r) => {
+                          const c = comissaoDoRepresentante(r);
+                          const aReceber = r.clientesAtivos * TICKET_MEDIO * (c.total / 100);
+                          return (
+                            <tr key={r.nome} className="text-foreground">
+                              <td className="py-3 font-medium">{r.nome}</td>
+                              <td className="py-3 text-muted-foreground">{c.base}%</td>
+                              <td className="py-3 text-muted-foreground">{c.implementacao}%</td>
+                              <td className="py-3 text-muted-foreground">{c.suporte}%</td>
+                              <td className="py-3">
+                                {c.bonusPerformance > 0 ? (
+                                  <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                                    +{c.bonusPerformance}%
+                                  </span>
+                                ) : (
+                                  <span className="text-muted-foreground">—</span>
+                                )}
+                              </td>
+                              <td className="py-3 font-semibold">{c.total}%</td>
+                              <td className="py-3">
+                                {aReceber.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </Panel>
+              </TabsContent>
+
+              {/* PLANOS VENDIDOS */}
+              <TabsContent value="planos" className="space-y-6">
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <Panel title="Vendas por plano" subtitle="Mesas · Delivery · Premium">
+                    <ResponsiveContainer width="100%" height={260}>
+                      <BarChart data={planosVendidos} margin={{ left: -10, right: 8, top: 8 }}>
+                        <CartesianGrid stroke="#e5e7eb" vertical={false} />
+                        <XAxis dataKey="plano" stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} />
+                        <YAxis stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} />
+                        <Tooltip content={<PrettyTooltip />} />
+                        <Bar dataKey="vendas" radius={[8, 8, 0, 0]}>
+                          {planosVendidos.map((_, i) => (
                             <Cell key={i} fill={chartColors[i % chartColors.length]} />
                           ))}
                         </Bar>
                       </BarChart>
                     </ResponsiveContainer>
                   </Panel>
-
-                  <Panel title="Tempo médio de onboarding" subtitle="Dias até parceiro ativado">
-                    <ResponsiveContainer width="100%" height={260}>
-                      <LineChart data={onboardingData} margin={{ left: -10, right: 8, top: 8 }}>
-                        <CartesianGrid stroke="#f3dfe8" vertical={false} />
-                        <XAxis dataKey="semana" stroke="#a97a92" fontSize={12} tickLine={false} axisLine={false} />
-                        <YAxis stroke="#a97a92" fontSize={12} tickLine={false} axisLine={false} />
-                        <Tooltip content={<PrettyTooltip />} />
-                        <Line type="monotone" dataKey="dias" stroke="#e0759a" strokeWidth={3} dot={{ r: 4, fill: "#f4a8c4", stroke: "#e0759a", strokeWidth: 2 }} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </Panel>
-                </div>
-
-                <PartnersTable />
-              </TabsContent>
-
-              <TabsContent value="ativacao">
-                <KpiGrid kpis={activationKpis} />
-                <div className="mt-6">
-                  <Panel title="Progresso de capacitação por parceiro" subtitle="% da trilha concluída">
-                    <div className="space-y-4">
-                      {partners.map((p) => (
-                        <div key={p.nome} className="space-y-1.5">
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="font-medium text-foreground">{p.nome}</span>
-                            <span className="text-muted-foreground">{p.treino}%</span>
+                  <Panel title="Módulos adicionais contratados" subtitle="Total de vendas por módulo">
+                    <div className="space-y-3">
+                      {modulosAdicionais.map((m) => {
+                        const max = modulosAdicionais[0].vendas;
+                        return (
+                          <div key={m.modulo} className="space-y-1.5">
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="flex items-center gap-2 font-medium text-foreground">
+                                <Package className="h-3.5 w-3.5 text-muted-foreground" />
+                                {m.modulo}
+                              </span>
+                              <span className="text-muted-foreground">{m.vendas}</span>
+                            </div>
+                            <Progress value={(m.vendas / max) * 100} className="h-2" />
                           </div>
-                          <Progress value={p.treino} className="h-2" />
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </Panel>
                 </div>
               </TabsContent>
 
-              <TabsContent value="comercial">
-                <KpiGrid kpis={commercialKpis} />
-                <div className="mt-6 grid gap-4 lg:grid-cols-2">
-                  <Panel title="Funil comercial" subtitle="Leads → fechados">
+              {/* MAPA DE OPORTUNIDADES */}
+              <TabsContent value="mapa" className="space-y-6">
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <Panel title="Concentração por região" subtitle="Leads e clientes ativos">
                     <ResponsiveContainer width="100%" height={260}>
-                      <BarChart data={funnelData} margin={{ left: -10, right: 8, top: 8 }}>
-                        <CartesianGrid stroke="#f3dfe8" vertical={false} />
-                        <XAxis dataKey="etapa" stroke="#a97a92" fontSize={12} tickLine={false} axisLine={false} />
-                        <YAxis stroke="#a97a92" fontSize={12} tickLine={false} axisLine={false} />
+                      <BarChart data={porRegiao} layout="vertical" margin={{ left: 10, right: 20 }}>
+                        <CartesianGrid stroke="#e5e7eb" horizontal={false} />
+                        <XAxis type="number" stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} />
+                        <YAxis type="category" dataKey="regiao" stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} width={100} />
                         <Tooltip content={<PrettyTooltip />} />
-                        <Bar dataKey="valor" radius={[10, 10, 0, 0]}>
-                          {funnelData.map((_, i) => (
+                        <Bar dataKey="leads" name="Leads" radius={[0, 8, 8, 0]}>
+                          {porRegiao.map((_, i) => (
                             <Cell key={i} fill={chartColors[i % chartColors.length]} />
                           ))}
                         </Bar>
                       </BarChart>
                     </ResponsiveContainer>
                   </Panel>
-                  <Panel title="Ciclo de vendas" subtitle="Dias por etapa (média)">
-                    <ul className="space-y-3 text-sm">
-                      {[
-                        { etapa: "Lead → Qualificação", dias: 4 },
-                        { etapa: "Qualificação → Reunião", dias: 6 },
-                        { etapa: "Reunião → Proposta", dias: 9 },
-                        { etapa: "Proposta → Fechamento", dias: 12 },
-                      ].map((s) => (
-                        <li key={s.etapa} className="flex items-center justify-between rounded-lg bg-secondary/60 px-3 py-2">
-                          <span className="text-foreground">{s.etapa}</span>
-                          <span className="rounded-full bg-primary/70 px-2.5 py-0.5 text-xs font-medium text-primary-foreground">
-                            {s.dias}d
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
+                  <Panel title="Ranking por cidade" subtitle="Leads e clientes por praça">
+                    <div className="space-y-2.5">
+                      {porCidade.map((c) => {
+                        const max = porCidade[0].leads;
+                        return (
+                          <div key={c.cidade} className="flex items-center gap-3">
+                            <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="truncate font-medium text-foreground">{c.cidade}</span>
+                                <span className="shrink-0 text-xs text-muted-foreground">
+                                  {c.leads} leads · {c.clientes} clientes
+                                </span>
+                              </div>
+                              <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-secondary">
+                                <div
+                                  className="h-full rounded-full bg-primary"
+                                  style={{ width: `${(c.leads / max) * 100}%` }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </Panel>
                 </div>
               </TabsContent>
 
-              <TabsContent value="financeiro">
-                <KpiGrid kpis={financeKpis} />
-                <div className="mt-6">
-                  <Panel title="Receita recorrente vs. comissões" subtitle="R$ mil · últimos 7 meses">
-                    <ResponsiveContainer width="100%" height={280}>
-                      <AreaChart data={revenueData} margin={{ left: -10, right: 8, top: 8 }}>
-                        <defs>
-                          <linearGradient id="mrr2" x1="0" x2="0" y1="0" y2="1">
-                            <stop offset="0%" stopColor="#f4a8c4" stopOpacity={0.9} />
-                            <stop offset="100%" stopColor="#f4a8c4" stopOpacity={0.05} />
-                          </linearGradient>
-                          <linearGradient id="com2" x1="0" x2="0" y1="0" y2="1">
-                            <stop offset="0%" stopColor="#e8b4c8" stopOpacity={0.8} />
-                            <stop offset="100%" stopColor="#e8b4c8" stopOpacity={0.05} />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid stroke="#f3dfe8" vertical={false} />
-                        <XAxis dataKey="mes" stroke="#a97a92" fontSize={12} tickLine={false} axisLine={false} />
-                        <YAxis stroke="#a97a92" fontSize={12} tickLine={false} axisLine={false} />
-                        <Tooltip content={<PrettyTooltip />} />
-                        <Area type="monotone" dataKey="MRR" stroke="#e0759a" strokeWidth={2} fill="url(#mrr2)" />
-                        <Area type="monotone" dataKey="Comissoes" stroke="#c98aa8" strokeWidth={2} fill="url(#com2)" />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </Panel>
-                </div>
+              {/* PROJEÇÕES */}
+              <TabsContent value="projecoes" className="space-y-6">
+                <Panel
+                  title="Projeção de ganhos"
+                  subtitle="Baseada no ritmo atual: vendas/mês × ticket médio × tempo de retenção (~14 meses)"
+                >
+                  <ResponsiveContainer width="100%" height={280}>
+                    <AreaChart data={projecao} margin={{ left: -10, right: 8, top: 8 }}>
+                      <defs>
+                        <linearGradient id="proj" x1="0" x2="0" y1="0" y2="1">
+                          <stop offset="0%" stopColor="#059669" stopOpacity={0.8} />
+                          <stop offset="100%" stopColor="#059669" stopOpacity={0.05} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid stroke="#e5e7eb" vertical={false} />
+                      <XAxis dataKey="mes" stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} />
+                      <YAxis stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} unit="k" />
+                      <Tooltip content={<PrettyTooltip unit=" mil" />} />
+                      <Area type="monotone" dataKey="ganhoProjetado" name="Ganho projetado (R$ mil)" stroke="#059669" strokeWidth={2} fill="url(#proj)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </Panel>
+                <Panel title="Top 3 representantes — ritmo atual" subtitle="Vendas fechadas por mês">
+                  <ul className="space-y-3 text-sm">
+                    {[...representantes]
+                      .sort((a, b) => b.vendasPorMes - a.vendasPorMes)
+                      .slice(0, 3)
+                      .map((r) => (
+                        <li key={r.nome} className="flex items-center justify-between rounded-lg bg-secondary/60 px-3 py-2">
+                          <span className="text-foreground">{r.nome}</span>
+                          <span className="rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+                            {r.vendasPorMes} vendas/mês
+                          </span>
+                        </li>
+                      ))}
+                  </ul>
+                </Panel>
               </TabsContent>
             </Tabs>
           </div>
@@ -370,33 +558,42 @@ export function Dashboard() {
   );
 }
 
-function HeroCard({ title, value, delta, trend, caption }: { title: string; value: string; delta: string; trend: Trend; caption: string }) {
+function HeroCard({
+  icon: Icon,
+  title,
+  value,
+  caption,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  value: string;
+  caption: string;
+}) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-soft)]" style={{ backgroundImage: "var(--gradient-soft)" }}>
-      <div className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-primary/25 blur-2xl" />
-      <div className="relative">
-        <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{title}</div>
-        <div className="mt-2 flex items-baseline gap-2">
-          <div className="text-3xl font-semibold tracking-tight text-foreground">{value}</div>
-          <TrendPill delta={delta} trend={trend} />
+    <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-soft)]">
+      <div className="flex items-start justify-between">
+        <div className="grid h-9 w-9 place-items-center rounded-xl bg-secondary text-secondary-foreground">
+          <Icon className="h-4 w-4" />
         </div>
-        <div className="mt-1 text-xs text-muted-foreground">{caption}</div>
       </div>
+      <div className="mt-3 text-2xl font-semibold tracking-tight text-foreground">{value}</div>
+      <div className="text-xs font-medium text-foreground/80">{title}</div>
+      <div className="mt-0.5 text-[11px] text-muted-foreground">{caption}</div>
     </div>
   );
 }
 
-function TrendPill({ delta, trend }: { delta: string; trend: Trend }) {
-  const Icon = trend === "up" ? ArrowUpRight : ArrowDownRight;
-  return (
-    <span className={cn("inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-medium", trend === "up" ? "bg-primary/40 text-foreground" : "bg-destructive/15 text-destructive")}>
-      <Icon className="h-3 w-3" />
-      {delta}
-    </span>
-  );
-}
-
-function Panel({ title, subtitle, children, className }: { title: string; subtitle?: string; children: React.ReactNode; className?: string }) {
+function Panel({
+  title,
+  subtitle,
+  children,
+  className,
+}: {
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
     <div className={cn("rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-soft)]", className)}>
       <div className="mb-4">
@@ -408,59 +605,61 @@ function Panel({ title, subtitle, children, className }: { title: string; subtit
   );
 }
 
-function KpiGrid({ kpis }: { kpis: Kpi[] }) {
+function RepresentantesTable({ detalhado = false }: { detalhado?: boolean }) {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      {kpis.map((k) => (
-        <div key={k.label} className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-soft)]">
-          <div className="flex items-start justify-between">
-            <div className="grid h-9 w-9 place-items-center rounded-xl bg-secondary text-secondary-foreground">
-              <k.icon className="h-4 w-4" />
-            </div>
-            <TrendPill delta={k.delta} trend={k.trend} />
-          </div>
-          <div className="mt-3 text-2xl font-semibold tracking-tight text-foreground">{k.value}</div>
-          <div className="text-xs font-medium text-foreground/80">{k.label}</div>
-          <div className="mt-0.5 text-[11px] text-muted-foreground">{k.hint}</div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function PartnersTable() {
-  return (
-    <Panel title="Parceiros" subtitle="Saúde e desempenho">
+    <Panel title="Representantes" subtitle="Leads por status, clientes ativos e churn">
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground">
-              <th className="pb-3 font-medium">Parceiro</th>
-              <th className="pb-3 font-medium">Status</th>
-              <th className="pb-3 font-medium">Treino</th>
-              <th className="pb-3 font-medium">Leads</th>
-              <th className="pb-3 font-medium">MRR</th>
+              <th className="pb-3 font-medium">Representante</th>
+              {detalhado && (
+                <>
+                  <th className="pb-3 font-medium">Novo</th>
+                  <th className="pb-3 font-medium">Contatado</th>
+                  <th className="pb-3 font-medium">Visitado</th>
+                  <th className="pb-3 font-medium">Cancelado</th>
+                </>
+              )}
+              <th className="pb-3 font-medium">Fechado</th>
+              <th className="pb-3 font-medium">Clientes ativos</th>
               <th className="pb-3 font-medium">Churn</th>
+              <th className="pb-3 font-medium">Comissão</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {partners.map((p) => (
-              <tr key={p.nome} className="text-foreground">
-                <td className="py-3 font-medium">{p.nome}</td>
-                <td className="py-3">
-                  <StatusBadge status={p.status} />
-                </td>
-                <td className="py-3">
-                  <div className="flex items-center gap-2">
-                    <Progress value={p.treino} className="h-1.5 w-24" />
-                    <span className="text-xs text-muted-foreground">{p.treino}%</span>
-                  </div>
-                </td>
-                <td className="py-3">{p.leads}</td>
-                <td className="py-3">{p.mrr}</td>
-                <td className={cn("py-3", p.churn > 5 ? "text-destructive" : "text-foreground")}>{p.churn.toFixed(1)}%</td>
-              </tr>
-            ))}
+            {representantes.map((r) => {
+              const c = comissaoDoRepresentante(r);
+              return (
+                <tr key={r.nome} className="text-foreground">
+                  <td className="py-3">
+                    <div className="font-medium">{r.nome}</div>
+                    <div className="text-xs text-muted-foreground">{r.cidade}</div>
+                  </td>
+                  {detalhado && (
+                    <>
+                      <td className="py-3 text-muted-foreground">{r.leads.novo}</td>
+                      <td className="py-3 text-muted-foreground">{r.leads.contatado}</td>
+                      <td className="py-3 text-muted-foreground">{r.leads.visitado}</td>
+                      <td className="py-3 text-muted-foreground">{r.leads.cancelado}</td>
+                    </>
+                  )}
+                  <td className="py-3 font-medium">{r.leads.fechado}</td>
+                  <td className="py-3">{r.clientesAtivos}</td>
+                  <td className="py-3">
+                    <span
+                      className={cn(
+                        "rounded-full px-2 py-0.5 text-xs font-medium",
+                        r.churn >= 8 ? "bg-red-500/15 text-red-700" : "bg-emerald-500/15 text-emerald-700",
+                      )}
+                    >
+                      {r.churn.toFixed(1)}%
+                    </span>
+                  </td>
+                  <td className="py-3 font-semibold">{c.total}%</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -468,16 +667,7 @@ function PartnersTable() {
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, string> = {
-    Ativo: "bg-primary/40 text-foreground",
-    Onboarding: "bg-accent/60 text-accent-foreground",
-    "Em risco": "bg-destructive/15 text-destructive",
-  };
-  return <span className={cn("inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium", map[status] ?? "bg-secondary")}>{status}</span>;
-}
-
-function PrettyTooltip({ active, payload, label }: any) {
+function PrettyTooltip({ active, payload, label, unit }: any) {
   if (!active || !payload?.length) return null;
   return (
     <div className="rounded-xl border border-border bg-card px-3 py-2 shadow-[var(--shadow-soft)]">
@@ -486,8 +676,11 @@ function PrettyTooltip({ active, payload, label }: any) {
         {payload.map((p: any) => (
           <div key={p.dataKey ?? p.name} className="flex items-center gap-2 text-xs text-muted-foreground">
             <span className="h-2 w-2 rounded-full" style={{ backgroundColor: p.color ?? p.payload?.fill }} />
-            <span className="text-foreground">{p.name}:</span>
-            <span className="font-medium text-foreground">{p.value}</span>
+            <span className="text-foreground">{p.name ?? p.payload?.etapa}:</span>
+            <span className="font-medium text-foreground">
+              {p.value}
+              {unit ?? ""}
+            </span>
           </div>
         ))}
       </div>
