@@ -1,768 +1,577 @@
 import { useMemo, useState } from "react";
 import {
-  BadgeCheck,
-  Building2,
-  DollarSign,
+  AlertTriangle,
+  ArrowDownRight,
+  ArrowUpRight,
+  BarChart3,
+  Bell,
+  Briefcase,
+  Calendar,
+  CheckCircle2,
+  Download,
   Flower2,
-  LayoutDashboard,
-  MapPin,
-  Package,
-  PiggyBank,
-  Settings,
-  TrendingUp,
+  LineChart as LineChartIcon,
+  PhoneCall,
+  Sparkles,
+  Star,
+  Target,
+  UserPlus,
   Users,
+  Workflow,
 } from "lucide-react";
 import {
   Area,
   AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
   Cell,
-  Funnel,
-  FunnelChart,
-  LabelList,
-  Legend,
   Pie,
   PieChart,
   ResponsiveContainer,
-  Tooltip,
+  Tooltip as RTooltip,
   XAxis,
   YAxis,
 } from "recharts";
 
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useLocalStorageState } from "@/hooks/use-local-storage-state";
 import { type Column, ObjectEditorDialog, RowsEditorDialog } from "@/components/bibly/editors";
 
 // ---------------------------------------------------------------------------
-// Dados de exemplo — Programa de Representantes CardápioWeb
-// Tudo aqui é editável pela engrenagem em cada painel (persiste no navegador).
+// Dados de exemplo — dashboard pessoal do PSM. Tudo editável pela engrenagem
+// em cada painel; persiste no navegador (localStorage).
 // ---------------------------------------------------------------------------
 
-type StatusLead = "novo" | "contatado" | "visitado" | "fechado" | "cancelado";
-
-type Representante = {
-  nome: string;
-  cidade: string;
-  regiao: string;
-  leads: Record<StatusLead, number>;
-  clientesAtivos: number;
-  churn: number;
-  vendasPorMes: number;
+type Kpis = {
+  totalClientes: number;
+  deltaClientes: string;
+  pendenciasHoje: number;
+  deltaPendencias: string;
+  clientesRisco: number;
+  deltaRisco: string;
+  receitaCarteira: number;
+  deltaReceita: string;
+  metaMesPercent: number;
+  deltaMeta: string;
+  healthScore: number;
+  deltaHealth: string;
 };
 
-type RepresentanteRow = {
-  nome: string;
-  cidade: string;
-  regiao: string;
-  leadsNovo: number;
-  leadsContatado: number;
-  leadsVisitado: number;
-  leadsFechado: number;
-  leadsCancelado: number;
-  clientesAtivos: number;
-  churn: number;
-  vendasPorMes: number;
+const KPIS_PADRAO: Kpis = {
+  totalClientes: 84,
+  deltaClientes: "+4 este mês",
+  pendenciasHoje: 16,
+  deltaPendencias: "+3 vs. ontem",
+  clientesRisco: 7,
+  deltaRisco: "-2 esta semana",
+  receitaCarteira: 63510,
+  deltaReceita: "+9% este mês",
+  metaMesPercent: 73,
+  deltaMeta: "+12pp",
+  healthScore: 86,
+  deltaHealth: "+3 pts",
 };
 
-function toRow(r: Representante): RepresentanteRow {
-  return {
-    nome: r.nome,
-    cidade: r.cidade,
-    regiao: r.regiao,
-    leadsNovo: r.leads.novo,
-    leadsContatado: r.leads.contatado,
-    leadsVisitado: r.leads.visitado,
-    leadsFechado: r.leads.fechado,
-    leadsCancelado: r.leads.cancelado,
-    clientesAtivos: r.clientesAtivos,
-    churn: r.churn,
-    vendasPorMes: r.vendasPorMes,
-  };
-}
-
-function fromRow(row: RepresentanteRow): Representante {
-  return {
-    nome: row.nome,
-    cidade: row.cidade,
-    regiao: row.regiao,
-    leads: {
-      novo: Number(row.leadsNovo) || 0,
-      contatado: Number(row.leadsContatado) || 0,
-      visitado: Number(row.leadsVisitado) || 0,
-      fechado: Number(row.leadsFechado) || 0,
-      cancelado: Number(row.leadsCancelado) || 0,
-    },
-    clientesAtivos: Number(row.clientesAtivos) || 0,
-    churn: Number(row.churn) || 0,
-    vendasPorMes: Number(row.vendasPorMes) || 0,
-  };
-}
-
-const REPRESENTANTE_COLUMNS: Column<RepresentanteRow>[] = [
-  { key: "nome", label: "Nome" },
-  { key: "cidade", label: "Cidade" },
-  { key: "regiao", label: "Região" },
-  { key: "leadsNovo", label: "Leads novo", type: "number" },
-  { key: "leadsContatado", label: "Leads contatado", type: "number" },
-  { key: "leadsVisitado", label: "Leads visitado", type: "number" },
-  { key: "leadsFechado", label: "Leads fechado", type: "number" },
-  { key: "leadsCancelado", label: "Leads cancelado", type: "number" },
-  { key: "clientesAtivos", label: "Clientes ativos", type: "number" },
-  { key: "churn", label: "Churn (%)", type: "number" },
-  { key: "vendasPorMes", label: "Vendas fechadas / mês", type: "number" },
+const KPIS_FIELDS: Column<Kpis>[] = [
+  { key: "totalClientes", label: "Minha carteira — clientes", type: "number" },
+  { key: "deltaClientes", label: "Minha carteira — variação" },
+  { key: "pendenciasHoje", label: "Pendências hoje", type: "number" },
+  { key: "deltaPendencias", label: "Pendências — variação" },
+  { key: "clientesRisco", label: "Clientes em risco", type: "number" },
+  { key: "deltaRisco", label: "Risco — variação" },
+  { key: "receitaCarteira", label: "Receita da carteira (R$)", type: "number" },
+  { key: "deltaReceita", label: "Receita — variação" },
+  { key: "metaMesPercent", label: "Meta do mês (%)", type: "number" },
+  { key: "deltaMeta", label: "Meta — variação" },
+  { key: "healthScore", label: "Health Score", type: "number" },
+  { key: "deltaHealth", label: "Health Score — variação" },
 ];
 
-const REPRESENTANTES_PADRAO: Representante[] = [
-  { nome: "Marina Alves", cidade: "São Paulo, SP", regiao: "Sudeste", leads: { novo: 18, contatado: 14, visitado: 9, fechado: 12, cancelado: 2 }, clientesAtivos: 58, churn: 3.4, vendasPorMes: 6 },
-  { nome: "Diego Ferreira", cidade: "Belo Horizonte, MG", regiao: "Sudeste", leads: { novo: 15, contatado: 10, visitado: 7, fechado: 9, cancelado: 3 }, clientesAtivos: 52, churn: 5.1, vendasPorMes: 5 },
-  { nome: "Camila Rocha", cidade: "Porto Alegre, RS", regiao: "Sul", leads: { novo: 11, contatado: 9, visitado: 6, fechado: 8, cancelado: 1 }, clientesAtivos: 41, churn: 2.8, vendasPorMes: 4 },
-  { nome: "Thiago Nunes", cidade: "Curitiba, PR", regiao: "Sul", leads: { novo: 9, contatado: 6, visitado: 4, fechado: 5, cancelado: 2 }, clientesAtivos: 27, churn: 7.2, vendasPorMes: 3 },
-  { nome: "Larissa Costa", cidade: "Recife, PE", regiao: "Nordeste", leads: { novo: 14, contatado: 11, visitado: 8, fechado: 10, cancelado: 2 }, clientesAtivos: 46, churn: 4.6, vendasPorMes: 5 },
-  { nome: "Bruno Salgado", cidade: "Salvador, BA", regiao: "Nordeste", leads: { novo: 8, contatado: 5, visitado: 3, fechado: 4, cancelado: 3 }, clientesAtivos: 19, churn: 9.4, vendasPorMes: 2 },
-  { nome: "Fernanda Lima", cidade: "Goiânia, GO", regiao: "Centro-Oeste", leads: { novo: 7, contatado: 5, visitado: 4, fechado: 6, cancelado: 1 }, clientesAtivos: 33, churn: 3.9, vendasPorMes: 3 },
-  { nome: "Rafael Teixeira", cidade: "Manaus, AM", regiao: "Norte", leads: { novo: 5, contatado: 3, visitado: 2, fechado: 3, cancelado: 1 }, clientesAtivos: 14, churn: 6.5, vendasPorMes: 2 },
+type SaudeCarteira = { saudaveis: number; atencao: number; criticos: number };
+const SAUDE_PADRAO: SaudeCarteira = { saudaveis: 58, atencao: 19, criticos: 7 };
+const SAUDE_FIELDS: Column<SaudeCarteira>[] = [
+  { key: "saudaveis", label: "Saudáveis", type: "number" },
+  { key: "atencao", label: "Atenção", type: "number" },
+  { key: "criticos", label: "Críticos", type: "number" },
 ];
 
-type Parametros = {
-  ticketMedio: number;
-  retencaoMeses: number;
-  bonusClientesMin: number;
-  bonusChurnMax: number;
-};
-
-const PARAMETROS_PADRAO: Parametros = {
-  ticketMedio: 219,
-  retencaoMeses: 14,
-  bonusClientesMin: 50,
-  bonusChurnMax: 8,
-};
-
-const PARAMETROS_FIELDS: Column<Parametros>[] = [
-  { key: "ticketMedio", label: "Ticket médio (R$/mês por cliente)", type: "number" },
-  { key: "retencaoMeses", label: "Tempo médio de retenção (meses)", type: "number" },
-  { key: "bonusClientesMin", label: "Bônus performance — mínimo de clientes ativos", type: "number" },
-  { key: "bonusChurnMax", label: "Bônus performance — churn máximo (%)", type: "number" },
-];
-
-type PlanoVendido = { plano: string; vendas: number };
-const PLANOS_COLUMNS: Column<PlanoVendido>[] = [
-  { key: "plano", label: "Plano" },
-  { key: "vendas", label: "Vendas", type: "number" },
-];
-const PLANOS_PADRAO: PlanoVendido[] = [
-  { plano: "Delivery", vendas: 34 },
-  { plano: "Mesas", vendas: 21 },
-  { plano: "Premium", vendas: 16 },
-];
-
-type ModuloAdicional = { modulo: string; vendas: number };
-const MODULOS_COLUMNS: Column<ModuloAdicional>[] = [
-  { key: "modulo", label: "Módulo" },
-  { key: "vendas", label: "Vendas", type: "number" },
-];
-const MODULOS_PADRAO: ModuloAdicional[] = [
-  { modulo: "Cardápio Digital (QR Code)", vendas: 41 },
-  { modulo: "Integração iFood", vendas: 29 },
-  { modulo: "Autoatendimento / Totem", vendas: 18 },
-  { modulo: "Gestão de Estoque", vendas: 15 },
-  { modulo: "Split de Comandas", vendas: 9 },
-];
-
-type ComissaoMes = { mes: string; base: number; implementacao: number; suporte: number; bonus: number };
-const COMISSAO_COLUMNS: Column<ComissaoMes>[] = [
+type EvolucaoPonto = { mes: string; valor: number };
+const EVOLUCAO_COLUMNS: Column<EvolucaoPonto>[] = [
   { key: "mes", label: "Mês" },
-  { key: "base", label: "Base (R$)", type: "number" },
-  { key: "implementacao", label: "Implementação (R$)", type: "number" },
-  { key: "suporte", label: "Suporte (R$)", type: "number" },
-  { key: "bonus", label: "Bônus (R$)", type: "number" },
+  { key: "valor", label: "Clientes ativos", type: "number" },
 ];
-const COMISSAO_MENSAL_PADRAO: ComissaoMes[] = [
-  { mes: "Fev", base: 3200, implementacao: 2900, suporte: 2600, bonus: 1100 },
-  { mes: "Mar", base: 3400, implementacao: 3100, suporte: 2800, bonus: 1300 },
-  { mes: "Abr", base: 3700, implementacao: 3300, suporte: 3000, bonus: 1500 },
-  { mes: "Mai", base: 3900, implementacao: 3500, suporte: 3200, bonus: 1700 },
-  { mes: "Jun", base: 4200, implementacao: 3800, suporte: 3400, bonus: 2000 },
-  { mes: "Jul", base: 4500, implementacao: 4100, suporte: 3700, bonus: 2300 },
+const EVOLUCAO_PADRAO: EvolucaoPonto[] = [
+  { mes: "Fev", valor: 61 },
+  { mes: "Mar", valor: 65 },
+  { mes: "Abr", valor: 69 },
+  { mes: "Mai", valor: 74 },
+  { mes: "Jun", valor: 79 },
+  { mes: "Jul", valor: 84 },
 ];
 
-const chartColors = ["#2563eb", "#059669", "#d97706", "#dc2626", "#7c3aed"];
+type Acao = { horario: string; descricao: string };
+const ACOES_COLUMNS: Column<Acao>[] = [
+  { key: "horario", label: "Horário" },
+  { key: "descricao", label: "Descrição" },
+];
+const ACOES_PADRAO: Acao[] = [
+  { horario: "09:00", descricao: "Ligar para João" },
+  { horario: "11:00", descricao: "Follow-up Restaurante XPTO" },
+  { horario: "14:00", descricao: "Enviar proposta" },
+  { horario: "16:30", descricao: "Revisar contrato Sabor & Cia" },
+];
 
-function comissaoDoRepresentante(r: Representante, p: Parametros) {
-  const base = 10;
-  const implementacao = 10;
-  const suporte = 10;
-  const bonusPerformance = r.clientesAtivos >= p.bonusClientesMin && r.churn < p.bonusChurnMax ? 10 : 0;
-  const total = Math.min(base + implementacao + suporte + bonusPerformance, 40);
-  return { base, implementacao, suporte, bonusPerformance, total };
+type Objetivo = { label: string; atual: number; meta: number };
+const OBJETIVOS_COLUMNS: Column<Objetivo>[] = [
+  { key: "label", label: "Objetivo" },
+  { key: "atual", label: "Atual", type: "number" },
+  { key: "meta", label: "Meta", type: "number" },
+];
+const OBJETIVOS_PADRAO: Objetivo[] = [
+  { label: "Follow-ups", atual: 11, meta: 16 },
+  { label: "Clientes recuperados", atual: 2, meta: 4 },
+  { label: "Upsell", atual: 3, meta: 5 },
+  { label: "Visitas", atual: 4, meta: 6 },
+];
+
+type Movimentacao = { tipo: string; cliente: string; tempo: string };
+const MOVIMENTACOES_COLUMNS: Column<Movimentacao>[] = [
+  { key: "tipo", label: "Tipo (entrou, recuperado, followup, risco)" },
+  { key: "cliente", label: "Cliente" },
+  { key: "tempo", label: "Quando" },
+];
+const MOVIMENTACOES_PADRAO: Movimentacao[] = [
+  { tipo: "entrou", cliente: "Sabor & Cia", tempo: "há 2h" },
+  { tipo: "recuperado", cliente: "Cantina Bella", tempo: "há 5h" },
+  { tipo: "followup", cliente: "Restaurante XPTO", tempo: "ontem" },
+  { tipo: "risco", cliente: "Padaria Trigo Dourado", tempo: "há 2 dias" },
+];
+
+type Insight = { texto: string };
+const INSIGHTS_COLUMNS: Column<Insight>[] = [{ key: "texto", label: "Insight" }];
+const INSIGHTS_PADRAO: Insight[] = [
+  { texto: "Sua conversão aumentou 12%." },
+  { texto: "Você possui 3 clientes sem contato há mais de 10 dias." },
+  { texto: "Hoje é um bom dia para realizar follow-ups." },
+];
+
+const NAV_ITEMS = [
+  { id: "dashboard", label: "Dashboard", icon: BarChart3 },
+  { id: "carteira", label: "Minha Carteira", icon: Briefcase },
+  { id: "followups", label: "Follow-ups", icon: PhoneCall },
+  { id: "pipeline", label: "Pipeline", icon: Workflow },
+  { id: "agenda", label: "Agenda", icon: Calendar },
+  { id: "metas", label: "Metas", icon: Target },
+  { id: "relatorios", label: "Relatórios", icon: LineChartIcon },
+] as const;
+
+const MOVIMENTACAO_META: Record<string, { label: string; icon: React.ComponentType<{ className?: string }>; className: string }> = {
+  entrou: { label: "Cliente entrou", icon: UserPlus, className: "bg-emerald-100 text-emerald-600" },
+  recuperado: { label: "Cliente recuperado", icon: CheckCircle2, className: "bg-primary/15 text-primary" },
+  followup: { label: "Follow-up realizado", icon: PhoneCall, className: "bg-accent text-accent-foreground" },
+  risco: { label: "Cliente em risco", icon: AlertTriangle, className: "bg-red-100 text-red-600" },
+};
+
+function trend(delta: string): "up" | "down" {
+  return delta.trim().startsWith("-") ? "down" : "up";
+}
+
+function downloadCsv(filename: string, rows: string[][]) {
+  const csv = rows.map((r) => r.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 // ---------------------------------------------------------------------------
 
 export function Dashboard() {
-  const [tab, setTab] = useState("visao");
+  const [secao, setSecao] = useState<(typeof NAV_ITEMS)[number]["id"]>("dashboard");
+  const [periodo, setPeriodo] = useState("mes");
 
-  const [representantes, setRepresentantes] = useLocalStorageState<Representante[]>(
-    "bibly-representantes",
-    REPRESENTANTES_PADRAO,
+  const [kpis, setKpis] = useLocalStorageState<Kpis>("bibly-kpis", KPIS_PADRAO);
+  const [saude, setSaude] = useLocalStorageState<SaudeCarteira>("bibly-saude", SAUDE_PADRAO);
+  const [evolucao, setEvolucao] = useLocalStorageState<EvolucaoPonto[]>("bibly-evolucao", EVOLUCAO_PADRAO);
+  const [acoes, setAcoes] = useLocalStorageState<Acao[]>("bibly-acoes", ACOES_PADRAO);
+  const [objetivos, setObjetivos] = useLocalStorageState<Objetivo[]>("bibly-objetivos", OBJETIVOS_PADRAO);
+  const [movimentacoes, setMovimentacoes] = useLocalStorageState<Movimentacao[]>(
+    "bibly-movimentacoes",
+    MOVIMENTACOES_PADRAO,
   );
-  const [parametros, setParametros] = useLocalStorageState<Parametros>("bibly-parametros", PARAMETROS_PADRAO);
-  const [planosVendidos, setPlanosVendidos] = useLocalStorageState<PlanoVendido[]>("bibly-planos", PLANOS_PADRAO);
-  const [modulosAdicionais, setModulosAdicionais] = useLocalStorageState<ModuloAdicional[]>(
-    "bibly-modulos",
-    MODULOS_PADRAO,
-  );
-  const [comissaoMensal, setComissaoMensal] = useLocalStorageState<ComissaoMes[]>(
-    "bibly-comissao-mensal",
-    COMISSAO_MENSAL_PADRAO,
-  );
+  const [insights, setInsights] = useLocalStorageState<Insight[]>("bibly-insights", INSIGHTS_PADRAO);
 
-  const representantesEditor = (
-    <RowsEditorDialog
-      title="representantes"
-      description="Ajuste leads, clientes ativos, churn e ritmo de vendas de cada representante."
-      columns={REPRESENTANTE_COLUMNS}
-      rows={representantes.map(toRow)}
-      emptyRow={() =>
-        toRow({
-          nome: "Novo representante",
-          cidade: "",
-          regiao: "Sudeste",
-          leads: { novo: 0, contatado: 0, visitado: 0, fechado: 0, cancelado: 0 },
-          clientesAtivos: 0,
-          churn: 0,
-          vendasPorMes: 0,
-        })
-      }
-      onSave={(rows) => setRepresentantes(rows.map(fromRow))}
-    />
+  const saudeData = useMemo(
+    () => [
+      { name: "Saudáveis", value: saude.saudaveis, color: "#34d399" },
+      { name: "Atenção", value: saude.atencao, color: "#fbbf24" },
+      { name: "Críticos", value: saude.criticos, color: "#f87171" },
+    ],
+    [saude],
   );
 
-  const parametrosEditor = (
-    <ObjectEditorDialog
-      title="parâmetros gerais"
-      description="Ticket médio, retenção e regra do bônus de performance."
-      fields={PARAMETROS_FIELDS}
-      value={parametros}
-      onSave={setParametros}
-    />
-  );
-
-  const planosEditor = (
-    <RowsEditorDialog
-      title="planos vendidos"
-      columns={PLANOS_COLUMNS}
-      rows={planosVendidos}
-      emptyRow={() => ({ plano: "Novo plano", vendas: 0 })}
-      onSave={setPlanosVendidos}
-    />
-  );
-
-  const modulosEditor = (
-    <RowsEditorDialog
-      title="módulos adicionais"
-      columns={MODULOS_COLUMNS}
-      rows={modulosAdicionais}
-      emptyRow={() => ({ modulo: "Novo módulo", vendas: 0 })}
-      onSave={setModulosAdicionais}
-    />
-  );
-
-  const comissaoEditor = (
-    <RowsEditorDialog
-      title="comissão mensal"
-      columns={COMISSAO_COLUMNS}
-      rows={comissaoMensal}
-      emptyRow={() => ({ mes: "Novo mês", base: 0, implementacao: 0, suporte: 0, bonus: 0 })}
-      onSave={setComissaoMensal}
-    />
-  );
-
-  const totalRepresentantes = representantes.length;
-  const totalLeads = useMemo(
-    () => representantes.reduce((acc, r) => acc + Object.values(r.leads).reduce((a, b) => a + b, 0), 0),
-    [representantes],
-  );
-  const totalClientesFechados = useMemo(
-    () => representantes.reduce((acc, r) => acc + r.leads.fechado, 0),
-    [representantes],
-  );
-  const faturamentoMensal = useMemo(
-    () => representantes.reduce((acc, r) => acc + r.clientesAtivos * parametros.ticketMedio, 0),
-    [representantes, parametros.ticketMedio],
-  );
-  const comissaoTotalMes = useMemo(
-    () =>
-      representantes.reduce((acc, r) => {
-        const { total } = comissaoDoRepresentante(r, parametros);
-        return acc + r.clientesAtivos * parametros.ticketMedio * (total / 100);
-      }, 0),
-    [representantes, parametros],
-  );
-
-  const funilData = useMemo(() => {
-    const soma = (status: StatusLead) => representantes.reduce((acc, r) => acc + r.leads[status], 0);
-    return [
-      { etapa: "Novo", valor: soma("novo") + soma("contatado") + soma("visitado") + soma("fechado") },
-      { etapa: "Contatado", valor: soma("contatado") + soma("visitado") + soma("fechado") },
-      { etapa: "Visitado", valor: soma("visitado") + soma("fechado") },
-      { etapa: "Cliente fechado", valor: soma("fechado") },
-    ];
-  }, [representantes]);
-  const totalCancelados = useMemo(
-    () => representantes.reduce((acc, r) => acc + r.leads.cancelado, 0),
-    [representantes],
-  );
-
-  const porRegiao = useMemo(() => {
-    const map = new Map<string, { regiao: string; leads: number; clientes: number }>();
-    for (const r of representantes) {
-      const leadsTotal = Object.values(r.leads).reduce((a, b) => a + b, 0);
-      const atual = map.get(r.regiao) ?? { regiao: r.regiao, leads: 0, clientes: 0 };
-      atual.leads += leadsTotal;
-      atual.clientes += r.clientesAtivos;
-      map.set(r.regiao, atual);
-    }
-    return Array.from(map.values()).sort((a, b) => b.leads - a.leads);
-  }, [representantes]);
-
-  const porCidade = useMemo(
-    () =>
-      [...representantes]
-        .map((r) => ({
-          cidade: r.cidade,
-          regiao: r.regiao,
-          leads: Object.values(r.leads).reduce((a, b) => a + b, 0),
-          clientes: r.clientesAtivos,
-        }))
-        .sort((a, b) => b.leads - a.leads),
-    [representantes],
-  );
-
-  const projecao = useMemo(() => {
-    let acumulado = 0;
-    return Array.from({ length: 6 }, (_, i) => {
-      const mesIndex = i + 1;
-      const novosClientesMes = representantes.reduce((acc, r) => acc + r.vendasPorMes, 0);
-      const receitaNovaMes = novosClientesMes * parametros.ticketMedio * mesIndex;
-      acumulado = faturamentoMensal * mesIndex + receitaNovaMes * (mesIndex / 2);
-      const ganhoEstimado = acumulado * 0.18; // comissão média ponderada ~18%
-      return {
-        mes: `M+${mesIndex}`,
-        ganhoProjetado: Math.round(ganhoEstimado / 1000),
-      };
-    });
-  }, [representantes, parametros.ticketMedio, faturamentoMensal]);
+  const handleExport = () => {
+    downloadCsv("bibly-resumo.csv", [
+      ["Indicador", "Valor", "Variação"],
+      ["Minha carteira (clientes)", String(kpis.totalClientes), kpis.deltaClientes],
+      ["Pendências hoje", String(kpis.pendenciasHoje), kpis.deltaPendencias],
+      ["Clientes em risco", String(kpis.clientesRisco), kpis.deltaRisco],
+      ["Receita da carteira", String(kpis.receitaCarteira), kpis.deltaReceita],
+      ["Meta do mês (%)", String(kpis.metaMesPercent), kpis.deltaMeta],
+      ["Health Score", String(kpis.healthScore), kpis.deltaHealth],
+    ]);
+  };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="flex">
-        <aside className="hidden md:flex w-60 flex-col gap-1 border-r border-sidebar-border bg-sidebar px-4 py-6 sticky top-0 h-screen">
-          <div className="flex items-center gap-2 px-2 pb-6">
-            <div className="grid h-9 w-9 place-items-center rounded-xl bg-primary/70 text-primary-foreground shadow-[var(--shadow-soft)]">
+    <TooltipProvider delayDuration={200}>
+      <div className="min-h-screen bg-background">
+        <div className="flex">
+          {/* Sidebar compacta — só ícones */}
+          <aside className="hidden md:flex w-[72px] flex-col items-center gap-1 border-r border-sidebar-border bg-sidebar py-6 sticky top-0 h-screen">
+            <div className="mb-6 grid h-10 w-10 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-[var(--shadow-soft)]">
               <Flower2 className="h-5 w-5" />
             </div>
-            <div className="text-lg font-semibold tracking-tight text-sidebar-foreground">Bibly</div>
-          </div>
-          {[
-            { icon: LayoutDashboard, label: "Visão geral", active: true },
-            { icon: Users, label: "Representantes" },
-            { icon: TrendingUp, label: "Funil de vendas" },
-            { icon: PiggyBank, label: "Comissões" },
-            { icon: Settings, label: "Configurações" },
-          ].map((item) => (
-            <button
-              key={item.label}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
-                item.active
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                  : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
-              )}
-            >
-              <item.icon className="h-4 w-4" />
-              {item.label}
-            </button>
-          ))}
-        </aside>
+            {NAV_ITEMS.map((item) => {
+              const active = secao === item.id;
+              return (
+                <Tooltip key={item.id}>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => setSecao(item.id)}
+                      aria-label={item.label}
+                      className={cn(
+                        "grid h-11 w-11 place-items-center rounded-2xl text-muted-foreground transition-colors",
+                        active
+                          ? "bg-secondary text-primary"
+                          : "hover:bg-muted hover:text-foreground",
+                      )}
+                    >
+                      <item.icon className="h-[18px] w-[18px]" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">{item.label}</TooltipContent>
+                </Tooltip>
+              );
+            })}
+          </aside>
 
-        <main className="flex-1 min-w-0">
-          <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-background/80 px-6 py-5 backdrop-blur">
-            <div>
-              <div className="text-xs uppercase tracking-widest text-muted-foreground">Dashboard</div>
-              <h1 className="text-2xl font-semibold tracking-tight text-foreground">Bibly</h1>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="bg-secondary text-secondary-foreground">
-                {totalRepresentantes} representantes ativos
-              </Badge>
-              <Badge className="bg-primary/80 text-primary-foreground hover:bg-primary/80">Q3 · 2026</Badge>
-            </div>
-          </header>
-
-          <div className="px-6 py-6 space-y-6">
-            <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
-              <HeroCard icon={Users} title="Representantes ativos" value={String(totalRepresentantes)} caption="No programa" edit={representantesEditor} />
-              <HeroCard icon={BadgeCheck} title="Leads cadastrados" value={String(totalLeads)} caption="Todas as etapas" edit={representantesEditor} />
-              <HeroCard icon={Building2} title="Clientes fechados" value={String(totalClientesFechados)} caption="Total acumulado" edit={representantesEditor} />
-              <HeroCard
-                icon={DollarSign}
-                title="Faturamento mensal"
-                value={faturamentoMensal.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })}
-                caption="Carteira ativa"
-                edit={parametrosEditor}
-              />
-              <HeroCard
-                icon={PiggyBank}
-                title="Comissão do mês"
-                value={comissaoTotalMes.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })}
-                caption="Total pago aos reps"
-                edit={parametrosEditor}
-              />
-            </section>
-
-            <Tabs value={tab} onValueChange={setTab} className="space-y-6">
-              <TabsList className="w-full flex-wrap justify-start gap-1 bg-secondary/70 h-auto">
-                <TabsTrigger value="visao">Visão geral</TabsTrigger>
-                <TabsTrigger value="representantes">Por representante</TabsTrigger>
-                <TabsTrigger value="funil">Funil de vendas</TabsTrigger>
-                <TabsTrigger value="comissoes">Comissões</TabsTrigger>
-                <TabsTrigger value="planos">Planos vendidos</TabsTrigger>
-                <TabsTrigger value="mapa">Mapa de oportunidades</TabsTrigger>
-                <TabsTrigger value="projecoes">Projeções</TabsTrigger>
-              </TabsList>
-
-              {/* VISÃO GERAL */}
-              <TabsContent value="visao" className="space-y-6">
-                <div className="grid gap-4 lg:grid-cols-3">
-                  <Panel title="Funil comercial" subtitle="Leads → clientes fechados" className="lg:col-span-2" actions={representantesEditor}>
-                    <ResponsiveContainer width="100%" height={240}>
-                      <BarChart data={funilData} margin={{ left: -10, right: 8, top: 8 }}>
-                        <CartesianGrid stroke="#e5e7eb" vertical={false} />
-                        <XAxis dataKey="etapa" stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} />
-                        <YAxis stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} />
-                        <Tooltip content={<PrettyTooltip />} />
-                        <Bar dataKey="valor" radius={[8, 8, 0, 0]}>
-                          {funilData.map((_, i) => (
-                            <Cell key={i} fill={chartColors[i % chartColors.length]} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </Panel>
-                  <Panel title="Planos vendidos" subtitle="Distribuição por tipo" actions={planosEditor}>
-                    <ResponsiveContainer width="100%" height={200}>
-                      <PieChart>
-                        <Pie data={planosVendidos} dataKey="vendas" nameKey="plano" innerRadius={50} outerRadius={80} paddingAngle={4}>
-                          {planosVendidos.map((_, i) => (
-                            <Cell key={i} fill={chartColors[i % chartColors.length]} stroke="none" />
-                          ))}
-                        </Pie>
-                        <Tooltip content={<PrettyTooltip />} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                    <ul className="mt-2 space-y-1.5 text-sm">
-                      {planosVendidos.map((p, i) => (
-                        <li key={p.plano} className="flex items-center justify-between">
-                          <span className="flex items-center gap-2 text-muted-foreground">
-                            <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: chartColors[i % chartColors.length] }} />
-                            {p.plano}
-                          </span>
-                          <span className="font-medium text-foreground">{p.vendas}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </Panel>
-                </div>
-                <RepresentantesTable representantes={representantes} parametros={parametros} actions={representantesEditor} />
-              </TabsContent>
-
-              {/* POR REPRESENTANTE */}
-              <TabsContent value="representantes">
-                <RepresentantesTable representantes={representantes} parametros={parametros} detalhado actions={representantesEditor} />
-              </TabsContent>
-
-              {/* FUNIL DE VENDAS */}
-              <TabsContent value="funil" className="space-y-6">
-                <div className="grid gap-4 lg:grid-cols-2">
-                  <Panel title="Funil de vendas" subtitle="Novo → contatado → visitado → cliente fechado" actions={representantesEditor}>
-                    <ResponsiveContainer width="100%" height={280}>
-                      <FunnelChart>
-                        <Tooltip content={<PrettyTooltip />} />
-                        <Funnel dataKey="valor" data={funilData} isAnimationActive={false}>
-                          <LabelList position="right" dataKey="etapa" fill="#374151" stroke="none" />
-                          {funilData.map((_, i) => (
-                            <Cell key={i} fill={chartColors[i % chartColors.length]} />
-                          ))}
-                        </Funnel>
-                      </FunnelChart>
-                    </ResponsiveContainer>
-                  </Panel>
-                  <Panel title="Taxa de conversão por etapa" subtitle={`${totalCancelados} leads cancelados no período`} actions={representantesEditor}>
-                    <ul className="space-y-3 text-sm">
-                      {funilData.slice(1).map((etapa, i) => {
-                        const anterior = funilData[i].valor;
-                        const taxa = anterior > 0 ? (etapa.valor / anterior) * 100 : 0;
-                        return (
-                          <li key={etapa.etapa} className="flex items-center justify-between rounded-lg bg-secondary/60 px-3 py-2">
-                            <span className="text-foreground">
-                              {funilData[i].etapa} → {etapa.etapa}
-                            </span>
-                            <span
-                              className={cn(
-                                "rounded-full px-2.5 py-0.5 text-xs font-medium",
-                                taxa >= 60 ? "bg-emerald-500/15 text-emerald-700" : "bg-amber-500/15 text-amber-700",
-                              )}
-                            >
-                              {taxa.toFixed(0)}%
-                            </span>
-                          </li>
-                        );
-                      })}
-                      <li className="flex items-center justify-between rounded-lg bg-red-500/10 px-3 py-2">
-                        <span className="text-foreground">Total cancelados</span>
-                        <span className="rounded-full bg-red-500/15 px-2.5 py-0.5 text-xs font-medium text-red-700">
-                          {totalCancelados}
-                        </span>
-                      </li>
-                    </ul>
-                  </Panel>
-                </div>
-              </TabsContent>
-
-              {/* COMISSÕES */}
-              <TabsContent value="comissoes" className="space-y-6">
-                <Panel
-                  title="Evolução mensal de comissões"
-                  subtitle="Composição por faixa — base 10% + implementação 10% + suporte 10% + bônus até 10% (teto 40%)"
-                  actions={comissaoEditor}
-                >
-                  <ResponsiveContainer width="100%" height={280}>
-                    <AreaChart data={comissaoMensal} margin={{ left: -10, right: 8, top: 8 }}>
-                      <CartesianGrid stroke="#e5e7eb" vertical={false} />
-                      <XAxis dataKey="mes" stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} />
-                      <YAxis stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} />
-                      <Tooltip content={<PrettyTooltip />} />
-                      <Legend />
-                      <Area type="monotone" dataKey="base" stackId="1" name="Base (10%)" stroke="#2563eb" fill="#2563eb" fillOpacity={0.7} />
-                      <Area type="monotone" dataKey="implementacao" stackId="1" name="Implementação (10%)" stroke="#059669" fill="#059669" fillOpacity={0.7} />
-                      <Area type="monotone" dataKey="suporte" stackId="1" name="Suporte (10%)" stroke="#d97706" fill="#d97706" fillOpacity={0.7} />
-                      <Area type="monotone" dataKey="bonus" stackId="1" name="Bônus performance (10%)" stroke="#7c3aed" fill="#7c3aed" fillOpacity={0.7} />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </Panel>
-                <Panel
-                  title="Comissão atual por representante"
-                  subtitle="Bônus de performance: clientes ativos e churn definidos nos parâmetros gerais"
-                  actions={parametrosEditor}
-                >
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground">
-                          <th className="pb-3 font-medium">Representante</th>
-                          <th className="pb-3 font-medium">Base</th>
-                          <th className="pb-3 font-medium">Implementação</th>
-                          <th className="pb-3 font-medium">Suporte</th>
-                          <th className="pb-3 font-medium">Bônus</th>
-                          <th className="pb-3 font-medium">Total</th>
-                          <th className="pb-3 font-medium">A receber</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-border">
-                        {representantes.map((r) => {
-                          const c = comissaoDoRepresentante(r, parametros);
-                          const aReceber = r.clientesAtivos * parametros.ticketMedio * (c.total / 100);
-                          return (
-                            <tr key={r.nome} className="text-foreground">
-                              <td className="py-3 font-medium">{r.nome}</td>
-                              <td className="py-3 text-muted-foreground">{c.base}%</td>
-                              <td className="py-3 text-muted-foreground">{c.implementacao}%</td>
-                              <td className="py-3 text-muted-foreground">{c.suporte}%</td>
-                              <td className="py-3">
-                                {c.bonusPerformance > 0 ? (
-                                  <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-700">
-                                    +{c.bonusPerformance}%
-                                  </span>
-                                ) : (
-                                  <span className="text-muted-foreground">—</span>
-                                )}
-                              </td>
-                              <td className="py-3 font-semibold">{c.total}%</td>
-                              <td className="py-3">
-                                {aReceber.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+          <main className="flex-1 min-w-0">
+            {secao !== "dashboard" ? (
+              <PlaceholderSection label={NAV_ITEMS.find((n) => n.id === secao)!.label} />
+            ) : (
+              <>
+                {/* Header */}
+                <header className="flex flex-wrap items-center justify-between gap-4 px-8 pb-6 pt-8">
+                  <div>
+                    <h1 className="text-[26px] font-semibold tracking-tight text-foreground">
+                      Olá, Gabrielly 👋
+                    </h1>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Aqui está um resumo da sua carteira hoje.
+                    </p>
                   </div>
-                </Panel>
-              </TabsContent>
+                  <div className="flex items-center gap-2">
+                    <Select value={periodo} onValueChange={setPeriodo}>
+                      <SelectTrigger className="h-9 w-[160px] rounded-xl border-border bg-card text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="hoje">Hoje</SelectItem>
+                        <SelectItem value="semana">Últimos 7 dias</SelectItem>
+                        <SelectItem value="mes">Este mês</SelectItem>
+                        <SelectItem value="trimestre">Este trimestre</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      variant="outline"
+                      className="h-9 rounded-xl border-border bg-card text-sm"
+                      onClick={handleExport}
+                    >
+                      <Download className="h-4 w-4" /> Exportar
+                    </Button>
+                  </div>
+                </header>
 
-              {/* PLANOS VENDIDOS */}
-              <TabsContent value="planos" className="space-y-6">
-                <div className="grid gap-4 lg:grid-cols-2">
-                  <Panel title="Vendas por plano" subtitle="Mesas · Delivery · Premium" actions={planosEditor}>
-                    <ResponsiveContainer width="100%" height={260}>
-                      <BarChart data={planosVendidos} margin={{ left: -10, right: 8, top: 8 }}>
-                        <CartesianGrid stroke="#e5e7eb" vertical={false} />
-                        <XAxis dataKey="plano" stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} />
-                        <YAxis stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} />
-                        <Tooltip content={<PrettyTooltip />} />
-                        <Bar dataKey="vendas" radius={[8, 8, 0, 0]}>
-                          {planosVendidos.map((_, i) => (
-                            <Cell key={i} fill={chartColors[i % chartColors.length]} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </Panel>
-                  <Panel title="Módulos adicionais contratados" subtitle="Total de vendas por módulo" actions={modulosEditor}>
-                    <div className="space-y-3">
-                      {modulosAdicionais.map((m) => {
-                        const max = Math.max(...modulosAdicionais.map((x) => x.vendas), 1);
-                        return (
-                          <div key={m.modulo} className="space-y-1.5">
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="flex items-center gap-2 font-medium text-foreground">
-                                <Package className="h-3.5 w-3.5 text-muted-foreground" />
-                                {m.modulo}
-                              </span>
-                              <span className="text-muted-foreground">{m.vendas}</span>
-                            </div>
-                            <Progress value={(m.vendas / max) * 100} className="h-2" />
-                          </div>
-                        );
-                      })}
+                <div className="space-y-6 px-8 pb-10">
+                  {/* KPIs */}
+                  <section className="relative grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-6">
+                    <div className="absolute -top-2 right-0 xl:-top-9">
+                      <ObjectEditorDialog title="indicadores" fields={KPIS_FIELDS} value={kpis} onSave={setKpis} />
                     </div>
-                  </Panel>
-                </div>
-              </TabsContent>
+                    <StatCard icon={Users} label="Minha carteira" value={`${kpis.totalClientes}`} unit="clientes" delta={kpis.deltaClientes} />
+                    <StatCard icon={Bell} label="Pendências hoje" value={`${kpis.pendenciasHoje}`} unit="follow-ups" delta={kpis.deltaPendencias} />
+                    <StatCard icon={AlertTriangle} label="Clientes em risco" value={`${kpis.clientesRisco}`} unit="clientes" delta={kpis.deltaRisco} invert />
+                    <StatCard
+                      icon={Sparkles}
+                      label="Receita da carteira"
+                      value={kpis.receitaCarteira.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })}
+                      delta={kpis.deltaReceita}
+                    />
+                    <StatCard icon={Target} label="Meta do mês" value={`${kpis.metaMesPercent}%`} delta={kpis.deltaMeta} />
+                    <StatCard icon={Star} label="Health Score" value={`${kpis.healthScore}`} delta={kpis.deltaHealth} />
+                  </section>
 
-              {/* MAPA DE OPORTUNIDADES */}
-              <TabsContent value="mapa" className="space-y-6">
-                <div className="grid gap-4 lg:grid-cols-2">
-                  <Panel title="Concentração por região" subtitle="Leads e clientes ativos" actions={representantesEditor}>
-                    <ResponsiveContainer width="100%" height={260}>
-                      <BarChart data={porRegiao} layout="vertical" margin={{ left: 10, right: 20 }}>
-                        <CartesianGrid stroke="#e5e7eb" horizontal={false} />
-                        <XAxis type="number" stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} />
-                        <YAxis type="category" dataKey="regiao" stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} width={100} />
-                        <Tooltip content={<PrettyTooltip />} />
-                        <Bar dataKey="leads" name="Leads" radius={[0, 8, 8, 0]}>
-                          {porRegiao.map((_, i) => (
-                            <Cell key={i} fill={chartColors[i % chartColors.length]} />
+                  {/* Corpo: duas colunas */}
+                  <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+                    <div className="space-y-4 lg:col-span-7">
+                      <Panel
+                        title="Saúde da carteira"
+                        actions={
+                          <ObjectEditorDialog title="saúde da carteira" fields={SAUDE_FIELDS} value={saude} onSave={setSaude} />
+                        }
+                      >
+                        <div className="flex flex-col items-center gap-4 sm:flex-row">
+                          <ResponsiveContainer width={180} height={180}>
+                            <PieChart>
+                              <Pie data={saudeData} dataKey="value" nameKey="name" innerRadius={58} outerRadius={82} paddingAngle={3} strokeWidth={0}>
+                                {saudeData.map((d, i) => (
+                                  <Cell key={i} fill={d.color} />
+                                ))}
+                              </Pie>
+                              <RTooltip content={<DonutTooltip />} />
+                            </PieChart>
+                          </ResponsiveContainer>
+                          <ul className="flex-1 space-y-2.5 text-sm">
+                            {saudeData.map((d) => (
+                              <li key={d.name} className="flex items-center justify-between rounded-xl bg-muted/60 px-3 py-2">
+                                <span className="flex items-center gap-2 text-muted-foreground">
+                                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: d.color }} />
+                                  {d.name}
+                                </span>
+                                <span className="font-semibold text-foreground">{d.value}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </Panel>
+
+                      <Panel
+                        title="Evolução da carteira"
+                        subtitle="Clientes ativos ao longo do tempo"
+                        actions={
+                          <RowsEditorDialog
+                            title="evolução da carteira"
+                            columns={EVOLUCAO_COLUMNS}
+                            rows={evolucao}
+                            emptyRow={() => ({ mes: "Novo mês", valor: 0 })}
+                            onSave={setEvolucao}
+                          />
+                        }
+                      >
+                        <ResponsiveContainer width="100%" height={220}>
+                          <AreaChart data={evolucao} margin={{ left: -20, right: 8, top: 8 }}>
+                            <defs>
+                              <linearGradient id="evolucaoGrad" x1="0" x2="0" y1="0" y2="1">
+                                <stop offset="0%" stopColor="#e87db0" stopOpacity={0.35} />
+                                <stop offset="100%" stopColor="#e87db0" stopOpacity={0} />
+                              </linearGradient>
+                            </defs>
+                            <XAxis dataKey="mes" stroke="#b7b0bf" fontSize={12} tickLine={false} axisLine={false} />
+                            <YAxis stroke="#b7b0bf" fontSize={12} tickLine={false} axisLine={false} width={30} />
+                            <RTooltip content={<DonutTooltip />} />
+                            <Area type="monotone" dataKey="valor" stroke="#e87db0" strokeWidth={2.5} fill="url(#evolucaoGrad)" />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </Panel>
+                    </div>
+
+                    <div className="space-y-4 lg:col-span-5">
+                      <Panel
+                        title="Próximas ações"
+                        actions={
+                          <RowsEditorDialog
+                            title="próximas ações"
+                            columns={ACOES_COLUMNS}
+                            rows={acoes}
+                            emptyRow={() => ({ horario: "00:00", descricao: "Nova ação" })}
+                            onSave={setAcoes}
+                          />
+                        }
+                      >
+                        <ul className="space-y-1">
+                          {acoes.map((a, i) => (
+                            <li
+                              key={i}
+                              className="flex items-center gap-3 rounded-xl px-2 py-2.5 text-sm transition-colors hover:bg-muted/60"
+                            >
+                              <span className="w-14 shrink-0 rounded-lg bg-secondary px-2 py-1 text-center text-xs font-medium text-secondary-foreground">
+                                {a.horario}
+                              </span>
+                              <span className="text-foreground">{a.descricao}</span>
+                            </li>
                           ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </Panel>
-                  <Panel title="Ranking por cidade" subtitle="Leads e clientes por praça" actions={representantesEditor}>
-                    <div className="space-y-2.5">
-                      {porCidade.map((c) => {
-                        const max = Math.max(...porCidade.map((x) => x.leads), 1);
-                        return (
-                          <div key={c.cidade} className="flex items-center gap-3">
-                            <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
-                            <div className="min-w-0 flex-1">
+                        </ul>
+                      </Panel>
+
+                      <Panel
+                        title="Objetivos da semana"
+                        actions={
+                          <RowsEditorDialog
+                            title="objetivos da semana"
+                            columns={OBJETIVOS_COLUMNS}
+                            rows={objetivos}
+                            emptyRow={() => ({ label: "Novo objetivo", atual: 0, meta: 1 })}
+                            onSave={setObjetivos}
+                          />
+                        }
+                      >
+                        <div className="space-y-4">
+                          {objetivos.map((o) => (
+                            <div key={o.label} className="space-y-1.5">
                               <div className="flex items-center justify-between text-sm">
-                                <span className="truncate font-medium text-foreground">{c.cidade}</span>
-                                <span className="shrink-0 text-xs text-muted-foreground">
-                                  {c.leads} leads · {c.clientes} clientes
+                                <span className="font-medium text-foreground">{o.label}</span>
+                                <span className="text-muted-foreground">
+                                  {o.atual}/{o.meta}
                                 </span>
                               </div>
-                              <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-secondary">
-                                <div
-                                  className="h-full rounded-full bg-primary"
-                                  style={{ width: `${(c.leads / max) * 100}%` }}
-                                />
-                              </div>
+                              <Progress value={Math.min((o.atual / Math.max(o.meta, 1)) * 100, 100)} className="h-2" />
                             </div>
-                          </div>
-                        );
-                      })}
+                          ))}
+                        </div>
+                      </Panel>
                     </div>
-                  </Panel>
-                </div>
-              </TabsContent>
+                  </section>
 
-              {/* PROJEÇÕES */}
-              <TabsContent value="projecoes" className="space-y-6">
-                <Panel
-                  title="Projeção de ganhos"
-                  subtitle="Baseada no ritmo atual: vendas/mês × ticket médio × tempo de retenção"
-                  actions={parametrosEditor}
-                >
-                  <ResponsiveContainer width="100%" height={280}>
-                    <AreaChart data={projecao} margin={{ left: -10, right: 8, top: 8 }}>
-                      <defs>
-                        <linearGradient id="proj" x1="0" x2="0" y1="0" y2="1">
-                          <stop offset="0%" stopColor="#059669" stopOpacity={0.8} />
-                          <stop offset="100%" stopColor="#059669" stopOpacity={0.05} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid stroke="#e5e7eb" vertical={false} />
-                      <XAxis dataKey="mes" stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} />
-                      <YAxis stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} unit="k" />
-                      <Tooltip content={<PrettyTooltip unit=" mil" />} />
-                      <Area type="monotone" dataKey="ganhoProjetado" name="Ganho projetado (R$ mil)" stroke="#059669" strokeWidth={2} fill="url(#proj)" />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </Panel>
-                <Panel title="Top 3 representantes — ritmo atual" subtitle="Vendas fechadas por mês" actions={representantesEditor}>
-                  <ul className="space-y-3 text-sm">
-                    {[...representantes]
-                      .sort((a, b) => b.vendasPorMes - a.vendasPorMes)
-                      .slice(0, 3)
-                      .map((r) => (
-                        <li key={r.nome} className="flex items-center justify-between rounded-lg bg-secondary/60 px-3 py-2">
-                          <span className="text-foreground">{r.nome}</span>
-                          <span className="rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
-                            {r.vendasPorMes} vendas/mês
-                          </span>
-                        </li>
-                      ))}
-                  </ul>
-                </Panel>
-              </TabsContent>
-            </Tabs>
-          </div>
-        </main>
+                  {/* Rodapé: duas colunas */}
+                  <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+                    <div className="lg:col-span-7">
+                      <Panel
+                        title="Últimas movimentações"
+                        actions={
+                          <RowsEditorDialog
+                            title="últimas movimentações"
+                            description="Tipos aceitos: entrou, recuperado, followup, risco."
+                            columns={MOVIMENTACOES_COLUMNS}
+                            rows={movimentacoes}
+                            emptyRow={() => ({ tipo: "entrou", cliente: "Novo cliente", tempo: "agora" })}
+                            onSave={setMovimentacoes}
+                          />
+                        }
+                      >
+                        <ol className="relative space-y-5 pl-1">
+                          {movimentacoes.map((m, i) => {
+                            const meta = MOVIMENTACAO_META[m.tipo] ?? {
+                              label: m.tipo,
+                              icon: CheckCircle2,
+                              className: "bg-muted text-muted-foreground",
+                            };
+                            return (
+                              <li key={i} className="flex gap-3">
+                                <div className="flex flex-col items-center">
+                                  <span className={cn("grid h-8 w-8 shrink-0 place-items-center rounded-full", meta.className)}>
+                                    <meta.icon className="h-4 w-4" />
+                                  </span>
+                                  {i < movimentacoes.length - 1 && <span className="mt-1 h-full w-px flex-1 bg-border" />}
+                                </div>
+                                <div className="pb-1">
+                                  <div className="text-sm font-medium text-foreground">
+                                    {meta.label} · {m.cliente}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">{m.tempo}</div>
+                                </div>
+                              </li>
+                            );
+                          })}
+                        </ol>
+                      </Panel>
+                    </div>
+
+                    <div className="lg:col-span-5">
+                      <Panel
+                        title="Insights rápidos"
+                        actions={
+                          <RowsEditorDialog
+                            title="insights rápidos"
+                            columns={INSIGHTS_COLUMNS}
+                            rows={insights}
+                            emptyRow={() => ({ texto: "Novo insight" })}
+                            onSave={setInsights}
+                          />
+                        }
+                      >
+                        <div className="space-y-3">
+                          {insights.map((ins, i) => (
+                            <div
+                              key={i}
+                              className="flex items-start gap-2.5 rounded-xl border border-border bg-[var(--gradient-soft)] px-3 py-2.5 text-sm text-foreground"
+                            >
+                              <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                              {ins.texto}
+                            </div>
+                          ))}
+                        </div>
+                      </Panel>
+                    </div>
+                  </section>
+                </div>
+              </>
+            )}
+          </main>
+        </div>
       </div>
+    </TooltipProvider>
+  );
+}
+
+function PlaceholderSection({ label }: { label: string }) {
+  return (
+    <div className="flex h-screen flex-col items-center justify-center gap-2 px-8 text-center">
+      <div className="grid h-14 w-14 place-items-center rounded-2xl bg-secondary text-primary">
+        <Sparkles className="h-6 w-6" />
+      </div>
+      <h2 className="text-lg font-semibold text-foreground">{label}</h2>
+      <p className="max-w-xs text-sm text-muted-foreground">Essa área ainda está em construção. Em breve por aqui.</p>
     </div>
   );
 }
 
-function HeroCard({
+function StatCard({
   icon: Icon,
-  title,
+  label,
   value,
-  caption,
-  edit,
+  unit,
+  delta,
+  invert = false,
 }: {
   icon: React.ComponentType<{ className?: string }>;
-  title: string;
+  label: string;
   value: string;
-  caption: string;
-  edit?: React.ReactNode;
+  unit?: string;
+  delta: string;
+  invert?: boolean;
 }) {
+  const dir = trend(delta);
+  const positive = invert ? dir === "down" : dir === "up";
+  const TrendIcon = dir === "up" ? ArrowUpRight : ArrowDownRight;
+
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-soft)]">
-      <div className="flex items-start justify-between">
-        <div className="grid h-9 w-9 place-items-center rounded-xl bg-secondary text-secondary-foreground">
-          <Icon className="h-4 w-4" />
-        </div>
-        {edit}
+    <div
+      className="rounded-[20px] border border-border bg-card p-5"
+      style={{ boxShadow: "var(--shadow-card)" }}
+    >
+      <div className="grid h-9 w-9 place-items-center rounded-xl bg-secondary text-primary">
+        <Icon className="h-4 w-4" />
       </div>
-      <div className="mt-3 text-2xl font-semibold tracking-tight text-foreground">{value}</div>
-      <div className="text-xs font-medium text-foreground/80">{title}</div>
-      <div className="mt-0.5 text-[11px] text-muted-foreground">{caption}</div>
+      <div className="mt-3 flex items-baseline gap-1">
+        <span className="text-2xl font-semibold tracking-tight text-foreground">{value}</span>
+        {unit && <span className="text-xs text-muted-foreground">{unit}</span>}
+      </div>
+      <div className="mt-0.5 text-xs font-medium text-muted-foreground">{label}</div>
+      <div
+        className={cn(
+          "mt-2 inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[11px] font-medium",
+          positive ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-600",
+        )}
+      >
+        <TrendIcon className="h-3 w-3" />
+        {delta}
+      </div>
     </div>
   );
 }
@@ -771,17 +580,15 @@ function Panel({
   title,
   subtitle,
   children,
-  className,
   actions,
 }: {
   title: string;
   subtitle?: string;
   children: React.ReactNode;
-  className?: string;
   actions?: React.ReactNode;
 }) {
   return (
-    <div className={cn("rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-soft)]", className)}>
+    <div className="rounded-[20px] border border-border bg-card p-5" style={{ boxShadow: "var(--shadow-card)" }}>
       <div className="mb-4 flex items-start justify-between gap-2">
         <div>
           <div className="text-sm font-semibold text-foreground">{title}</div>
@@ -794,95 +601,18 @@ function Panel({
   );
 }
 
-function RepresentantesTable({
-  representantes,
-  parametros,
-  detalhado = false,
-  actions,
-}: {
-  representantes: Representante[];
-  parametros: Parametros;
-  detalhado?: boolean;
-  actions?: React.ReactNode;
-}) {
-  return (
-    <Panel title="Representantes" subtitle="Leads por status, clientes ativos e churn" actions={actions}>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground">
-              <th className="pb-3 font-medium">Representante</th>
-              {detalhado && (
-                <>
-                  <th className="pb-3 font-medium">Novo</th>
-                  <th className="pb-3 font-medium">Contatado</th>
-                  <th className="pb-3 font-medium">Visitado</th>
-                  <th className="pb-3 font-medium">Cancelado</th>
-                </>
-              )}
-              <th className="pb-3 font-medium">Fechado</th>
-              <th className="pb-3 font-medium">Clientes ativos</th>
-              <th className="pb-3 font-medium">Churn</th>
-              <th className="pb-3 font-medium">Comissão</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {representantes.map((r) => {
-              const c = comissaoDoRepresentante(r, parametros);
-              return (
-                <tr key={r.nome} className="text-foreground">
-                  <td className="py-3">
-                    <div className="font-medium">{r.nome}</div>
-                    <div className="text-xs text-muted-foreground">{r.cidade}</div>
-                  </td>
-                  {detalhado && (
-                    <>
-                      <td className="py-3 text-muted-foreground">{r.leads.novo}</td>
-                      <td className="py-3 text-muted-foreground">{r.leads.contatado}</td>
-                      <td className="py-3 text-muted-foreground">{r.leads.visitado}</td>
-                      <td className="py-3 text-muted-foreground">{r.leads.cancelado}</td>
-                    </>
-                  )}
-                  <td className="py-3 font-medium">{r.leads.fechado}</td>
-                  <td className="py-3">{r.clientesAtivos}</td>
-                  <td className="py-3">
-                    <span
-                      className={cn(
-                        "rounded-full px-2 py-0.5 text-xs font-medium",
-                        r.churn >= parametros.bonusChurnMax ? "bg-red-500/15 text-red-700" : "bg-emerald-500/15 text-emerald-700",
-                      )}
-                    >
-                      {r.churn.toFixed(1)}%
-                    </span>
-                  </td>
-                  <td className="py-3 font-semibold">{c.total}%</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </Panel>
-  );
-}
-
-function PrettyTooltip({ active, payload, label, unit }: any) {
+function DonutTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-xl border border-border bg-card px-3 py-2 shadow-[var(--shadow-soft)]">
-      {label !== undefined && <div className="text-xs font-medium text-foreground">{label}</div>}
-      <div className="mt-1 space-y-0.5">
-        {payload.map((p: any) => (
-          <div key={p.dataKey ?? p.name} className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: p.color ?? p.payload?.fill }} />
-            <span className="text-foreground">{p.name ?? p.payload?.etapa}:</span>
-            <span className="font-medium text-foreground">
-              {p.value}
-              {unit ?? ""}
-            </span>
-          </div>
-        ))}
-      </div>
+    <div className="rounded-xl border border-border bg-card px-3 py-2 text-xs shadow-[var(--shadow-soft)]">
+      {label !== undefined && <div className="font-medium text-foreground">{label}</div>}
+      {payload.map((p: any) => (
+        <div key={p.dataKey ?? p.name} className="flex items-center gap-2 text-muted-foreground">
+          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: p.color ?? p.payload?.color ?? p.payload?.fill }} />
+          <span className="text-foreground">{p.name ?? p.payload?.name}:</span>
+          <span className="font-medium text-foreground">{p.value}</span>
+        </div>
+      ))}
     </div>
   );
 }
