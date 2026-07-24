@@ -3,6 +3,7 @@ import { Plus, Settings, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -12,13 +13,20 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-export const GearButton = forwardRef<HTMLButtonElement, { label?: string }>(({ label }, ref) => (
+export const GearButton = forwardRef<
+  HTMLButtonElement,
+  React.ComponentPropsWithoutRef<"button"> & { label?: string }
+>(({ label, className, ...props }, ref) => (
   <button
     ref={ref}
     type="button"
     aria-label={label ?? "Editar"}
     title={label ?? "Editar"}
-    className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+    className={cn(
+      "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground",
+      className,
+    )}
+    {...props}
   >
     <Settings className="h-4 w-4" />
   </button>
