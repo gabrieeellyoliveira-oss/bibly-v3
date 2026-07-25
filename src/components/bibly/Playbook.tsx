@@ -1,6 +1,5 @@
 import { useMemo, useState, type ComponentType } from "react";
 import {
-  Award,
   Building2,
   ChevronLeft,
   Clock,
@@ -10,13 +9,12 @@ import {
   Package,
   Repeat2,
   Route,
-  Scale,
   ShieldCheck,
-  Tag,
   TrendingUp,
   UserCheck,
 } from "lucide-react";
 
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
 import { useLocalStorageState } from "@/hooks/use-local-storage-state";
 import { MarkdownEditorDialog, RichText } from "@/components/bibly/editors";
@@ -29,7 +27,7 @@ import { MarkdownEditorDialog, RichText } from "@/components/bibly/editors";
 // ---------------------------------------------------------------------------
 
 type Badge = "Novo" | "Atualizado";
-type IconType = ComponentType<{ className?: string }>;
+export type IconType = ComponentType<{ className?: string }>;
 
 type TopicMeta = {
   id: string;
@@ -64,10 +62,10 @@ const TOPICS: TopicMeta[] = [
     icon: UserCheck,
   },
   {
-    id: "matriz-objecoes",
-    title: "Matriz de Objeções",
+    id: "objecoes-concorrentes",
+    title: "Objeções & Concorrentes",
     category: "Vendas",
-    summary: "Principais objeções no processo de aquisição e como contorná-las estrategicamente.",
+    summary: "As objeções mais comuns e como responder, mais o comparativo com a concorrência.",
     icon: ShieldCheck,
   },
   {
@@ -100,20 +98,6 @@ const TOPICS: TopicMeta[] = [
     icon: TrendingUp,
   },
   {
-    id: "planos-precos",
-    title: "Planos e Preços",
-    category: "Comercial",
-    summary: "Valores oficiais dos planos e módulos, por fidelidade.",
-    icon: Tag,
-  },
-  {
-    id: "concorrentes",
-    title: "Matriz de Concorrentes",
-    category: "Mercado",
-    summary: "Comparativo de funcionalidades e preços com a concorrência.",
-    icon: Scale,
-  },
-  {
     id: "funcoes",
     title: "Funções",
     category: "Cultura & Time",
@@ -135,19 +119,75 @@ const TOPICS: TopicMeta[] = [
     summary: "Perfil, funcionamento, modelo financeiro e objeções do programa.",
     icon: Building2,
   },
-  {
-    id: "progressao-carreira",
-    title: "Progressão de Carreira",
-    category: "Cultura & Time",
-    summary: "Evolução salarial e de comissão por nível de senioridade.",
-    icon: Award,
-  },
 ];
 
 const BADGE_STYLE: Record<Badge, { bg: string; fg: string }> = {
   Novo: { bg: "var(--badge-novo-bg)", fg: "var(--badge-novo-fg)" },
   Atualizado: { bg: "var(--badge-atualizado-bg)", fg: "var(--badge-atualizado-fg)" },
 };
+
+const CONCORRENTES_TABELA_COMPLETA = `Encontre a relação entre as funcionalidades do Cardápio Web e dos concorrentes. ✅ = tem · ⚠️ = parcial/limitado · ❌ = não tem.
+
+| Concorrente | Cardápio delivery | Cardápio mesas | ChatBot WhatsApp | Pagamento online | Disparador WhatsApp | Fidelidade | Fluxo de caixa | Módulo fiscal | Estoque produtos | Estoque insumos | Gestão financeira | Rotas de entrega | Totem |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Cardápio Web | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Anota ai | ✅ | ✅ | ✅ | ✅ | ⚠️ | ✅ | ✅ | ⚠️ | ⚠️ | ❌ | ⚠️ | ❌ | ❌ |
+| Brendi | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Saipos | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Instadelivery | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ |
+| Consumer (Menu Dino) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Goomer | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Yooga | ✅ | ⚠️ | ✅ | ✅ | ❌ | ✅ | ✅ | ⚠️ | ⚠️ | ⚠️ | ⚠️ | ❌ | ❌ |
+| OlaClick | ✅ | ✅ | ✅ | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | ⚠️ | ✅ | ✅ | ❌ |
+| WhatsMenu | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ✅ | ⚠️ | ❌ | ⚠️ | ❌ |
+| Multipedidos | ✅ | ⚠️ | ⚠️ | ✅ | ✅ | ✅ | ⚠️ | ⚠️ | ⚠️ | ❌ | ❌ | ❌ | ❌ |
+| Delivery Direto | ✅ | ✅ | ⚠️ | ✅ | ⚠️ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ⚠️ | ❌ |
+| Linx | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Neemo | ✅ | ✅ | ✅ | ✅ | ⚠️ | ⚠️ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Alloy | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ |
+| Accon | ✅ | ❌ | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Takeat | ✅ | ✅ | ✅ | ✅ | ⚠️ | ✅ | ✅ | ⚠️ | ⚠️ | ⚠️ | ⚠️ | ❌ | ✅ |
+| EasyAssist | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
+| BigDim | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Ecta | ✅ | ✅ | ✅ | ✅ | ⚠️ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Suitable | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ❌ | ✅ |
+| BeeFood | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️ |
+| Cardápio Ai | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Omie | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
+| GrandChef | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Jotajá | ✅ | ❌ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
+| Sischef | ⚠️ | ⚠️ | ❌ | ⚠️ | ❌ | ❌ | ✅ | ✅ | ✅ | ⚠️ | ✅ | ⚠️ | ❌ |
+| Deli | ✅ | ⚠️ | ⚠️ | ✅ | ❌ | ❌ | ✅ | ⚠️ | ✅ | ⚠️ | ✅ | ❌ | ❌ |
+
+## Notas por concorrente
+
+- **Anota ai** (https://anota.ai/) — período promocional de R$ 59,90 nos primeiros meses; depois Plano Start R$ 279,99/mês ou Gestão Avançada R$ 399,99/mês. Cardápio digital comprado pelo iFood, chatbot multi-rede (WhatsApp, Facebook, Instagram), pouco foco em gestão, cresceu com promoções agressivas do iFood; suporte terceirizado sofreu com o crescimento.
+- **Brendi** (https://brendi.com.br/) — cobrança por faturamento: até R$1.500 = R$60/mês; R$1.500,01 a R$7.500 = 4% do faturado; acima de R$7.500 = R$300/mês. Foco em automação de delivery (não mesas), pouco foco em gestão, valor elevado pelo que oferece.
+- **Saipos** (https://saipos.com/) — R$ 219/mês (até R$40 mil de faturamento); implantação R$600 com 75% de desconto como gatilho de urgência. Sistema de gestão usado por franquias grandes, foco forte em gestão; temos integração com eles.
+- **Instadelivery** (https://instadelivery.com.br/) — grátis até R$2.000/mês faturado; R$69,90/mês até R$5.000; R$129,90/mês acima disso. Barato e completo, mas usabilidade ruim e pouco profissional; cresceu com programa de indicação agressivo, foca em preço baixo.
+- **Consumer (Menu Dino)** (https://consumer.com.br/) — grátis até 200 pedidos; Consumer 1 PC R$64,90/mês (1 computador); Consumer rede R$84,90/mês; cobram à parte por várias funcionalidades, incluindo o próprio Menu Dino. É um sistema de gestão com cardápio (Menu Dino) que exige instalação local, difícil de usar, com bugs para quem faz tráfego pago.
+- **Goomer** (https://goomer.com.br/) — grátis até 30 pedidos/mês via WhatsApp (R$1,39 por pedido extra); básico R$99,90/mês; automatizar R$184,90/mês; integrar R$299,90/mês + R$99,90/mês de implementação QR code/delivery. Muito conhecido, foco forte em totens de mesa, fluxo de pedido pouco fácil, falta ferramentas de marketing.
+- **Yooga** (https://yooga.com.br/) — planos anuais de R$211,65 a R$296,65 (12x); mensais de R$249 a R$349; Premium sob consulta. Foco em gestão mais que automação, bem feito mas pouco relevante no mercado; funcionalidades básicas presas a planos superiores.
+- **OlaClick** (https://olaclick.com/) — Advanced R$64/mês (~400 pedidos); Premium R$160/mês (~4.000 pedidos); Elite R$374/mês; Infinity R$928/mês (ilimitado). Preço acessível, mas parece incompleto e dependente do plano contratado.
+- **WhatsMenu** (https://whatsmenu.com.br/) — valor padrão R$97/mês; usa montagem gratuita de cardápio (100 itens) como gatilho de urgência para implementação. Barato, sem grandes ameaças ao nosso posicionamento.
+- **Multipedidos** (https://multipedidos.com.br/) — iniciante R$169,90/mês; profissional R$259,90/mês; implementação R$150. Relativamente completo e promissor, mas custo elevado ao somar módulos que já entregamos no plano (como o chatbot).
+- **Delivery Direto** (https://site.deliverydireto.com.br/) — comissão de 10% sobre vendas (teto R$699/mês) no iniciante; 5% (teto R$899/mês) no profissional; possui módulos à parte. Possivelmente o cardápio digital mais antigo da lista, perdendo mercado para concorrentes mais modernos.
+- **Linx** (https://www.linx.com.br/) — Essencial R$349/mês; Plus R$529/mês; Max R$779/mês. Foco em grandes empresas/franquias, dona da Neemo (posicionada como sistema de gestão); atendimento fica caro por depender da Neemo à parte.
+- **Neemo** (https://www.neemo.com.br/) — Start a partir de R$189/mês; Pro a partir de R$289/mês; franquia sob consulta. Cardápio digital comprado pela Linx, interface historicamente ruim, foco em franquias com ERP.
+- **Alloy** (https://www.alloy.al/) — Começar R$164,93 (até R$30 mil/mês); Crescer R$224,93 (até R$70 mil); Avançar R$284,93 (até R$110 mil); Evoluir R$359,93 (acima de R$110 mil). Pouca relevância de mercado hoje, mas ferramenta completa e bem feita.
+- **Accon** (https://accon.com.br/) — mensal completo R$349/mês; trimestral completo R$299/mês. Foco em atendimento e automação de delivery, deixa a gestão de lado, integra com outros PDVs.
+- **Takeat** (https://www.takeat.app/) — básico R$199/mês; inovação R$279/mês; profissional R$499/mês; enterprise sob consulta. Bom custo-benefício, cardápio com usabilidade ruim, mas sistema relativamente completo.
+- **EasyAssist** (https://easyassist.com.br/) — sem dado de preço coletado. Sistema de gestão simples, focado apenas em mesas, com controles básicos de estoque e pedidos.
+- **BigDim** (https://www.bigdim.com.br/) — Flex R$59,90/mês (até 150 pedidos); Basic R$89,90/mês; Pro R$159,90/mês; Prime R$189,90/mês. Preço acessível, sistema pequeno, parece ter muitas coisas mas incompletas.
+- **Ecta** (https://ecta.com.br/) — 1º mês no boleto R$350; demais meses R$200; no cartão, 6x de R$189. Foco em atendimento com custo-benefício mediano; disparador de mensagem via SMS (não WhatsApp), um pouco arcaico.
+- **Suitable** (https://suitable.com.br/) — Starter R$287/mês; Advanced R$386/mês; Premium R$479/mês; Ultra sob consulta. Sistema razoavelmente completo, compara-se diretamente com concorrentes no próprio site; layout de cardápio pouco atrativo.
+- **BeeFood** (https://beefood.com.br/) — grátis (histórico de 7 dias); Zangão R$200/mês; Rainha R$300/mês; BeeFood R$400/mês. Bastante completo, cardápio pouco intuitivo, preços não muito competitivos.
+- **Cardápio Ai** (https://cardapio.ai/) — PDV Básico R$49,90/mês; PDV + Robô R$64,90/mês; PDV Integrado R$99,90/mês. Custo baixo, focado em automação de atendimento, deixa gestão e marketing de lado.
+- **Omie** (https://www.omie.com.br/) — Omie ERP R$99/mês; Omie Multivarejo R$209/mês. Foco principal é ERP para vários segmentos; cardápio digital não é o foco.
+- **GrandChef** (https://www.grandchef.com.br/) — Starter 12x R$29,94; Lite 12x R$67,43 ou R$89,90/mês; Pro 12x R$97,43 ou R$129,90/mês. Relativamente completo e bem feito, bom posicionamento em gestão, cardápio digital com segurança percebida fraca.
+- **Jotajá** (https://www.site.jotaja.com/) — Start R$249/mês + R$300 de implantação; Advanced R$329/mês + R$300 de implantação; Franquias sob consulta. Cardápio simples, destaque pelo evento anual "Jotajá Summit"; pouca relevância atual.
+- **Sischef** (https://sischef.com/) — planos a partir de R$99,99/mês, com módulos à parte. Foco em gestão (não concorre diretamente com nosso posicionamento de cardápio digital); forte reconhecimento entre franquias; temos integração com eles.
+- **Deli** (https://deli.com.br/pt-br/) — Inicial R$83,90/mês; Avançado R$125,90/mês; Pro R$178,90/mês, com módulos à parte. Relativamente completo e promissor; custo sobe ao somar módulos que já entregamos no plano (como o chatbot).`;
 
 const DEFAULT_BODIES: Record<string, string> = {
   produto: `Todos os aspectos mais importantes do produto: funcionalidades, planos e integrações disponíveis.
@@ -272,29 +312,6 @@ Profissionais de vendas com histórico comprovado em comercialização de soluç
 
 ### Diferenciais competitivos (opcional, mas estratégico)
 - Capacidade futura de escalar operação (time, parceiros, volume)`,
-  "matriz-objecoes": `Esta aba reúne as principais objeções que surgem no processo de aquisição de parceiros e como contorná-las de forma estratégica, alinhada ao posicionamento do programa de representantes.
-
-| Tipo de objeção | Explicação | Como resolver |
-|---|---|---|
-| Entendimento do programa | O potencial parceiro não entendeu o que é o programa ou confunde com revenda de sistema | Explicar de forma simples que não é revenda e sim representação de uma empresa de tecnologia |
-| Prioridade | O parceiro diz que não é o foco dele agora ou que está cheio de demandas | Mostrar relevância da parceria e alto potencial de retorno |
-| Perfil | O parceiro acredita que o público dele não combina com o produto | Explorar juntos o ICP e dar exemplos de parceiros parecidos que já indicaram |
-| Esforço operacional | Acha que vai dar trabalho indicar, vender, acompanhar ou dar suporte | Informar que ele vai ganhar uma comissão gradativa de acordo com cada responsabilidade que assumir |
-| Retorno financeiro | O parceiro sente que o ganho é baixo por não ser revenda ou que o esforço não compensa | Reforçar a progressão da comissão, previsibilidade por volume e rapidez de recebimento |
-| Confiança | Insegurança sobre reputação, entrega ou suporte | Mostrar cases, volume de parceiros ativos e materiais de apoio |
-| Concorrência | Já indica outro sistema ou tem parceria parecida | Mostrar diferenciais do programa e possibilidade de coexistência, sem exclusividade |
-| Compromisso | Medo de assumir obrigações, metas, exclusividade ou mudanças no próprio processo | Deixar claro que não há metas obrigatórias nem exclusividade forçada — a parceria é flexível e no ritmo do parceiro |
-| Exclusividade | Pergunta se precisa ser exclusivo | Deixar claro que não exige exclusividade |
-| Deal breaker | Situação em que realmente não faz sentido a parceria | Desqualificar e deixar a porta aberta para o futuro, quando fizer sentido |
-| Dispensa | O lead manda você embora de forma gentil | Pedir um tempo para já alinhar a questão, evitando ter que retornar em outro horário |
-
-## Como registrar uma nova objeção
-
-Ao identificar uma objeção nova em campo, documente:
-- **Descritivo:** o que o lead falou
-- **Momento:** em que etapa do processo de vendas ela apareceu
-- **Tipo:** em qual categoria da tabela acima ela se encaixa
-- **Discurso de solução:** o que poderia ser falado para transpor a objeção`,
   "jornada-representante": `A Jornada do Representante na Cardápio Web é composta pelas etapas descritas nessa documentação.
 
 **Em construção pela liderança** — as colunas abaixo (Lead antes → Lead depois → Estágio correspondente nas vendas) ainda não têm as etapas preenchidas na planilha de origem. Use as definições de funil (Prospecção, Acompanhamento e Clientes de Representantes) enquanto essa etapa não é formalizada.
@@ -521,78 +538,6 @@ Na prospecção o AIDA é muito poderoso, pois permite que o lead progrida na jo
 **Agendar um horário:** Agende um horário e peça o e-mail do lead.
 
 **Aplicar gatilho de compromisso:** Explique que o consultor tem uma agenda ocupada e é um dos maiores especialistas no assunto conversado, então pergunte se o lead teria algum motivo para não estar presente no horário e data acordados, diga que vai enviar uma mensagem no WhatsApp para confirmar a reunião e pergunte se o lead confirma. Com base nisso, finalize a ligação.`,
-  "planos-precos": `Valores dos planos e módulos para a contratação da Cardápio Web, bem como os descontos disponíveis para negociações nas vendas.
-
-| Fidelidade | Plano Mesas — Valor total | Plano Mesas — Valor mensal | Plano Delivery — Valor total | Plano Delivery — Valor mensal | Plano Premium — Valor total | Plano Premium — Valor mensal | Módulo Marketplace — Valor total | Módulo Marketplace — Valor mensal | Módulo Estoque Avançado — Valor total | Módulo Estoque Avançado — Valor mensal | Módulo Cupom Fiscal — Valor total | Módulo Cupom Fiscal — Valor mensal | Módulo Entregadores — Valor total | Módulo Entregadores — Valor mensal | Entregadores — até 500 pedidos (por pedido) | Entregadores — 501 a 1500 pedidos (por pedido) | Entregadores — acima de 1500 pedidos (por pedido) | Módulo Financeiro — Valor total | Módulo Financeiro — Valor mensal | Módulo Totem — Valor total | Módulo Totem — Valor mensal |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Anual | R$ 1.679,88 | R$ 139,99 | R$ 2.159,88 | R$ 179,99 | R$ 2.879,88 | R$ 239,99 | R$ 359,88 | R$ 29,99 | R$ 359,88 | R$ 29,99 | R$ 839,88 | R$ 69,99 | R$ 659,88 | R$ 54,99 | 0% | 8% | 6% | R$ 839,88 | R$ 69,99 | R$ 1.199,88 | R$ 99,99 |
-| Semestral | R$ 899,94 | R$ 149,99 | R$ 1.139,94 | R$ 189,99 | R$ 1.499,94 | R$ 249,99 | R$ 179,94 | R$ 29,99 | R$ 179,94 | R$ 29,99 | R$ 419,94 | R$ 69,99 | R$ 329,94 | R$ 54,99 | 0% | 8% | 6% | R$ 419,94 | R$ 69,99 | R$ 599,94 | R$ 99,99 |
-| Trimestral | R$ 479,97 | R$ 159,99 | R$ 599,97 | R$ 199,99 | R$ 779,97 | R$ 259,99 | R$ 89,97 | R$ 29,99 | R$ 89,97 | R$ 29,99 | R$ 209,97 | R$ 69,99 | R$ 164,97 | R$ 54,99 | 0% | 8% | 6% | R$ 209,97 | R$ 69,99 | R$ 299,97 | R$ 99,99 |
-| Mensal | R$ 169,99 | R$ 169,99 | R$ 209,99 | R$ 209,99 | R$ 269,99 | R$ 269,99 | R$ 29,99 | R$ 29,99 | R$ 29,99 | R$ 29,99 | R$ 69,99 | R$ 69,99 | R$ 54,99 | R$ 54,99 | 0% | 8% | 6% | R$ 69,99 | R$ 69,99 | R$ 99,99 | R$ 99,99 |
-
-**Nota:** o módulo Entregadores combina uma mensalidade fixa com uma taxa por pedido, escalonada por volume (0% até 500 pedidos, 8% de 501 a 1500, 6% acima de 1500).`,
-  concorrentes: `Encontre a relação entre as funcionalidades do Cardápio Web e dos concorrentes. ✅ = tem · ⚠️ = parcial/limitado · ❌ = não tem.
-
-| Concorrente | Cardápio delivery | Cardápio mesas | ChatBot WhatsApp | Pagamento online | Disparador WhatsApp | Fidelidade | Fluxo de caixa | Módulo fiscal | Estoque produtos | Estoque insumos | Gestão financeira | Rotas de entrega | Totem |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Cardápio Web | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Anota ai | ✅ | ✅ | ✅ | ✅ | ⚠️ | ✅ | ✅ | ⚠️ | ⚠️ | ❌ | ⚠️ | ❌ | ❌ |
-| Brendi | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Saipos | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Instadelivery | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ |
-| Consumer (Menu Dino) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Goomer | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| Yooga | ✅ | ⚠️ | ✅ | ✅ | ❌ | ✅ | ✅ | ⚠️ | ⚠️ | ⚠️ | ⚠️ | ❌ | ❌ |
-| OlaClick | ✅ | ✅ | ✅ | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | ⚠️ | ✅ | ✅ | ❌ |
-| WhatsMenu | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ✅ | ⚠️ | ❌ | ⚠️ | ❌ |
-| Multipedidos | ✅ | ⚠️ | ⚠️ | ✅ | ✅ | ✅ | ⚠️ | ⚠️ | ⚠️ | ❌ | ❌ | ❌ | ❌ |
-| Delivery Direto | ✅ | ✅ | ⚠️ | ✅ | ⚠️ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ⚠️ | ❌ |
-| Linx | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Neemo | ✅ | ✅ | ✅ | ✅ | ⚠️ | ⚠️ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Alloy | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ |
-| Accon | ✅ | ❌ | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Takeat | ✅ | ✅ | ✅ | ✅ | ⚠️ | ✅ | ✅ | ⚠️ | ⚠️ | ⚠️ | ⚠️ | ❌ | ✅ |
-| EasyAssist | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| BigDim | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Ecta | ✅ | ✅ | ✅ | ✅ | ⚠️ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Suitable | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ❌ | ✅ |
-| BeeFood | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️ |
-| Cardápio Ai | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Omie | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
-| GrandChef | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Jotajá | ✅ | ❌ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
-| Sischef | ⚠️ | ⚠️ | ❌ | ⚠️ | ❌ | ❌ | ✅ | ✅ | ✅ | ⚠️ | ✅ | ⚠️ | ❌ |
-| Deli | ✅ | ⚠️ | ⚠️ | ✅ | ❌ | ❌ | ✅ | ⚠️ | ✅ | ⚠️ | ✅ | ❌ | ❌ |
-
-## Notas por concorrente
-
-- **Anota ai** (https://anota.ai/) — período promocional de R$ 59,90 nos primeiros meses; depois Plano Start R$ 279,99/mês ou Gestão Avançada R$ 399,99/mês. Cardápio digital comprado pelo iFood, chatbot multi-rede (WhatsApp, Facebook, Instagram), pouco foco em gestão, cresceu com promoções agressivas do iFood; suporte terceirizado sofreu com o crescimento.
-- **Brendi** (https://brendi.com.br/) — cobrança por faturamento: até R$1.500 = R$60/mês; R$1.500,01 a R$7.500 = 4% do faturado; acima de R$7.500 = R$300/mês. Foco em automação de delivery (não mesas), pouco foco em gestão, valor elevado pelo que oferece.
-- **Saipos** (https://saipos.com/) — R$ 219/mês (até R$40 mil de faturamento); implantação R$600 com 75% de desconto como gatilho de urgência. Sistema de gestão usado por franquias grandes, foco forte em gestão; temos integração com eles.
-- **Instadelivery** (https://instadelivery.com.br/) — grátis até R$2.000/mês faturado; R$69,90/mês até R$5.000; R$129,90/mês acima disso. Barato e completo, mas usabilidade ruim e pouco profissional; cresceu com programa de indicação agressivo, foca em preço baixo.
-- **Consumer (Menu Dino)** (https://consumer.com.br/) — grátis até 200 pedidos; Consumer 1 PC R$64,90/mês (1 computador); Consumer rede R$84,90/mês; cobram à parte por várias funcionalidades, incluindo o próprio Menu Dino. É um sistema de gestão com cardápio (Menu Dino) que exige instalação local, difícil de usar, com bugs para quem faz tráfego pago.
-- **Goomer** (https://goomer.com.br/) — grátis até 30 pedidos/mês via WhatsApp (R$1,39 por pedido extra); básico R$99,90/mês; automatizar R$184,90/mês; integrar R$299,90/mês + R$99,90/mês de implementação QR code/delivery. Muito conhecido, foco forte em totens de mesa, fluxo de pedido pouco fácil, falta ferramentas de marketing.
-- **Yooga** (https://yooga.com.br/) — planos anuais de R$211,65 a R$296,65 (12x); mensais de R$249 a R$349; Premium sob consulta. Foco em gestão mais que automação, bem feito mas pouco relevante no mercado; funcionalidades básicas presas a planos superiores.
-- **OlaClick** (https://olaclick.com/) — Advanced R$64/mês (~400 pedidos); Premium R$160/mês (~4.000 pedidos); Elite R$374/mês; Infinity R$928/mês (ilimitado). Preço acessível, mas parece incompleto e dependente do plano contratado.
-- **WhatsMenu** (https://whatsmenu.com.br/) — valor padrão R$97/mês; usa montagem gratuita de cardápio (100 itens) como gatilho de urgência para implementação. Barato, sem grandes ameaças ao nosso posicionamento.
-- **Multipedidos** (https://multipedidos.com.br/) — iniciante R$169,90/mês; profissional R$259,90/mês; implementação R$150. Relativamente completo e promissor, mas custo elevado ao somar módulos que já entregamos no plano (como o chatbot).
-- **Delivery Direto** (https://site.deliverydireto.com.br/) — comissão de 10% sobre vendas (teto R$699/mês) no iniciante; 5% (teto R$899/mês) no profissional; possui módulos à parte. Possivelmente o cardápio digital mais antigo da lista, perdendo mercado para concorrentes mais modernos.
-- **Linx** (https://www.linx.com.br/) — Essencial R$349/mês; Plus R$529/mês; Max R$779/mês. Foco em grandes empresas/franquias, dona da Neemo (posicionada como sistema de gestão); atendimento fica caro por depender da Neemo à parte.
-- **Neemo** (https://www.neemo.com.br/) — Start a partir de R$189/mês; Pro a partir de R$289/mês; franquia sob consulta. Cardápio digital comprado pela Linx, interface historicamente ruim, foco em franquias com ERP.
-- **Alloy** (https://www.alloy.al/) — Começar R$164,93 (até R$30 mil/mês); Crescer R$224,93 (até R$70 mil); Avançar R$284,93 (até R$110 mil); Evoluir R$359,93 (acima de R$110 mil). Pouca relevância de mercado hoje, mas ferramenta completa e bem feita.
-- **Accon** (https://accon.com.br/) — mensal completo R$349/mês; trimestral completo R$299/mês. Foco em atendimento e automação de delivery, deixa a gestão de lado, integra com outros PDVs.
-- **Takeat** (https://www.takeat.app/) — básico R$199/mês; inovação R$279/mês; profissional R$499/mês; enterprise sob consulta. Bom custo-benefício, cardápio com usabilidade ruim, mas sistema relativamente completo.
-- **EasyAssist** (https://easyassist.com.br/) — sem dado de preço coletado. Sistema de gestão simples, focado apenas em mesas, com controles básicos de estoque e pedidos.
-- **BigDim** (https://www.bigdim.com.br/) — Flex R$59,90/mês (até 150 pedidos); Basic R$89,90/mês; Pro R$159,90/mês; Prime R$189,90/mês. Preço acessível, sistema pequeno, parece ter muitas coisas mas incompletas.
-- **Ecta** (https://ecta.com.br/) — 1º mês no boleto R$350; demais meses R$200; no cartão, 6x de R$189. Foco em atendimento com custo-benefício mediano; disparador de mensagem via SMS (não WhatsApp), um pouco arcaico.
-- **Suitable** (https://suitable.com.br/) — Starter R$287/mês; Advanced R$386/mês; Premium R$479/mês; Ultra sob consulta. Sistema razoavelmente completo, compara-se diretamente com concorrentes no próprio site; layout de cardápio pouco atrativo.
-- **BeeFood** (https://beefood.com.br/) — grátis (histórico de 7 dias); Zangão R$200/mês; Rainha R$300/mês; BeeFood R$400/mês. Bastante completo, cardápio pouco intuitivo, preços não muito competitivos.
-- **Cardápio Ai** (https://cardapio.ai/) — PDV Básico R$49,90/mês; PDV + Robô R$64,90/mês; PDV Integrado R$99,90/mês. Custo baixo, focado em automação de atendimento, deixa gestão e marketing de lado.
-- **Omie** (https://www.omie.com.br/) — Omie ERP R$99/mês; Omie Multivarejo R$209/mês. Foco principal é ERP para vários segmentos; cardápio digital não é o foco.
-- **GrandChef** (https://www.grandchef.com.br/) — Starter 12x R$29,94; Lite 12x R$67,43 ou R$89,90/mês; Pro 12x R$97,43 ou R$129,90/mês. Relativamente completo e bem feito, bom posicionamento em gestão, cardápio digital com segurança percebida fraca.
-- **Jotajá** (https://www.site.jotaja.com/) — Start R$249/mês + R$300 de implantação; Advanced R$329/mês + R$300 de implantação; Franquias sob consulta. Cardápio simples, destaque pelo evento anual "Jotajá Summit"; pouca relevância atual.
-- **Sischef** (https://sischef.com/) — planos a partir de R$99,99/mês, com módulos à parte. Foco em gestão (não concorre diretamente com nosso posicionamento de cardápio digital); forte reconhecimento entre franquias; temos integração com eles.
-- **Deli** (https://deli.com.br/pt-br/) — Inicial R$83,90/mês; Avançado R$125,90/mês; Pro R$178,90/mês, com módulos à parte. Relativamente completo e promissor; custo sobe ao somar módulos que já entregamos no plano (como o chatbot).`,
   funcoes: `Nessa área você encontra as definições de cada profissional envolvido no processo comercial de representantes.
 
 | Função | Descrição |
@@ -790,30 +735,6 @@ Muita gente associa parceria com algo sem custo, mas aqui a taxa funciona como u
 
 ### "Não conheço o mercado de food"
 Isso acontece bastante, principalmente com vendedores vindos de outros segmentos de software. O treinamento cobre exatamente esse ponto: você aprende as dores do restaurante, o discurso certo, os argumentos que mais convertem e exemplos práticos de venda.`,
-  "progressao-carreira": `A progressão de carreira por nível trata da evolução do agente de parcerias dentro do seu mesmo nível de senioridade, seja como Channel Hunter ou Channel Account Manager. O principal critério é a performance em relação às metas estipuladas para o canal, com benefício de aumento da taxa de comissionamento e maior protagonismo na gestão e desenvolvimento das parcerias.
-
-| Nível | Faixa | Base salarial | Comissão Meta 1 | Comissão Meta 2 | Comissão Meta 3 | Critérios de elegibilidade / desclassificação |
-|---|---|---|---|---|---|---|
-| JR 1 | Faixa 1 – Base | R$ 1.809,51 | 20% (OTE R$ 2.171,41) | 25% (OTE R$ 2.261,89) | 30% (OTE R$ 2.352,36) | Ramp-up concluído em caso de novato; Meta 3 nos últimos 2 meses |
-| JR 1 | Faixa 2 – Estrela |  | 30% (OTE R$ 2.352,36) | 35% (OTE R$ 2.442,84) | 40% (OTE R$ 2.533,31) | Meta 3 (1 mês, no mês vigente) / se não bater Meta 3 na faixa 2, desce para o nível anterior |
-| JR 2 | Faixa 1 – Base | R$ 1.988,48 | 20% (OTE R$ 2.386,18) | 25% (OTE R$ 2.485,60) | 30% (OTE R$ 2.585,02) | Ramp-up concluído em caso de novato; Meta 3 nos últimos 2 meses |
-| JR 2 | Faixa 2 – Estrela |  | 30% (OTE R$ 2.585,02) | 35% (OTE R$ 2.684,45) | 40% (OTE R$ 2.783,87) | Meta 3 (1 mês, no mês vigente) / se não bater Meta 3 na faixa 2, desce para o nível anterior |
-| JR 3 | Faixa 1 – Base | R$ 2.185,14 | 20% (OTE R$ 2.622,17) | 25% (OTE R$ 2.731,43) | 30% (OTE R$ 2.840,68) | Ramp-up concluído em caso de novato; Meta 3 nos últimos 2 meses |
-| JR 3 | Faixa 2 – Estrela |  | 30% (OTE R$ 2.840,68) | 35% (OTE R$ 2.949,94) | 40% (OTE R$ 3.059,20) | Meta 3 (1 mês, no mês vigente) / se não bater Meta 3 na faixa 2, desce para o nível anterior |
-| PL 1 | Faixa 1 – Base | R$ 2.401,25 | 25% (OTE R$ 3.001,56) | 30% (OTE R$ 3.121,62) | 45% (OTE R$ 3.481,81) | Ramp-up concluído em caso de novato; Meta 3 nos últimos 2 meses |
-| PL 1 | Faixa 2 – Estrela |  | 30% (OTE R$ 3.121,62) | 35% (OTE R$ 3.241,69) | 50% (OTE R$ 3.601,88) | Meta 3 (1 mês, no mês vigente) / se não bater Meta 3 na faixa 2, desce para o nível anterior |
-| PL 2 | Faixa 1 – Base | R$ 2.617,36 | 25% (OTE R$ 3.271,70) | 30% (OTE R$ 3.402,57) | 45% (OTE R$ 3.795,17) | Ramp-up concluído em caso de novato; Meta 3 nos últimos 2 meses |
-| PL 2 | Faixa 2 – Estrela |  | 30% (OTE R$ 3.402,57) | 35% (OTE R$ 3.533,44) | 50% (OTE R$ 3.926,04) | Meta 3 (1 mês, no mês vigente) / se não bater Meta 3 na faixa 2, desce para o nível anterior |
-| PL 3 | Faixa 1 – Base | R$ 2.852,93 | 25% (OTE R$ 3.566,16) | 30% (OTE R$ 3.708,81) | 45% (OTE R$ 4.136,75) | Ramp-up concluído em caso de novato; Meta 3 nos últimos 2 meses |
-| PL 3 | Faixa 2 – Estrela |  | 30% (OTE R$ 3.708,81) | 35% (OTE R$ 3.851,46) | 50% (OTE R$ 4.279,40) | Meta 3 (1 mês, no mês vigente) / se não bater Meta 3 na faixa 2, desce para o nível anterior |
-| SR 1 | Faixa 1 – Base | R$ 3.109,69 | 25% (OTE R$ 3.887,11) | 30% (OTE R$ 4.042,60) | 45% (OTE R$ 4.509,05) | Ramp-up concluído em caso de novato; Meta 3 nos últimos 2 meses |
-| SR 1 | Faixa 2 – Estrela |  | 30% (OTE R$ 4.042,60) | 35% (OTE R$ 4.198,08) | 50% (OTE R$ 4.664,53) | Meta 3 (1 mês, no mês vigente) / se não bater Meta 3 na faixa 2, desce para o nível anterior |
-| SR 2 | Faixa 1 – Base | R$ 3.389,56 | 25% (OTE R$ 4.236,95) | 30% (OTE R$ 4.406,43) | 45% (OTE R$ 4.914,86) | Ramp-up concluído em caso de novato; Meta 3 nos últimos 2 meses |
-| SR 2 | Faixa 2 – Estrela |  | 30% (OTE R$ 4.406,43) | 35% (OTE R$ 4.575,91) | 50% (OTE R$ 5.084,34) | Meta 3 (1 mês, no mês vigente) / se não bater Meta 3 na faixa 2, desce para o nível anterior |
-| SR 3 | Faixa 1 – Base | R$ 3.694,62 | 25% (OTE R$ 4.618,27) | 30% (OTE R$ 4.803,01) | 45% (OTE R$ 5.357,20) | Ramp-up concluído em caso de novato; Meta 3 nos últimos 2 meses |
-| SR 3 | Faixa 2 – Estrela |  | 30% (OTE R$ 4.803,01) | 35% (OTE R$ 4.987,74) | 50% (OTE R$ 5.541,93) | Meta 3 (1 mês, no mês vigente) / se não bater Meta 3 na faixa 2, desce para o nível anterior |
-
-**Nota:** as colunas originais "Meta de Clientes" e "Custo por Cliente (OTE)" estavam quebradas (#REF!) na planilha de origem para a maioria dos níveis e foram omitidas até serem corrigidas pela liderança.`,
 };
 
 const ONBOARDING_DAYS: { tag: string; title: string; items: string[] }[] = [
@@ -933,18 +854,27 @@ const IPP_PILLS = [
   "CNPJ ativo (MEI+)",
 ];
 
-const OBJECOES_PILLS = [
-  "Entendimento do programa",
-  "Prioridade",
-  "Perfil",
-  "Esforço operacional",
-  "Retorno financeiro",
-  "Confiança",
-  "Concorrência",
-  "Compromisso",
-  "Exclusividade",
-  "Deal breaker",
-  "Dispensa",
+const OBJECOES_SIMPLES = [
+  { titulo: "Entendimento do programa", resposta: "Explique que não é revenda — é representação de uma empresa de tecnologia." },
+  { titulo: "Prioridade", resposta: "Mostre a relevância da parceria e o potencial de retorno." },
+  { titulo: "Perfil", resposta: "Explore o ICP junto com o parceiro e cite exemplos parecidos que já indicaram." },
+  { titulo: "Esforço operacional", resposta: "A comissão cresce conforme a responsabilidade assumida — não precisa fazer tudo sozinho." },
+  { titulo: "Retorno financeiro", resposta: "Reforce a progressão da comissão e a rapidez de recebimento." },
+  { titulo: "Confiança", resposta: "Mostre cases, volume de parceiros ativos e materiais de apoio." },
+  { titulo: "Concorrência", resposta: "Destaque os diferenciais do programa — não exige exclusividade." },
+  { titulo: "Compromisso", resposta: "Não há metas obrigatórias nem exclusividade forçada; o ritmo é do parceiro." },
+  { titulo: "Exclusividade", resposta: "Deixe claro que não exige exclusividade." },
+  { titulo: "Deal breaker", resposta: "Desqualifique com respeito e deixe a porta aberta para o futuro." },
+  { titulo: "Dispensa", resposta: "Peça um tempo para alinhar, evitando ter que retomar em outro horário." },
+];
+
+const CONCORRENTES_DESTAQUE = [
+  { nome: "Anota ai", preco: "a partir de R$ 279,99/mês", nota: "Comprado pelo iFood; pouco foco em gestão." },
+  { nome: "Saipos", preco: "R$ 219/mês", nota: "Foco em gestão para franquias grandes; temos integração com eles." },
+  { nome: "Goomer", preco: "grátis a R$ 299,90/mês", nota: "Forte em totens de mesa; falta ferramentas de marketing." },
+  { nome: "WhatsMenu", preco: "R$ 97/mês", nota: "Barato; sem grandes ameaças ao nosso posicionamento." },
+  { nome: "Consumer (Menu Dino)", preco: "grátis a R$ 84,90/mês", nota: "Exige instalação local; difícil de usar." },
+  { nome: "Sischef", preco: "a partir de R$ 99,99/mês", nota: "Foco em gestão para franquias; temos integração com eles." },
 ];
 
 const JORNADA_STEPS = [
@@ -975,12 +905,12 @@ const SPECIAL_WIDGET_IDS = new Set([
   "onboarding",
   "produto",
   "ipp",
-  "matriz-objecoes",
+  "objecoes-concorrentes",
   "jornada-representante",
   "spin-selling",
 ]);
 
-function IconChip({ icon: Icon, size = 44, radius = 14 }: { icon: IconType; size?: number; radius?: number }) {
+export function IconChip({ icon: Icon, size = 44, radius = 14 }: { icon: IconType; size?: number; radius?: number }) {
   return (
     <div
       className="grid shrink-0 place-items-center text-white"
@@ -1142,6 +1072,62 @@ function NumberedSteps({ steps }: { steps: { title: string; desc: string }[] }) 
   );
 }
 
+function ObjecoesConcorrentes() {
+  return (
+    <div className="flex flex-col gap-6">
+      <div>
+        <div className="mb-2.5 text-sm font-bold text-foreground">Objeções mais comuns</div>
+        <p className="mb-3 text-[13px] text-muted-foreground">Toque em cada uma para ver a resposta rápida.</p>
+        <Accordion
+          type="single"
+          collapsible
+          className="rounded-[20px] border border-border bg-card px-5"
+          style={{ boxShadow: "var(--shadow-card)" }}
+        >
+          {OBJECOES_SIMPLES.map((o, i) => (
+            <AccordionItem key={o.titulo} value={o.titulo} className={i === OBJECOES_SIMPLES.length - 1 ? "border-b-0" : undefined}>
+              <AccordionTrigger className="text-[13.5px] font-semibold text-foreground hover:no-underline">
+                {o.titulo}
+              </AccordionTrigger>
+              <AccordionContent className="text-[13px] leading-relaxed text-muted-foreground">{o.resposta}</AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
+      </div>
+
+      <div>
+        <div className="mb-2.5 text-sm font-bold text-foreground">Principais concorrentes</div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {CONCORRENTES_DESTAQUE.map((c) => (
+            <div key={c.nome} className="rounded-2xl border border-border bg-card p-4" style={{ boxShadow: "var(--shadow-card)" }}>
+              <div className="text-sm font-bold text-foreground">{c.nome}</div>
+              <div className="mt-0.5 text-xs font-semibold" style={{ color: "var(--category-label)" }}>
+                {c.preco}
+              </div>
+              <div className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">{c.nota}</div>
+            </div>
+          ))}
+        </div>
+        <Accordion
+          type="single"
+          collapsible
+          className="mt-3 rounded-[20px] border border-border bg-card px-5"
+          style={{ boxShadow: "var(--shadow-card)" }}
+        >
+          <AccordionItem value="tabela-completa" className="border-b-0">
+            <AccordionTrigger className="text-[13.5px] font-semibold text-foreground hover:no-underline">
+              Ver comparativo completo (28 concorrentes)
+            </AccordionTrigger>
+            <AccordionContent>
+              <RichText text={CONCORRENTES_TABELA_COMPLETA} />
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </div>
+    </div>
+  );
+}
+
 export function Playbook() {
   const [bodies, setBodies] = useLocalStorageState<Record<string, string>>("bibly-playbook-bodies", DEFAULT_BODIES);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -1154,7 +1140,7 @@ export function Playbook() {
   const updateBody = (id: string, body: string) => setBodies((prev) => ({ ...prev, [id]: body }));
 
   if (active) {
-    const showBody = active.id !== "onboarding";
+    const showBody = active.id !== "onboarding" && active.id !== "objecoes-concorrentes";
     return (
       <div className="h-screen overflow-y-auto">
         <div className="mx-auto max-w-3xl px-6 py-8 sm:px-10">
@@ -1202,16 +1188,7 @@ export function Playbook() {
               </div>
             )}
 
-            {active.id === "matriz-objecoes" && (
-              <div className="rounded-[20px] border border-border bg-card p-5" style={{ boxShadow: "var(--shadow-card)" }}>
-                <div className="mb-3 text-sm font-bold text-foreground">Categorias de objeção mapeadas</div>
-                <div className="flex flex-wrap gap-2">
-                  {OBJECOES_PILLS.map((p) => (
-                    <Pill key={p}>{p}</Pill>
-                  ))}
-                </div>
-              </div>
-            )}
+            {active.id === "objecoes-concorrentes" && <ObjecoesConcorrentes />}
 
             {active.id === "jornada-representante" && <NumberedSteps steps={JORNADA_STEPS} />}
 

@@ -3,6 +3,7 @@ import {
   AlertTriangle,
   ArrowDownRight,
   ArrowUpRight,
+  Award,
   BarChart3,
   Bell,
   BookOpen,
@@ -17,6 +18,7 @@ import {
   PhoneCall,
   Sparkles,
   Star,
+  Tag,
   Target,
   UserPlus,
   Users,
@@ -35,13 +37,13 @@ import {
 } from "recharts";
 
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useLocalStorageState } from "@/hooks/use-local-storage-state";
 import { type Column, ObjectEditorDialog, RowsEditorDialog } from "@/components/bibly/editors";
 import { Playbook } from "@/components/bibly/Playbook";
 import { Templates } from "@/components/bibly/Templates";
+import { ContentPage } from "@/components/bibly/ContentPage";
 
 // ---------------------------------------------------------------------------
 // Dados de exemplo — dashboard pessoal do PSM. Tudo editável pela engrenagem
@@ -63,38 +65,106 @@ type Kpis = {
   deltaHealth: string;
 };
 
-const KPIS_PADRAO: Kpis = {
-  totalClientes: 84,
-  deltaClientes: "+4 este mês",
-  pendenciasHoje: 16,
-  deltaPendencias: "+3 vs. ontem",
-  clientesRisco: 7,
-  deltaRisco: "-2 esta semana",
-  receitaCarteira: 63510,
-  deltaReceita: "+9% este mês",
-  metaMesPercent: 73,
-  deltaMeta: "+12pp",
-  healthScore: 86,
-  deltaHealth: "+3 pts",
+type Periodo = "hoje" | "semana" | "mes" | "trimestre" | "semestre";
+
+const KPIS_POR_PERIODO: Record<Periodo, Kpis> = {
+  hoje: {
+    totalClientes: 84,
+    deltaClientes: "+1 hoje",
+    pendenciasHoje: 6,
+    deltaPendencias: "+2 vs. ontem",
+    clientesRisco: 7,
+    deltaRisco: "sem mudança",
+    receitaCarteira: 2340,
+    deltaReceita: "+5% vs. ontem",
+    metaMesPercent: 73,
+    deltaMeta: "+1pp",
+    healthScore: 86,
+    deltaHealth: "estável",
+  },
+  semana: {
+    totalClientes: 84,
+    deltaClientes: "+4 esta semana",
+    pendenciasHoje: 16,
+    deltaPendencias: "+3 vs. semana passada",
+    clientesRisco: 7,
+    deltaRisco: "-2 esta semana",
+    receitaCarteira: 14200,
+    deltaReceita: "+9% esta semana",
+    metaMesPercent: 73,
+    deltaMeta: "+3pp",
+    healthScore: 86,
+    deltaHealth: "+1 pt",
+  },
+  mes: {
+    totalClientes: 84,
+    deltaClientes: "+4 este mês",
+    pendenciasHoje: 41,
+    deltaPendencias: "+9 vs. mês passado",
+    clientesRisco: 7,
+    deltaRisco: "-2 este mês",
+    receitaCarteira: 63510,
+    deltaReceita: "+9% este mês",
+    metaMesPercent: 73,
+    deltaMeta: "+12pp",
+    healthScore: 86,
+    deltaHealth: "+3 pts",
+  },
+  trimestre: {
+    totalClientes: 84,
+    deltaClientes: "+11 no trimestre",
+    pendenciasHoje: 118,
+    deltaPendencias: "+22 vs. trimestre anterior",
+    clientesRisco: 9,
+    deltaRisco: "-4 no trimestre",
+    receitaCarteira: 178300,
+    deltaReceita: "+22% no trimestre",
+    metaMesPercent: 81,
+    deltaMeta: "+18pp",
+    healthScore: 84,
+    deltaHealth: "+2 pts",
+  },
+  semestre: {
+    totalClientes: 84,
+    deltaClientes: "+19 no semestre",
+    pendenciasHoje: 246,
+    deltaPendencias: "+37 vs. semestre anterior",
+    clientesRisco: 11,
+    deltaRisco: "-6 no semestre",
+    receitaCarteira: 342100,
+    deltaReceita: "+34% no semestre",
+    metaMesPercent: 88,
+    deltaMeta: "+25pp",
+    healthScore: 87,
+    deltaHealth: "+5 pts",
+  },
 };
 
 const KPIS_FIELDS: Column<Kpis>[] = [
   { key: "totalClientes", label: "Minha carteira — clientes", type: "number" },
   { key: "deltaClientes", label: "Minha carteira — variação" },
-  { key: "pendenciasHoje", label: "Pendências hoje", type: "number" },
+  { key: "pendenciasHoje", label: "Pendências", type: "number" },
   { key: "deltaPendencias", label: "Pendências — variação" },
   { key: "clientesRisco", label: "Clientes em risco", type: "number" },
   { key: "deltaRisco", label: "Risco — variação" },
   { key: "receitaCarteira", label: "Receita da carteira (R$)", type: "number" },
   { key: "deltaReceita", label: "Receita — variação" },
-  { key: "metaMesPercent", label: "Meta do mês (%)", type: "number" },
+  { key: "metaMesPercent", label: "Meta do período (%)", type: "number" },
   { key: "deltaMeta", label: "Meta — variação" },
   { key: "healthScore", label: "Health Score", type: "number" },
   { key: "deltaHealth", label: "Health Score — variação" },
 ];
 
 type SaudeCarteira = { saudaveis: number; atencao: number; criticos: number };
-const SAUDE_PADRAO: SaudeCarteira = { saudaveis: 58, atencao: 19, criticos: 7 };
+
+const SAUDE_POR_PERIODO: Record<Periodo, SaudeCarteira> = {
+  hoje: { saudaveis: 59, atencao: 18, criticos: 7 },
+  semana: { saudaveis: 58, atencao: 19, criticos: 7 },
+  mes: { saudaveis: 58, atencao: 19, criticos: 7 },
+  trimestre: { saudaveis: 54, atencao: 21, criticos: 9 },
+  semestre: { saudaveis: 50, atencao: 23, criticos: 11 },
+};
+
 const SAUDE_FIELDS: Column<SaudeCarteira>[] = [
   { key: "saudaveis", label: "Saudáveis", type: "number" },
   { key: "atencao", label: "Atenção", type: "number" },
@@ -127,17 +197,35 @@ const ACOES_PADRAO: Acao[] = [
   { horario: "16:30", descricao: "Revisar contrato Sabor & Cia" },
 ];
 
-type Objetivo = { label: string; atual: number; meta: number };
-const OBJETIVOS_COLUMNS: Column<Objetivo>[] = [
-  { key: "label", label: "Objetivo" },
-  { key: "atual", label: "Atual", type: "number" },
-  { key: "meta", label: "Meta", type: "number" },
+type MetaItem = { metrica: string; valor: string; contexto: string };
+const METAS_COLUMNS: Column<MetaItem>[] = [
+  { key: "metrica", label: "Métrica" },
+  { key: "valor", label: "Valor atual" },
+  { key: "contexto", label: "Contexto / meta" },
 ];
-const OBJETIVOS_PADRAO: Objetivo[] = [
-  { label: "Follow-ups", atual: 11, meta: 16 },
-  { label: "Clientes recuperados", atual: 2, meta: 4 },
-  { label: "Upsell", atual: 3, meta: 5 },
-  { label: "Visitas", atual: 4, meta: 6 },
+
+const METAS_ATIVACAO_PADRAO: MetaItem[] = [
+  { metrica: "Tempo médio de onboarding", valor: "9 dias", contexto: "meta: até 10 dias" },
+  { metrica: "% do canal treinado", valor: "78%", contexto: "meta: 90%" },
+  { metrica: "Taxa de acesso ao portal", valor: "64%", contexto: "dos representantes ativos" },
+  { metrica: "Consumo de materiais de capacitação", valor: "52%", contexto: "dos módulos concluídos" },
+  { metrica: "Ações de co-marketing realizadas", valor: "3", contexto: "no período" },
+];
+
+const METAS_COMERCIAL_PADRAO: MetaItem[] = [
+  { metrica: "Volume de leads indicados", valor: "27", contexto: "no período" },
+  { metrica: "Taxa de conversão por etapa", valor: "18%", contexto: "lead → cliente" },
+  { metrica: "Valor total de vendas", valor: "R$ 42.300", contexto: "no período" },
+  { metrica: "Ticket médio das oportunidades", valor: "R$ 1.567", contexto: "por venda fechada" },
+  { metrica: "Ciclo de vendas no canal", valor: "14 dias", contexto: "média do funil" },
+];
+
+const METAS_FINANCEIRO_PADRAO: MetaItem[] = [
+  { metrica: "Receita recorrente gerada", valor: "R$ 63.510", contexto: "MRR da carteira" },
+  { metrica: "Comissões pagas", valor: "R$ 8.240", contexto: "no período" },
+  { metrica: "Margem gerada por canal", valor: "34%", contexto: "sobre a receita" },
+  { metrica: "Taxa de churn dos clientes do parceiro", valor: "3,2%", contexto: "mensal" },
+  { metrica: "CLV por canal", valor: "R$ 4.980", contexto: "médio por cliente" },
 ];
 
 type Movimentacao = { tipo: string; cliente: string; tempo: string };
@@ -161,15 +249,51 @@ const INSIGHTS_PADRAO: Insight[] = [
   { texto: "Hoje é um bom dia para realizar follow-ups." },
 ];
 
+const PLANOS_PRECOS_BODY = `Valores dos planos e módulos para a contratação da Cardápio Web, bem como os descontos disponíveis para negociações nas vendas.
+
+| Fidelidade | Plano Mesas — Valor total | Plano Mesas — Valor mensal | Plano Delivery — Valor total | Plano Delivery — Valor mensal | Plano Premium — Valor total | Plano Premium — Valor mensal | Módulo Marketplace — Valor total | Módulo Marketplace — Valor mensal | Módulo Estoque Avançado — Valor total | Módulo Estoque Avançado — Valor mensal | Módulo Cupom Fiscal — Valor total | Módulo Cupom Fiscal — Valor mensal | Módulo Entregadores — Valor total | Módulo Entregadores — Valor mensal | Entregadores — até 500 pedidos (por pedido) | Entregadores — 501 a 1500 pedidos (por pedido) | Entregadores — acima de 1500 pedidos (por pedido) | Módulo Financeiro — Valor total | Módulo Financeiro — Valor mensal | Módulo Totem — Valor total | Módulo Totem — Valor mensal |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Anual | R$ 1.679,88 | R$ 139,99 | R$ 2.159,88 | R$ 179,99 | R$ 2.879,88 | R$ 239,99 | R$ 359,88 | R$ 29,99 | R$ 359,88 | R$ 29,99 | R$ 839,88 | R$ 69,99 | R$ 659,88 | R$ 54,99 | 0% | 8% | 6% | R$ 839,88 | R$ 69,99 | R$ 1.199,88 | R$ 99,99 |
+| Semestral | R$ 899,94 | R$ 149,99 | R$ 1.139,94 | R$ 189,99 | R$ 1.499,94 | R$ 249,99 | R$ 179,94 | R$ 29,99 | R$ 179,94 | R$ 29,99 | R$ 419,94 | R$ 69,99 | R$ 329,94 | R$ 54,99 | 0% | 8% | 6% | R$ 419,94 | R$ 69,99 | R$ 599,94 | R$ 99,99 |
+| Trimestral | R$ 479,97 | R$ 159,99 | R$ 599,97 | R$ 199,99 | R$ 779,97 | R$ 259,99 | R$ 89,97 | R$ 29,99 | R$ 89,97 | R$ 29,99 | R$ 209,97 | R$ 69,99 | R$ 164,97 | R$ 54,99 | 0% | 8% | 6% | R$ 209,97 | R$ 69,99 | R$ 299,97 | R$ 99,99 |
+| Mensal | R$ 169,99 | R$ 169,99 | R$ 209,99 | R$ 209,99 | R$ 269,99 | R$ 269,99 | R$ 29,99 | R$ 29,99 | R$ 29,99 | R$ 29,99 | R$ 69,99 | R$ 69,99 | R$ 54,99 | R$ 54,99 | 0% | 8% | 6% | R$ 69,99 | R$ 69,99 | R$ 99,99 | R$ 99,99 |
+
+**Nota:** o módulo Entregadores combina uma mensalidade fixa com uma taxa por pedido, escalonada por volume (0% até 500 pedidos, 8% de 501 a 1500, 6% acima de 1500).`;
+
+const PROGRESSAO_CARREIRA_BODY = `A progressão de carreira por nível trata da evolução do agente de parcerias dentro do seu mesmo nível de senioridade, seja como Channel Hunter ou Channel Account Manager. O principal critério é a performance em relação às metas estipuladas para o canal, com benefício de aumento da taxa de comissionamento e maior protagonismo na gestão e desenvolvimento das parcerias.
+
+| Nível | Faixa | Base salarial | Comissão Meta 1 | Comissão Meta 2 | Comissão Meta 3 | Critérios de elegibilidade / desclassificação |
+|---|---|---|---|---|---|---|
+| JR 1 | Faixa 1 – Base | R$ 1.809,51 | 20% (OTE R$ 2.171,41) | 25% (OTE R$ 2.261,89) | 30% (OTE R$ 2.352,36) | Ramp-up concluído em caso de novato; Meta 3 nos últimos 2 meses |
+| JR 1 | Faixa 2 – Estrela |  | 30% (OTE R$ 2.352,36) | 35% (OTE R$ 2.442,84) | 40% (OTE R$ 2.533,31) | Meta 3 (1 mês, no mês vigente) / se não bater Meta 3 na faixa 2, desce para o nível anterior |
+| JR 2 | Faixa 1 – Base | R$ 1.988,48 | 20% (OTE R$ 2.386,18) | 25% (OTE R$ 2.485,60) | 30% (OTE R$ 2.585,02) | Ramp-up concluído em caso de novato; Meta 3 nos últimos 2 meses |
+| JR 2 | Faixa 2 – Estrela |  | 30% (OTE R$ 2.585,02) | 35% (OTE R$ 2.684,45) | 40% (OTE R$ 2.783,87) | Meta 3 (1 mês, no mês vigente) / se não bater Meta 3 na faixa 2, desce para o nível anterior |
+| JR 3 | Faixa 1 – Base | R$ 2.185,14 | 20% (OTE R$ 2.622,17) | 25% (OTE R$ 2.731,43) | 30% (OTE R$ 2.840,68) | Ramp-up concluído em caso de novato; Meta 3 nos últimos 2 meses |
+| JR 3 | Faixa 2 – Estrela |  | 30% (OTE R$ 2.840,68) | 35% (OTE R$ 2.949,94) | 40% (OTE R$ 3.059,20) | Meta 3 (1 mês, no mês vigente) / se não bater Meta 3 na faixa 2, desce para o nível anterior |
+| PL 1 | Faixa 1 – Base | R$ 2.401,25 | 25% (OTE R$ 3.001,56) | 30% (OTE R$ 3.121,62) | 45% (OTE R$ 3.481,81) | Ramp-up concluído em caso de novato; Meta 3 nos últimos 2 meses |
+| PL 1 | Faixa 2 – Estrela |  | 30% (OTE R$ 3.121,62) | 35% (OTE R$ 3.241,69) | 50% (OTE R$ 3.601,88) | Meta 3 (1 mês, no mês vigente) / se não bater Meta 3 na faixa 2, desce para o nível anterior |
+| PL 2 | Faixa 1 – Base | R$ 2.617,36 | 25% (OTE R$ 3.271,70) | 30% (OTE R$ 3.402,57) | 45% (OTE R$ 3.795,17) | Ramp-up concluído em caso de novato; Meta 3 nos últimos 2 meses |
+| PL 2 | Faixa 2 – Estrela |  | 30% (OTE R$ 3.402,57) | 35% (OTE R$ 3.533,44) | 50% (OTE R$ 3.926,04) | Meta 3 (1 mês, no mês vigente) / se não bater Meta 3 na faixa 2, desce para o nível anterior |
+| PL 3 | Faixa 1 – Base | R$ 2.852,93 | 25% (OTE R$ 3.566,16) | 30% (OTE R$ 3.708,81) | 45% (OTE R$ 4.136,75) | Ramp-up concluído em caso de novato; Meta 3 nos últimos 2 meses |
+| PL 3 | Faixa 2 – Estrela |  | 30% (OTE R$ 3.708,81) | 35% (OTE R$ 3.851,46) | 50% (OTE R$ 4.279,40) | Meta 3 (1 mês, no mês vigente) / se não bater Meta 3 na faixa 2, desce para o nível anterior |
+| SR 1 | Faixa 1 – Base | R$ 3.109,69 | 25% (OTE R$ 3.887,11) | 30% (OTE R$ 4.042,60) | 45% (OTE R$ 4.509,05) | Ramp-up concluído em caso de novato; Meta 3 nos últimos 2 meses |
+| SR 1 | Faixa 2 – Estrela |  | 30% (OTE R$ 4.042,60) | 35% (OTE R$ 4.198,08) | 50% (OTE R$ 4.664,53) | Meta 3 (1 mês, no mês vigente) / se não bater Meta 3 na faixa 2, desce para o nível anterior |
+| SR 2 | Faixa 1 – Base | R$ 3.389,56 | 25% (OTE R$ 4.236,95) | 30% (OTE R$ 4.406,43) | 45% (OTE R$ 4.914,86) | Ramp-up concluído em caso de novato; Meta 3 nos últimos 2 meses |
+| SR 2 | Faixa 2 – Estrela |  | 30% (OTE R$ 4.406,43) | 35% (OTE R$ 4.575,91) | 50% (OTE R$ 5.084,34) | Meta 3 (1 mês, no mês vigente) / se não bater Meta 3 na faixa 2, desce para o nível anterior |
+| SR 3 | Faixa 1 – Base | R$ 3.694,62 | 25% (OTE R$ 4.618,27) | 30% (OTE R$ 4.803,01) | 45% (OTE R$ 5.357,20) | Ramp-up concluído em caso de novato; Meta 3 nos últimos 2 meses |
+| SR 3 | Faixa 2 – Estrela |  | 30% (OTE R$ 4.803,01) | 35% (OTE R$ 4.987,74) | 50% (OTE R$ 5.541,93) | Meta 3 (1 mês, no mês vigente) / se não bater Meta 3 na faixa 2, desce para o nível anterior |
+
+**Nota:** as colunas originais "Meta de Clientes" e "Custo por Cliente (OTE)" estavam quebradas (#REF!) na planilha de origem para a maioria dos níveis e foram omitidas até serem corrigidas pela liderança.`;
+
 const NAV_ITEMS = [
   { id: "dashboard", label: "Dashboard", icon: BarChart3 },
   { id: "playbook", label: "Playbook", icon: BookOpen },
   { id: "templates", label: "Templates", icon: MessageSquareText },
+  { id: "planos-precos", label: "Planos e Preços", icon: Tag },
+  { id: "progressao-carreira", label: "Progressão de Carreira", icon: Award },
   { id: "carteira", label: "Minha Carteira", icon: Briefcase },
-  { id: "followups", label: "Follow-ups", icon: PhoneCall },
   { id: "pipeline", label: "Pipeline", icon: Workflow },
   { id: "agenda", label: "Agenda", icon: Calendar },
-  { id: "metas", label: "Metas", icon: Target },
   { id: "relatorios", label: "Relatórios", icon: LineChartIcon },
 ] as const;
 
@@ -180,11 +304,12 @@ const MOVIMENTACAO_META: Record<string, { label: string; icon: React.ComponentTy
   risco: { label: "Cliente em risco", icon: AlertTriangle, className: "bg-red-100 text-red-600" },
 };
 
-const PERIODO_OPTIONS = [
+const PERIODO_OPTIONS: { value: Periodo; label: string }[] = [
   { value: "hoje", label: "Hoje" },
   { value: "semana", label: "7 dias" },
   { value: "mes", label: "Este mês" },
   { value: "trimestre", label: "Trimestre" },
+  { value: "semestre", label: "Semestre" },
 ];
 
 function trend(delta: string): "up" | "down" {
@@ -206,14 +331,36 @@ function downloadCsv(filename: string, rows: string[][]) {
 
 export function Dashboard() {
   const [secao, setSecao] = useState<(typeof NAV_ITEMS)[number]["id"]>("dashboard");
-  const [periodo, setPeriodo] = useState("mes");
+  const [periodo, setPeriodo] = useState<Periodo>("mes");
   const [menuAberto, setMenuAberto] = useLocalStorageState("bibly-menu-aberto", false);
 
-  const [kpis, setKpis] = useLocalStorageState<Kpis>("bibly-kpis", KPIS_PADRAO);
-  const [saude, setSaude] = useLocalStorageState<SaudeCarteira>("bibly-saude", SAUDE_PADRAO);
+  const [kpisPorPeriodo, setKpisPorPeriodo] = useLocalStorageState<Record<Periodo, Kpis>>(
+    "bibly-kpis-por-periodo",
+    KPIS_POR_PERIODO,
+  );
+  const [saudePorPeriodo, setSaudePorPeriodo] = useLocalStorageState<Record<Periodo, SaudeCarteira>>(
+    "bibly-saude-por-periodo",
+    SAUDE_POR_PERIODO,
+  );
+  const kpis = kpisPorPeriodo[periodo];
+  const saude = saudePorPeriodo[periodo];
+  const setKpis = (next: Kpis) => setKpisPorPeriodo((prev) => ({ ...prev, [periodo]: next }));
+  const setSaude = (next: SaudeCarteira) => setSaudePorPeriodo((prev) => ({ ...prev, [periodo]: next }));
+
   const [evolucao, setEvolucao] = useLocalStorageState<EvolucaoPonto[]>("bibly-evolucao", EVOLUCAO_PADRAO);
   const [acoes, setAcoes] = useLocalStorageState<Acao[]>("bibly-acoes", ACOES_PADRAO);
-  const [objetivos, setObjetivos] = useLocalStorageState<Objetivo[]>("bibly-objetivos", OBJETIVOS_PADRAO);
+  const [metasAtivacao, setMetasAtivacao] = useLocalStorageState<MetaItem[]>(
+    "bibly-metas-ativacao",
+    METAS_ATIVACAO_PADRAO,
+  );
+  const [metasComercial, setMetasComercial] = useLocalStorageState<MetaItem[]>(
+    "bibly-metas-comercial",
+    METAS_COMERCIAL_PADRAO,
+  );
+  const [metasFinanceiro, setMetasFinanceiro] = useLocalStorageState<MetaItem[]>(
+    "bibly-metas-financeiro",
+    METAS_FINANCEIRO_PADRAO,
+  );
   const [movimentacoes, setMovimentacoes] = useLocalStorageState<Movimentacao[]>(
     "bibly-movimentacoes",
     MOVIMENTACOES_PADRAO,
@@ -229,14 +376,16 @@ export function Dashboard() {
     [saude],
   );
 
+  const periodoLabel = PERIODO_OPTIONS.find((o) => o.value === periodo)?.label ?? periodo;
+
   const handleExport = () => {
     downloadCsv("bibly-resumo.csv", [
       ["Indicador", "Valor", "Variação"],
       ["Minha carteira (clientes)", String(kpis.totalClientes), kpis.deltaClientes],
-      ["Pendências hoje", String(kpis.pendenciasHoje), kpis.deltaPendencias],
+      ["Pendências", String(kpis.pendenciasHoje), kpis.deltaPendencias],
       ["Clientes em risco", String(kpis.clientesRisco), kpis.deltaRisco],
       ["Receita da carteira", String(kpis.receitaCarteira), kpis.deltaReceita],
-      ["Meta do mês (%)", String(kpis.metaMesPercent), kpis.deltaMeta],
+      ["Meta do período (%)", String(kpis.metaMesPercent), kpis.deltaMeta],
       ["Health Score", String(kpis.healthScore), kpis.deltaHealth],
     ]);
   };
@@ -329,6 +478,22 @@ export function Dashboard() {
               <Playbook />
             ) : secao === "templates" ? (
               <Templates />
+            ) : secao === "planos-precos" ? (
+              <ContentPage
+                storageKey="bibly-content-planos-precos"
+                title="Planos e Preços"
+                summary="Valores oficiais dos planos e módulos, por fidelidade."
+                icon={Tag}
+                defaultBody={PLANOS_PRECOS_BODY}
+              />
+            ) : secao === "progressao-carreira" ? (
+              <ContentPage
+                storageKey="bibly-content-progressao-carreira"
+                title="Progressão de Carreira"
+                summary="Evolução salarial e de comissão por nível de senioridade."
+                icon={Award}
+                defaultBody={PROGRESSAO_CARREIRA_BODY}
+              />
             ) : secao !== "dashboard" ? (
               <PlaceholderSection label={NAV_ITEMS.find((n) => n.id === secao)!.label} />
             ) : (
@@ -380,10 +545,10 @@ export function Dashboard() {
                   {/* KPIs */}
                   <section className="relative grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-6">
                     <div className="absolute -top-2 right-0 xl:-top-9">
-                      <ObjectEditorDialog title="indicadores" fields={KPIS_FIELDS} value={kpis} onSave={setKpis} />
+                      <ObjectEditorDialog title={`indicadores — ${periodoLabel}`} fields={KPIS_FIELDS} value={kpis} onSave={setKpis} />
                     </div>
                     <StatCard icon={Users} label="Minha carteira" value={`${kpis.totalClientes}`} unit="clientes" delta={kpis.deltaClientes} />
-                    <StatCard icon={Bell} label="Pendências hoje" value={`${kpis.pendenciasHoje}`} unit="follow-ups" delta={kpis.deltaPendencias} />
+                    <StatCard icon={Bell} label="Pendências" value={`${kpis.pendenciasHoje}`} unit="follow-ups" delta={kpis.deltaPendencias} />
                     <StatCard icon={AlertTriangle} label="Clientes em risco" value={`${kpis.clientesRisco}`} unit="clientes" delta={kpis.deltaRisco} invert />
                     <StatCard
                       icon={Sparkles}
@@ -391,7 +556,7 @@ export function Dashboard() {
                       value={kpis.receitaCarteira.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })}
                       delta={kpis.deltaReceita}
                     />
-                    <StatCard icon={Target} label="Meta do mês" value={`${kpis.metaMesPercent}%`} delta={kpis.deltaMeta} />
+                    <StatCard icon={Target} label="Meta do período" value={`${kpis.metaMesPercent}%`} delta={kpis.deltaMeta} />
                     <StatCard icon={Star} label="Health Score" value={`${kpis.healthScore}`} delta={kpis.deltaHealth} />
                   </section>
 
@@ -400,8 +565,9 @@ export function Dashboard() {
                     <div className="space-y-4 lg:col-span-7">
                       <Panel
                         title="Saúde da carteira"
+                        subtitle={periodoLabel}
                         actions={
-                          <ObjectEditorDialog title="saúde da carteira" fields={SAUDE_FIELDS} value={saude} onSave={setSaude} />
+                          <ObjectEditorDialog title={`saúde da carteira — ${periodoLabel}`} fields={SAUDE_FIELDS} value={saude} onSave={setSaude} />
                         }
                       >
                         <div className="flex flex-col items-center gap-4 sm:flex-row">
@@ -487,33 +653,55 @@ export function Dashboard() {
                         </ul>
                       </Panel>
 
-                      <Panel
-                        title="Objetivos da semana"
-                        actions={
-                          <RowsEditorDialog
-                            title="objetivos da semana"
-                            columns={OBJETIVOS_COLUMNS}
-                            rows={objetivos}
-                            emptyRow={() => ({ label: "Novo objetivo", atual: 0, meta: 1 })}
-                            onSave={setObjetivos}
-                          />
-                        }
-                      >
-                        <div className="space-y-4">
-                          {objetivos.map((o) => (
-                            <div key={o.label} className="space-y-1.5">
-                              <div className="flex items-center justify-between text-sm">
-                                <span className="font-medium text-foreground">{o.label}</span>
-                                <span className="text-muted-foreground">
-                                  {o.atual}/{o.meta}
-                                </span>
-                              </div>
-                              <Progress value={Math.min((o.atual / Math.max(o.meta, 1)) * 100, 100)} className="h-2" />
-                            </div>
-                          ))}
-                        </div>
-                      </Panel>
                     </div>
+                  </section>
+
+                  {/* Minhas metas — Ativação/Engajamento, Performance Comercial, Financeiro/Retenção */}
+                  <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                    <Panel
+                      title="Ativação e engajamento"
+                      actions={
+                        <RowsEditorDialog
+                          title="ativação e engajamento"
+                          columns={METAS_COLUMNS}
+                          rows={metasAtivacao}
+                          emptyRow={() => ({ metrica: "Nova métrica", valor: "—", contexto: "" })}
+                          onSave={setMetasAtivacao}
+                        />
+                      }
+                    >
+                      <MetaLista itens={metasAtivacao} />
+                    </Panel>
+
+                    <Panel
+                      title="Performance comercial"
+                      actions={
+                        <RowsEditorDialog
+                          title="performance comercial"
+                          columns={METAS_COLUMNS}
+                          rows={metasComercial}
+                          emptyRow={() => ({ metrica: "Nova métrica", valor: "—", contexto: "" })}
+                          onSave={setMetasComercial}
+                        />
+                      }
+                    >
+                      <MetaLista itens={metasComercial} />
+                    </Panel>
+
+                    <Panel
+                      title="Indicadores financeiros e de retenção"
+                      actions={
+                        <RowsEditorDialog
+                          title="indicadores financeiros e de retenção"
+                          columns={METAS_COLUMNS}
+                          rows={metasFinanceiro}
+                          emptyRow={() => ({ metrica: "Nova métrica", valor: "—", contexto: "" })}
+                          onSave={setMetasFinanceiro}
+                        />
+                      }
+                    >
+                      <MetaLista itens={metasFinanceiro} />
+                    </Panel>
                   </section>
 
                   {/* Rodapé: duas colunas */}
@@ -679,6 +867,22 @@ function Panel({
       </div>
       {children}
     </div>
+  );
+}
+
+function MetaLista({ itens }: { itens: MetaItem[] }) {
+  return (
+    <ul className="space-y-3">
+      {itens.map((m) => (
+        <li key={m.metrica} className="flex items-start justify-between gap-3 text-sm">
+          <div>
+            <div className="font-medium text-foreground">{m.metrica}</div>
+            {m.contexto && <div className="text-xs text-muted-foreground">{m.contexto}</div>}
+          </div>
+          <span className="shrink-0 font-semibold text-foreground">{m.valor}</span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
