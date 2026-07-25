@@ -5,9 +5,12 @@ import {
   ArrowUpRight,
   BarChart3,
   Bell,
+  BookOpen,
   Briefcase,
   Calendar,
   CheckCircle2,
+  ChevronsLeft,
+  ChevronsRight,
   Download,
   LineChart as LineChartIcon,
   PhoneCall,
@@ -37,6 +40,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { cn } from "@/lib/utils";
 import { useLocalStorageState } from "@/hooks/use-local-storage-state";
 import { type Column, ObjectEditorDialog, RowsEditorDialog } from "@/components/bibly/editors";
+import { Playbook } from "@/components/bibly/Playbook";
 
 // ---------------------------------------------------------------------------
 // Dados de exemplo — dashboard pessoal do PSM. Tudo editável pela engrenagem
@@ -164,6 +168,7 @@ const NAV_ITEMS = [
   { id: "agenda", label: "Agenda", icon: Calendar },
   { id: "metas", label: "Metas", icon: Target },
   { id: "relatorios", label: "Relatórios", icon: LineChartIcon },
+  { id: "playbook", label: "Playbook", icon: BookOpen },
 ] as const;
 
 const MOVIMENTACAO_META: Record<string, { label: string; icon: React.ComponentType<{ className?: string }>; className: string }> = {
@@ -193,6 +198,7 @@ function downloadCsv(filename: string, rows: string[][]) {
 export function Dashboard() {
   const [secao, setSecao] = useState<(typeof NAV_ITEMS)[number]["id"]>("dashboard");
   const [periodo, setPeriodo] = useState("mes");
+  const [menuAberto, setMenuAberto] = useLocalStorageState("bibly-menu-aberto", false);
 
   const [kpis, setKpis] = useLocalStorageState<Kpis>("bibly-kpis", KPIS_PADRAO);
   const [saude, setSaude] = useLocalStorageState<SaudeCarteira>("bibly-saude", SAUDE_PADRAO);
@@ -230,40 +236,89 @@ export function Dashboard() {
     <TooltipProvider delayDuration={200}>
       <div className="min-h-screen bg-background">
         <div className="flex">
-          {/* Sidebar compacta — só ícones */}
-          <aside className="hidden md:flex w-[72px] flex-col items-center gap-1 border-r border-sidebar-border bg-sidebar py-6 sticky top-0 h-screen">
-            <img
-              src="/bibly-mascot.png"
-              alt="Bibly"
-              className="mb-6 h-11 w-11 rounded-2xl object-cover shadow-[var(--shadow-soft)]"
-            />
+          {/* Sidebar retrátil — recolhida mostra só ícones, expandida mostra ícone + label */}
+          <aside
+            className={cn(
+              "sticky top-0 hidden h-screen shrink-0 flex-col gap-1 border-r border-sidebar-border bg-sidebar py-6 transition-[width] duration-200 md:flex",
+              menuAberto ? "w-[220px] items-stretch px-3" : "w-[72px] items-center",
+            )}
+          >
+            <div
+              className={cn(
+                "mb-6 flex items-center gap-2",
+                menuAberto ? "px-1" : "flex-col",
+              )}
+            >
+              <img
+                src="/bibly-mascot.png"
+                alt="Bibly"
+                className="h-11 w-11 shrink-0 rounded-2xl object-cover shadow-[var(--shadow-soft)]"
+              />
+              {menuAberto && <span className="text-sm font-semibold text-foreground">Bibly</span>}
+            </div>
+
             {NAV_ITEMS.map((item) => {
               const active = secao === item.id;
+              const button = (
+                <button
+                  type="button"
+                  onClick={() => setSecao(item.id)}
+                  aria-label={item.label}
+                  className={cn(
+                    "grid place-items-center rounded-2xl text-muted-foreground transition-colors",
+                    menuAberto
+                      ? "h-11 w-full grid-cols-[auto_1fr] grid-flow-col justify-start gap-3 px-3"
+                      : "h-11 w-11",
+                    active
+                      ? "bg-secondary text-primary"
+                      : "hover:bg-muted hover:text-foreground",
+                  )}
+                >
+                  <item.icon className="h-[18px] w-[18px] shrink-0" />
+                  {menuAberto && <span className="justify-self-start text-sm font-medium">{item.label}</span>}
+                </button>
+              );
+
+              if (menuAberto) {
+                return <div key={item.id}>{button}</div>;
+              }
+
               return (
                 <Tooltip key={item.id}>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      onClick={() => setSecao(item.id)}
-                      aria-label={item.label}
-                      className={cn(
-                        "grid h-11 w-11 place-items-center rounded-2xl text-muted-foreground transition-colors",
-                        active
-                          ? "bg-secondary text-primary"
-                          : "hover:bg-muted hover:text-foreground",
-                      )}
-                    >
-                      <item.icon className="h-[18px] w-[18px]" />
-                    </button>
-                  </TooltipTrigger>
+                  <TooltipTrigger asChild>{button}</TooltipTrigger>
                   <TooltipContent side="right">{item.label}</TooltipContent>
                 </Tooltip>
               );
             })}
+
+            <div className="mt-auto pt-4">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => setMenuAberto((v) => !v)}
+                    aria-label={menuAberto ? "Recolher menu" : "Expandir menu"}
+                    className={cn(
+                      "grid place-items-center rounded-2xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+                      menuAberto ? "h-11 w-full" : "h-11 w-11",
+                    )}
+                  >
+                    {menuAberto ? (
+                      <ChevronsLeft className="h-[18px] w-[18px]" />
+                    ) : (
+                      <ChevronsRight className="h-[18px] w-[18px]" />
+                    )}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right">{menuAberto ? "Recolher menu" : "Expandir menu"}</TooltipContent>
+              </Tooltip>
+            </div>
           </aside>
 
           <main className="flex-1 min-w-0">
-            {secao !== "dashboard" ? (
+            {secao === "playbook" ? (
+              <Playbook />
+            ) : secao !== "dashboard" ? (
               <PlaceholderSection label={NAV_ITEMS.find((n) => n.id === secao)!.label} />
             ) : (
               <>
