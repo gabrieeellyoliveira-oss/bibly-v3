@@ -13,6 +13,7 @@ import {
   ChevronsRight,
   Download,
   LineChart as LineChartIcon,
+  MessageSquareText,
   PhoneCall,
   Sparkles,
   Star,
@@ -35,12 +36,12 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useLocalStorageState } from "@/hooks/use-local-storage-state";
 import { type Column, ObjectEditorDialog, RowsEditorDialog } from "@/components/bibly/editors";
 import { Playbook } from "@/components/bibly/Playbook";
+import { Templates } from "@/components/bibly/Templates";
 
 // ---------------------------------------------------------------------------
 // Dados de exemplo — dashboard pessoal do PSM. Tudo editável pela engrenagem
@@ -162,21 +163,29 @@ const INSIGHTS_PADRAO: Insight[] = [
 
 const NAV_ITEMS = [
   { id: "dashboard", label: "Dashboard", icon: BarChart3 },
+  { id: "playbook", label: "Playbook", icon: BookOpen },
+  { id: "templates", label: "Templates", icon: MessageSquareText },
   { id: "carteira", label: "Minha Carteira", icon: Briefcase },
   { id: "followups", label: "Follow-ups", icon: PhoneCall },
   { id: "pipeline", label: "Pipeline", icon: Workflow },
   { id: "agenda", label: "Agenda", icon: Calendar },
   { id: "metas", label: "Metas", icon: Target },
   { id: "relatorios", label: "Relatórios", icon: LineChartIcon },
-  { id: "playbook", label: "Playbook", icon: BookOpen },
 ] as const;
 
 const MOVIMENTACAO_META: Record<string, { label: string; icon: React.ComponentType<{ className?: string }>; className: string }> = {
   entrou: { label: "Cliente entrou", icon: UserPlus, className: "bg-emerald-100 text-emerald-600" },
-  recuperado: { label: "Cliente recuperado", icon: CheckCircle2, className: "bg-primary/15 text-primary" },
+  recuperado: { label: "Cliente recuperado", icon: CheckCircle2, className: "bg-secondary text-primary" },
   followup: { label: "Follow-up realizado", icon: PhoneCall, className: "bg-accent text-accent-foreground" },
   risco: { label: "Cliente em risco", icon: AlertTriangle, className: "bg-red-100 text-red-600" },
 };
+
+const PERIODO_OPTIONS = [
+  { value: "hoje", label: "Hoje" },
+  { value: "semana", label: "7 dias" },
+  { value: "mes", label: "Este mês" },
+  { value: "trimestre", label: "Trimestre" },
+];
 
 function trend(delta: string): "up" | "down" {
   return delta.trim().startsWith("-") ? "down" : "up";
@@ -239,7 +248,7 @@ export function Dashboard() {
           {/* Sidebar retrátil — recolhida mostra só ícones, expandida mostra ícone + label */}
           <aside
             className={cn(
-              "sticky top-0 hidden h-screen shrink-0 flex-col gap-1 border-r border-sidebar-border bg-sidebar py-6 transition-[width] duration-200 md:flex",
+              "bibly-sidebar sticky top-0 h-screen shrink-0 flex-col gap-1 border-r border-sidebar-border bg-sidebar py-6 transition-[width] duration-200",
               menuAberto ? "w-[220px] items-stretch px-3" : "w-[72px] items-center",
             )}
           >
@@ -318,6 +327,8 @@ export function Dashboard() {
           <main className="flex-1 min-w-0">
             {secao === "playbook" ? (
               <Playbook />
+            ) : secao === "templates" ? (
+              <Templates />
             ) : secao !== "dashboard" ? (
               <PlaceholderSection label={NAV_ITEMS.find((n) => n.id === secao)!.label} />
             ) : (
@@ -333,17 +344,28 @@ export function Dashboard() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Select value={periodo} onValueChange={setPeriodo}>
-                      <SelectTrigger className="h-9 w-[160px] rounded-xl border-border bg-card text-sm">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="hoje">Hoje</SelectItem>
-                        <SelectItem value="semana">Últimos 7 dias</SelectItem>
-                        <SelectItem value="mes">Este mês</SelectItem>
-                        <SelectItem value="trimestre">Este trimestre</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div
+                      className="flex gap-1.5 rounded-full border border-border bg-card p-1"
+                      style={{ boxShadow: "0 1px 2px rgba(43,37,48,0.04)" }}
+                    >
+                      {PERIODO_OPTIONS.map((opt) => {
+                        const active = periodo === opt.value;
+                        return (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => setPeriodo(opt.value)}
+                            className={cn(
+                              "rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
+                              active ? "text-white" : "text-muted-foreground hover:text-foreground",
+                            )}
+                            style={active ? { backgroundImage: "var(--gradient-primary)" } : undefined}
+                          >
+                            {opt.label}
+                          </button>
+                        );
+                      })}
+                    </div>
                     <Button
                       variant="outline"
                       className="h-9 rounded-xl border-border bg-card text-sm"
@@ -608,11 +630,14 @@ function StatCard({
 
   return (
     <div
-      className="rounded-[20px] border border-border bg-card p-5"
+      className="rounded-[22px] border border-border bg-card p-5"
       style={{ boxShadow: "var(--shadow-card)" }}
     >
-      <div className="grid h-9 w-9 place-items-center rounded-xl bg-secondary text-primary">
-        <Icon className="h-4 w-4" />
+      <div
+        className="grid h-11 w-11 place-items-center rounded-[14px] text-white"
+        style={{ backgroundImage: "var(--gradient-primary)" }}
+      >
+        <Icon className="h-[18px] w-[18px]" />
       </div>
       <div className="mt-3 flex items-baseline gap-1">
         <span className="text-2xl font-semibold tracking-tight text-foreground">{value}</span>
@@ -644,7 +669,7 @@ function Panel({
   actions?: React.ReactNode;
 }) {
   return (
-    <div className="rounded-[20px] border border-border bg-card p-5" style={{ boxShadow: "var(--shadow-card)" }}>
+    <div className="rounded-[22px] border border-border bg-card p-5" style={{ boxShadow: "var(--shadow-card)" }}>
       <div className="mb-4 flex items-start justify-between gap-2">
         <div>
           <div className="text-sm font-semibold text-foreground">{title}</div>

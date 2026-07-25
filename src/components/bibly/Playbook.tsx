@@ -1,119 +1,156 @@
-import { useMemo, useState } from "react";
-import { BookOpen, ChevronRight, Search } from "lucide-react";
+import { useMemo, useState, type ComponentType } from "react";
+import {
+  Award,
+  Building2,
+  ChevronLeft,
+  Clock,
+  Filter,
+  IdCard,
+  MessageCircleQuestion,
+  Package,
+  Repeat2,
+  Route,
+  Scale,
+  ShieldCheck,
+  Tag,
+  TrendingUp,
+  UserCheck,
+} from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { useLocalStorageState } from "@/hooks/use-local-storage-state";
 import { MarkdownEditorDialog, RichText } from "@/components/bibly/editors";
 
 // ---------------------------------------------------------------------------
-// Playbook de Representantes — material central de consulta do time.
-// Conteúdo inicial extraído das planilhas de onboarding e de playbook de
-// representantes; tudo editável pela engrenagem, persiste no navegador.
+// Playbook de Representantes — material central de consulta do time, em
+// formato de grid + detalhe por tópico. Conteúdo extraído das planilhas de
+// onboarding e de playbook de representantes; corpo de cada tópico editável
+// pela engrenagem, persiste no navegador.
 // ---------------------------------------------------------------------------
 
-type PlaybookTopic = {
+type Badge = "Novo" | "Atualizado";
+type IconType = ComponentType<{ className?: string }>;
+
+type TopicMeta = {
   id: string;
   title: string;
+  category: string;
   summary: string;
-  body: string;
+  icon: IconType;
+  badge?: Badge;
 };
 
-const PLAYBOOK_TOPICS_PADRAO: PlaybookTopic[] = [
+const TOPICS: TopicMeta[] = [
   {
     id: "onboarding",
-    title: "Onboarding (PSM)",
-    summary: "Roteiro de integração do Partner Success Manager nos primeiros 30 dias",
-    body: `É o seu processo de entrada e adaptação aqui na empresa. Ele foi pensado para te ajudar a entender como tudo funciona: desde a cultura e os valores da empresa, até as ferramentas, rotinas e o seu papel no time.
-
-O objetivo é que você receba treinamentos, conheça pessoas-chave, tire dúvidas e se sinta confiante e integrado(a) rapidamente.
-
-## Dia 1 e Dia 2
-
-**Imersão organizacional**
-- Criação de conta no Sandbox
-- Teste de Profile Sólides
-- Envio do resultado para o líder direto
-
-**Compra de livro e primeiro 1:1**
-- Adquirir o livro "Ecossistema de Parceiros"
-- Iniciar a leitura para apresentação após 30 dias
-- Solicitar reembolso
-- Receber feedback do processo seletivo
-- Agendar o primeiro 1:1 com a liderança
-
-**Conhecendo a jornada do cliente**
-Conversas programadas com lideranças de Content, Growth, Channel, Pré-vendas, Vendas, Expansão, Implementação, Suporte e Inovação/Parcerias.
-
-**Ponto de contato com liderança**
-Reunião diária de encerramento com o gestor direto.
-
-## Dia 3
-
-**Métricas**
-Desenvolver senso analítico com foco em KPIs e frameworks de gestão de canais.
-
-**Cultura da Cardápio Web**
-- Ler o artigo sobre cultura empresarial
-- Revisar o memorando interno
-- Discutir aprendizados com a liderança
-
-## Dias 4 e 5
-
-**Imersão técnica (parte 1)**
-- Escutar 5 episódios do Partner Cast com resumos
-- Estudar o CW Club
-- Revisar materiais sobre: Modelos de Canais, Estruturação de Parcerias, Funções de Partner Manager e Metodologia de Programas de Canal
-
-## Dias 6 e 7
-
-**Imersão técnica (parte 2)**
-Explorar recursos sobre: Playbook de Representantes, definições de onboarding, checklists de integração, estratégias de capacitação de parceiros, SPIN Selling e escalabilidade de programas.
-
-## Dia 8
-
-**Conhecimento de modelo de parcerias**
-- Pesquisar 3 empresas com modelos diferentes
-- Documentar a contribuição da função de PSM no setor
-
-**Conhecendo o produto**
-- Estudar a Central de Ajuda
-- Realizar teste prático
-- Assistir vídeos sobre sistema, cardápio digital e gestão
-
-## Dia 9
-
-**Teste prático do sistema**
-Exercícios no Sandbox incluindo: criação de cardápio, gestão de cupons, programa de fidelização, disparos via WhatsApp, cadastro de áreas de entrega e roleplay.
-
-## Dia 10
-
-**Plataformas utilizadas**
-- Treinamento em Pipedrive
-- Portal do Representante
-- Kommo
-
-Acompanhamentos com profissionais: closer, channel acquisition, PSM, implementador e helpdesk.
-
-## Dias 11 e 12
-
-**Apresentação**
-Demonstração cobrindo: e-commerce para restaurantes, os três pilares, jornada do representante, técnicas SPIN, métricas, planos, módulos e definição de onboarding bem-sucedido.
-
-## Dia 13
-
-**Treinamento de atendimento**
-Treinamento supervisionado com a liderança direta.
-
-## Dia 30
-
-**Apresentação do livro**
-Apresentar os aprendizados de "Ecossistema de Parceiros".`,
+    title: "Onboarding",
+    category: "Cultura & Time",
+    summary: "Seu processo de entrada e adaptação — cultura, ferramentas, rotinas e o seu papel no time.",
+    icon: Clock,
+    badge: "Atualizado",
   },
   {
     id: "produto",
     title: "Produto",
-    summary: "Funcionalidades, pilares, planos e integrações da plataforma",
-    body: `Todos os aspectos mais importantes do produto: funcionalidades, planos e integrações disponíveis.
+    category: "Produto",
+    summary: "Todos os aspectos mais importantes do produto: funcionalidades, planos e integrações.",
+    icon: Package,
+  },
+  {
+    id: "ipp",
+    title: "IPP — Perfil Ideal de Parceiro",
+    category: "Aquisição",
+    summary: "Perfil ideal de parceiro (representante) para o programa.",
+    icon: UserCheck,
+  },
+  {
+    id: "matriz-objecoes",
+    title: "Matriz de Objeções",
+    category: "Vendas",
+    summary: "Principais objeções no processo de aquisição e como contorná-las estrategicamente.",
+    icon: ShieldCheck,
+  },
+  {
+    id: "jornada-representante",
+    title: "Jornada do Representante",
+    category: "Processos",
+    summary: "As etapas que compõem a jornada, da prospecção à passagem de bastão.",
+    icon: Route,
+    badge: "Novo",
+  },
+  {
+    id: "passagem-bastao",
+    title: "Passagem de Bastão",
+    category: "Processos",
+    summary: "Checklist de informações para conectar os setores na marcação da apresentação.",
+    icon: Repeat2,
+  },
+  {
+    id: "spin-selling",
+    title: "SPIN Selling",
+    category: "Vendas",
+    summary: "Metodologia baseada em quatro pilares de perguntas: Situação, Problema, Implicação e Necessidade.",
+    icon: MessageCircleQuestion,
+  },
+  {
+    id: "aida",
+    title: "AIDA",
+    category: "Vendas",
+    summary: "Modelo de hierarquia de efeitos aplicado à cold call de prospecção.",
+    icon: TrendingUp,
+  },
+  {
+    id: "planos-precos",
+    title: "Planos e Preços",
+    category: "Comercial",
+    summary: "Valores oficiais dos planos e módulos, por fidelidade.",
+    icon: Tag,
+  },
+  {
+    id: "concorrentes",
+    title: "Matriz de Concorrentes",
+    category: "Mercado",
+    summary: "Comparativo de funcionalidades e preços com a concorrência.",
+    icon: Scale,
+  },
+  {
+    id: "funcoes",
+    title: "Funções",
+    category: "Cultura & Time",
+    summary: "Definições dos profissionais envolvidos no processo comercial.",
+    icon: IdCard,
+  },
+  {
+    id: "funis",
+    title: "Funis",
+    category: "Processos",
+    summary: "Etapas dos funis de prospecção, acompanhamento, clientes e motivos de perda.",
+    icon: Filter,
+    badge: "Novo",
+  },
+  {
+    id: "estrutura-representantes",
+    title: "Estrutura de Representantes",
+    category: "Comercial",
+    summary: "Perfil, funcionamento, modelo financeiro e objeções do programa.",
+    icon: Building2,
+  },
+  {
+    id: "progressao-carreira",
+    title: "Progressão de Carreira",
+    category: "Cultura & Time",
+    summary: "Evolução salarial e de comissão por nível de senioridade.",
+    icon: Award,
+  },
+];
+
+const BADGE_STYLE: Record<Badge, { bg: string; fg: string }> = {
+  Novo: { bg: "var(--badge-novo-bg)", fg: "var(--badge-novo-fg)" },
+  Atualizado: { bg: "var(--badge-atualizado-bg)", fg: "var(--badge-atualizado-fg)" },
+};
+
+const DEFAULT_BODIES: Record<string, string> = {
+  produto: `Todos os aspectos mais importantes do produto: funcionalidades, planos e integrações disponíveis.
 
 Vídeo com a visão completa da plataforma: https://www.youtube.com/watch?v=rfmGEWZZUNU
 
@@ -215,12 +252,7 @@ Vídeo com a visão completa da plataforma: https://www.youtube.com/watch?v=rfmG
 - Gestão de entregadores e rotas de entrega
 - Integração com marketplaces
 - Totem (dispositivos)`,
-  },
-  {
-    id: "ipp",
-    title: "IPP — Perfil Ideal de Parceiro",
-    summary: "Perfil ideal de parceiro (representante) para o programa",
-    body: `Esta aba documenta o perfil ideal de parceiro (representante).
+  ipp: `Esta aba documenta o perfil ideal de parceiro (representante).
 
 ## Perfil Ideal de Parceiro — Representantes
 
@@ -240,12 +272,7 @@ Profissionais de vendas com histórico comprovado em comercialização de soluç
 
 ### Diferenciais competitivos (opcional, mas estratégico)
 - Capacidade futura de escalar operação (time, parceiros, volume)`,
-  },
-  {
-    id: "matriz-objecoes",
-    title: "Matriz de Objeções",
-    summary: "Principais objeções na aquisição de parceiros e como contorná-las",
-    body: `Esta aba reúne as principais objeções que surgem no processo de aquisição de parceiros e como contorná-las de forma estratégica, alinhada ao posicionamento do programa de representantes.
+  "matriz-objecoes": `Esta aba reúne as principais objeções que surgem no processo de aquisição de parceiros e como contorná-las de forma estratégica, alinhada ao posicionamento do programa de representantes.
 
 | Tipo de objeção | Explicação | Como resolver |
 |---|---|---|
@@ -268,57 +295,14 @@ Ao identificar uma objeção nova em campo, documente:
 - **Momento:** em que etapa do processo de vendas ela apareceu
 - **Tipo:** em qual categoria da tabela acima ela se encaixa
 - **Discurso de solução:** o que poderia ser falado para transpor a objeção`,
-  },
-  {
-    id: "jornada-representante",
-    title: "Jornada do Representante",
-    summary: "Etapas da jornada do representante na Cardápio Web",
-    body: `A Jornada do Representante na Cardápio Web é composta pelas etapas descritas nessa documentação.
+  "jornada-representante": `A Jornada do Representante na Cardápio Web é composta pelas etapas descritas nessa documentação.
 
 **Em construção pela liderança** — as colunas abaixo (Lead antes → Lead depois → Estágio correspondente nas vendas) ainda não têm as etapas preenchidas na planilha de origem. Use as definições de funil (Prospecção, Acompanhamento e Clientes de Representantes) enquanto essa etapa não é formalizada.
 
 | Etapa da jornada | Lead antes | Lead depois | Estágio correspondente nas vendas |
 |---|---|---|---|
 | A definir | — | — | — |`,
-  },
-  {
-    id: "mensagem-confirmacao",
-    title: "Mensagem de Confirmação de Apresentação",
-    summary: "Templates de WhatsApp para confirmar presença na apresentação",
-    body: `A mensagem de confirmação de apresentação é uma etapa essencial no processo: reforça o compromisso assumido pelo lead e garante que ambos os lados estejam alinhados quanto ao dia, horário e formato do encontro. Além de demonstrar profissionalismo, ela reduz o risco de no-show, aumenta a taxa de comparecimento e transmite seriedade e organização por parte da empresa.
-
-## 1ª mensagem — dia anterior à apresentação
-
-📅 Confirmação da sua reunião
-
-Olá, [NOME_DO_LEAD]! Tudo certo?
-Passando para lembrar que amanhã você tem uma reunião com o nosso especialista [NOME_DO_CLOSER] às [DIA e HORA_DA_APRESENTAÇÃO] (horário de Brasília).
-
-⚡️ O que você pode esperar:
-- ⏱️ Duração média de 45 minutos
-- 👨‍💻 O especialista ficará disponível até 15 minutos após o horário
-- 🎯 Será o momento ideal para entender os benefícios da parceria com a Cardápio Web
-
-Posso confirmar sua presença? ✅
-
-Estou à disposição para qualquer dúvida, combinado?
-
-## 2ª mensagem — dia da apresentação
-
-🌟 Bom dia, [NOME_DO_LEAD]! Tudo certo?
-
-O [NOME_DO_CLOSER] já está preparado para a nossa reunião hoje às [HORA_DA_APRESENTAÇÃO] (horário de Brasília).
-Vai ser um momento rápido (45 min) e focado em como podemos ajudar no seu negócio.
-
-Consegue me dar um ok só para confirmar a presença?
-
-Estamos te aguardando! 🚀`,
-  },
-  {
-    id: "passagem-bastao",
-    title: "Passagem de Bastão",
-    summary: "Checklist de informações para conectar os setores na marcação",
-    body: `O momento de passagem de bastão é muito importante e crucial para a empresa. É quando o time ganha mais conexão com as informações passadas entre os setores no momento da marcação da apresentação.
+  "passagem-bastao": `O momento de passagem de bastão é muito importante e crucial para a empresa. É quando o time ganha mais conexão com as informações passadas entre os setores no momento da marcação da apresentação.
 
 ## Checklist de perguntas para registrar antes da passagem
 
@@ -330,12 +314,7 @@ Estamos te aguardando! 🚀`,
 - Os valores estão dentro do orçamento do lead?
 - A pessoa com quem você falou é a tomadora de decisão?
 - Qual a prioridade do lead em relação a essa solução?`,
-  },
-  {
-    id: "spin-selling",
-    title: "SPIN Selling",
-    summary: "Metodologia de vendas por perguntas — roteiros por funcionalidade",
-    body: `O SPIN Selling é uma metodologia de vendas criada por Neil Rackham nos anos 1980, que usa boas perguntas para estruturar uma venda com base em quatro pilares: Situação, Problema, Implicação e Necessidade.
+  "spin-selling": `O SPIN Selling é uma metodologia de vendas criada por Neil Rackham nos anos 1980, que usa boas perguntas para estruturar uma venda com base em quatro pilares: Situação, Problema, Implicação e Necessidade.
 
 ## Roteiros por funcionalidade
 
@@ -493,12 +472,7 @@ Show, vamos supor que você, como dono de um delivery, só faz entregas se o cli
 
 **Discurso de desenvolvimento:**
 Ótimo, NOME_DO_LEAD! É justamente essa visão que a gente traz para os seus anúncios, nosso objetivo quando falamos de anúncios é potencializar as campanhas de marketing para a sua empresa, trazendo uma performance de primeiro nível para garantir os melhores resultados para você e para a sua empresa.`,
-  },
-  {
-    id: "aida",
-    title: "AIDA",
-    summary: "Modelo de hierarquia de efeitos aplicado à cold call",
-    body: `O modelo AIDA é um modelo dentro da classe conhecida como modelos de hierarquia de efeitos, todos os quais implicam que os consumidores passam por uma série de etapas quando tomam decisões de compra.
+  aida: `O modelo AIDA é um modelo dentro da classe conhecida como modelos de hierarquia de efeitos, todos os quais implicam que os consumidores passam por uma série de etapas quando tomam decisões de compra.
 
 Na prospecção o AIDA é muito poderoso, pois permite que o lead progrida na jornada de compra dentro de uma única ligação. Abaixo, a forma correta de aplicar uma Cold Call usando esse modelo.
 
@@ -547,12 +521,7 @@ Na prospecção o AIDA é muito poderoso, pois permite que o lead progrida na jo
 **Agendar um horário:** Agende um horário e peça o e-mail do lead.
 
 **Aplicar gatilho de compromisso:** Explique que o consultor tem uma agenda ocupada e é um dos maiores especialistas no assunto conversado, então pergunte se o lead teria algum motivo para não estar presente no horário e data acordados, diga que vai enviar uma mensagem no WhatsApp para confirmar a reunião e pergunte se o lead confirma. Com base nisso, finalize a ligação.`,
-  },
-  {
-    id: "planos-precos",
-    title: "Planos e Preços",
-    summary: "Valores oficiais dos planos e módulos, por fidelidade",
-    body: `Valores dos planos e módulos para a contratação da Cardápio Web, bem como os descontos disponíveis para negociações nas vendas.
+  "planos-precos": `Valores dos planos e módulos para a contratação da Cardápio Web, bem como os descontos disponíveis para negociações nas vendas.
 
 | Fidelidade | Plano Mesas — Valor total | Plano Mesas — Valor mensal | Plano Delivery — Valor total | Plano Delivery — Valor mensal | Plano Premium — Valor total | Plano Premium — Valor mensal | Módulo Marketplace — Valor total | Módulo Marketplace — Valor mensal | Módulo Estoque Avançado — Valor total | Módulo Estoque Avançado — Valor mensal | Módulo Cupom Fiscal — Valor total | Módulo Cupom Fiscal — Valor mensal | Módulo Entregadores — Valor total | Módulo Entregadores — Valor mensal | Entregadores — até 500 pedidos (por pedido) | Entregadores — 501 a 1500 pedidos (por pedido) | Entregadores — acima de 1500 pedidos (por pedido) | Módulo Financeiro — Valor total | Módulo Financeiro — Valor mensal | Módulo Totem — Valor total | Módulo Totem — Valor mensal |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -562,12 +531,7 @@ Na prospecção o AIDA é muito poderoso, pois permite que o lead progrida na jo
 | Mensal | R$ 169,99 | R$ 169,99 | R$ 209,99 | R$ 209,99 | R$ 269,99 | R$ 269,99 | R$ 29,99 | R$ 29,99 | R$ 29,99 | R$ 29,99 | R$ 69,99 | R$ 69,99 | R$ 54,99 | R$ 54,99 | 0% | 8% | 6% | R$ 69,99 | R$ 69,99 | R$ 99,99 | R$ 99,99 |
 
 **Nota:** o módulo Entregadores combina uma mensalidade fixa com uma taxa por pedido, escalonada por volume (0% até 500 pedidos, 8% de 501 a 1500, 6% acima de 1500).`,
-  },
-  {
-    id: "concorrentes",
-    title: "Matriz de Concorrentes",
-    summary: "Comparativo de funcionalidades e preços com 27 concorrentes",
-    body: `Encontre a relação entre as funcionalidades do Cardápio Web e dos concorrentes. ✅ = tem · ⚠️ = parcial/limitado · ❌ = não tem.
+  concorrentes: `Encontre a relação entre as funcionalidades do Cardápio Web e dos concorrentes. ✅ = tem · ⚠️ = parcial/limitado · ❌ = não tem.
 
 | Concorrente | Cardápio delivery | Cardápio mesas | ChatBot WhatsApp | Pagamento online | Disparador WhatsApp | Fidelidade | Fluxo de caixa | Módulo fiscal | Estoque produtos | Estoque insumos | Gestão financeira | Rotas de entrega | Totem |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -629,12 +593,7 @@ Na prospecção o AIDA é muito poderoso, pois permite que o lead progrida na jo
 - **Jotajá** (https://www.site.jotaja.com/) — Start R$249/mês + R$300 de implantação; Advanced R$329/mês + R$300 de implantação; Franquias sob consulta. Cardápio simples, destaque pelo evento anual "Jotajá Summit"; pouca relevância atual.
 - **Sischef** (https://sischef.com/) — planos a partir de R$99,99/mês, com módulos à parte. Foco em gestão (não concorre diretamente com nosso posicionamento de cardápio digital); forte reconhecimento entre franquias; temos integração com eles.
 - **Deli** (https://deli.com.br/pt-br/) — Inicial R$83,90/mês; Avançado R$125,90/mês; Pro R$178,90/mês, com módulos à parte. Relativamente completo e promissor; custo sobe ao somar módulos que já entregamos no plano (como o chatbot).`,
-  },
-  {
-    id: "funcoes",
-    title: "Funções",
-    summary: "Definições dos profissionais envolvidos no processo",
-    body: `Nessa área você encontra as definições de cada profissional envolvido no processo comercial de representantes.
+  funcoes: `Nessa área você encontra as definições de cada profissional envolvido no processo comercial de representantes.
 
 | Função | Descrição |
 |---|---|
@@ -643,14 +602,11 @@ Na prospecção o AIDA é muito poderoso, pois permite que o lead progrida na jo
 | Supervisor de parcerias | Profissional responsável por garantir que o time siga as rotinas definidas estrategicamente pelo gerente de parcerias. |
 | Coordenador de parcerias | Liderança responsável por acompanhar o trabalho dos supervisores, definindo estratégias e ajudando no desenvolvimento de lideranças e colaboradores. |
 | Gerente de parcerias | Liderança responsável por acompanhar o trabalho dos coordenadores e supervisores de parcerias, com o intuito de definir estratégias e desenvolver as lideranças do time. |`,
-  },
-  {
-    id: "funil-prospeccao",
-    title: "Funil de Prospecção",
-    summary: "Etapas do funil de prospecção de novos representantes",
-    body: `Este documento padroniza e esclarece o significado de cada etapa do funil de representantes, garantindo que todo o time tenha o mesmo entendimento sobre o status dos leads ao longo da jornada.
+  funis: `Definições padronizadas das etapas dos três funis do time de representantes, mais os motivos de perda usados para recuperação de oportunidades.
 
-## Etapas do funil
+## Funil de Prospecção
+
+Este documento padroniza e esclarece o significado de cada etapa do funil de representantes, garantindo que todo o time tenha o mesmo entendimento sobre o status dos leads ao longo da jornada.
 
 | Etapa | Critério |
 |---|---|
@@ -666,28 +622,13 @@ Na prospecção o AIDA é muito poderoso, pois permite que o lead progrida na jo
 | Proposta enviada | Leads comprometidos com o pagamento, com proposta enviada e dados de cadastro entregues. |
 | Finalização | Leads com link de pagamento gerado. |
 
-## Dados para cadastro de um representante
+**Dados para cadastro de um representante:** Nome completo, Telefone, E-mail, CNPJ, Chave PIX, Endereço, CEP.
 
-- Nome completo
-- Telefone
-- E-mail
-- CNPJ
-- Chave PIX
-- Endereço
-- CEP
+**Próximo passo:** com os dados do representante, crie a conta dele em portal.cardapioweb.com/login, parceiro.cardapioweb.com/users/sign_in e portal.sandbox.cardapioweb.com/login.
 
-## Próximo passo
+## Funil de Acompanhamento
 
-Com os dados do representante, crie a conta dele nos seguintes sites:
-- portal.cardapioweb.com/login
-- https://parceiro.cardapioweb.com/users/sign_in
-- https://portal.sandbox.cardapioweb.com/login`,
-  },
-  {
-    id: "funil-acompanhamento",
-    title: "Funil de Acompanhamento",
-    summary: "Etapas do funil de acompanhamento de representantes ativos",
-    body: `Este documento padroniza e esclarece o significado de cada etapa do funil de acompanhamento de representantes, garantindo que todo o time tenha o mesmo entendimento sobre o status ao longo da jornada.
+Este documento padroniza e esclarece o significado de cada etapa do funil de acompanhamento de representantes, garantindo que todo o time tenha o mesmo entendimento sobre o status ao longo da jornada.
 
 | Etapa | Critério |
 |---|---|
@@ -701,13 +642,11 @@ Com os dados do representante, crie a conta dele nos seguintes sites:
 | 1º Follow-up (rumo à 2ª venda) | Primeiro contato de acompanhamento incentivando até a segunda venda. |
 | 2º Follow-up (rumo à 2ª venda) | Segundo contato de acompanhamento com o mesmo objetivo. |
 | 3º Follow-up (rumo à 2ª venda) | Terceiro contato de acompanhamento com o mesmo objetivo. |
-| 2º Cliente | Representante realizou sua segunda venda. |`,
-  },
-  {
-    id: "funil-clientes",
-    title: "Funil de Clientes de Representantes",
-    summary: "Etapas do funil de clientes trazidos por representantes",
-    body: `Este documento padroniza e esclarece o significado de cada etapa do funil de clientes de representantes, garantindo que todo o time tenha o mesmo entendimento sobre o status dos clientes ao longo da jornada.
+| 2º Cliente | Representante realizou sua segunda venda. |
+
+## Funil de Clientes de Representantes
+
+Este documento padroniza e esclarece o significado de cada etapa do funil de clientes de representantes, garantindo que todo o time tenha o mesmo entendimento sobre o status dos clientes ao longo da jornada.
 
 | Etapa | Critério |
 |---|---|
@@ -715,23 +654,11 @@ Com os dados do representante, crie a conta dele nos seguintes sites:
 | Proposta enviada | Card do cliente criado, com informações, plano e módulo preenchidos, categoria "Produto" adicionada no Pipedrive e modelo de proposta enviado. |
 | Negócio fechado | Cliente com link de pagamento, aguardando ser dado como ganho para implementação. |
 
-## Modelo de dados do cliente
+**Modelo de dados do cliente:** Nome da loja, Nome do titular, CPF, Endereço, CEP, WhatsApp (para implementação), E-mail, Plano escolhido.
 
-📋 CADASTRO
-- 🏪 Nome da loja
-- 👤 Nome do titular
-- 📄 CPF
-- 📍 Endereço
-- 🗺️ CEP
-- 📱 WhatsApp (para implementação)
-- 📧 E-mail
-- ⭐ Plano escolhido`,
-  },
-  {
-    id: "motivos-perda",
-    title: "Motivos de Perda",
-    summary: "Razões de perda de leads, para recuperação de oportunidades",
-    body: `Os motivos de perda são as razões pelas quais os leads foram perdidos. São muito importantes para a recuperação de oportunidades e ajustes de estratégia com foco em aumentar as vendas.
+## Motivos de Perda
+
+Os motivos de perda são as razões pelas quais os leads foram perdidos. São muito importantes para a recuperação de oportunidades e ajustes de estratégia com foco em aumentar as vendas.
 
 | Motivo | Descrição |
 |---|---|
@@ -748,12 +675,7 @@ Com os dados do representante, crie a conta dele nos seguintes sites:
 | Perda de teste | Motivo para dar perdido em leads de teste. |
 | Lead quer White Label | Lead quer o modelo de revenda White Label. |
 | Lead com contato indisponível | Lead sem contato disponível para mensagem ou ligação. |`,
-  },
-  {
-    id: "estrutura-representantes",
-    title: "Estrutura de Representantes",
-    summary: "Perfil, funcionamento, modelo financeiro e objeções do programa",
-    body: `Esta aba documenta a nova estrutura do programa de representantes da Cardápio Web: perfil ideal (IPP), benefícios, modelo de funcionamento e principais objeções com respostas.
+  "estrutura-representantes": `Esta aba documenta a nova estrutura do programa de representantes da Cardápio Web: perfil ideal (IPP), benefícios, modelo de funcionamento e principais objeções com respostas.
 
 ## Perfil Ideal de Representante (IPP)
 
@@ -868,12 +790,7 @@ Muita gente associa parceria com algo sem custo, mas aqui a taxa funciona como u
 
 ### "Não conheço o mercado de food"
 Isso acontece bastante, principalmente com vendedores vindos de outros segmentos de software. O treinamento cobre exatamente esse ponto: você aprende as dores do restaurante, o discurso certo, os argumentos que mais convertem e exemplos práticos de venda.`,
-  },
-  {
-    id: "progressao-carreira",
-    title: "Progressão de Carreira",
-    summary: "Evolução salarial e de comissão por nível de senioridade",
-    body: `A progressão de carreira por nível trata da evolução do agente de parcerias dentro do seu mesmo nível de senioridade, seja como Channel Hunter ou Channel Account Manager. O principal critério é a performance em relação às metas estipuladas para o canal, com benefício de aumento da taxa de comissionamento e maior protagonismo na gestão e desenvolvimento das parcerias.
+  "progressao-carreira": `A progressão de carreira por nível trata da evolução do agente de parcerias dentro do seu mesmo nível de senioridade, seja como Channel Hunter ou Channel Account Manager. O principal critério é a performance em relação às metas estipuladas para o canal, com benefício de aumento da taxa de comissionamento e maior protagonismo na gestão e desenvolvimento das parcerias.
 
 | Nível | Faixa | Base salarial | Comissão Meta 1 | Comissão Meta 2 | Comissão Meta 3 | Critérios de elegibilidade / desclassificação |
 |---|---|---|---|---|---|---|
@@ -897,384 +814,461 @@ Isso acontece bastante, principalmente com vendedores vindos de outros segmentos
 | SR 3 | Faixa 2 – Estrela |  | 30% (OTE R$ 4.803,01) | 35% (OTE R$ 4.987,74) | 50% (OTE R$ 5.541,93) | Meta 3 (1 mês, no mês vigente) / se não bater Meta 3 na faixa 2, desce para o nível anterior |
 
 **Nota:** as colunas originais "Meta de Clientes" e "Custo por Cliente (OTE)" estavam quebradas (#REF!) na planilha de origem para a maioria dos níveis e foram omitidas até serem corrigidas pela liderança.`,
+};
+
+const ONBOARDING_DAYS: { tag: string; title: string; items: string[] }[] = [
+  {
+    tag: "Dia 1-2",
+    title: "Imersão organizacional",
+    items: [
+      "Criar conta no Sandbox",
+      "Fazer o teste de Profile da Sólides e enviar resultado ao líder direto",
+      'Adquirir o livro "Ecossistema de Parceiros" e iniciar a leitura (apresentação em 30 dias)',
+      "Solicitar reembolso da compra do livro",
+      "Receber feedback do processo seletivo",
+      "Agendar o primeiro 1:1 com a liderança",
+      "Conversar com as lideranças de Content, Growth, Channel, Pré-vendas, Vendas, Expansão, Implementação, Suporte e Inovação/Parcerias",
+      "Reunião diária de encerramento com o gestor direto",
+    ],
   },
   {
-    id: "cadencia-prospeccao",
-    title: "Cadência: Prospecção de Novos Representantes",
-    summary: "Fluxo de ligações, e-mails e mensagens para leads inbound",
-    body: `Cadência responsável pelo time de representantes oriundos do inbound. O fluxo de ligações, mensagens e e-mails é registrado aqui para maior controle.
-
-## 1º Dia — Ligação de diagnóstico
-
-**Mensagem de abertura**
-Olá, [nome_do_lead]! Tudo certo? Aqui é o [nome_do_especialista], especialista de representantes da Cardápio Web.
-
-Vi que você preencheu o formulário e demonstrou interesse em conhecer melhor a oportunidade. Estou entrando em contato para entender melhor seu perfil e te explicar como funciona o modelo de parceria!
-
-Me conta: você hoje já atua com vendas, atendimento ao setor de restaurantes ou possui alguma carteira de clientes?
-
-**E-mail de abertura**
-Olá, [nome_do_lead]! Tudo bem?
-
-Sou [nome_do_especialista], da Cardápio Web, e vi que você demonstrou interesse em conhecer nosso Programa de Representantes. Queria aproveitar o contato para te apresentar essa oportunidade de perto.
-
-Sabemos que muitas pessoas buscam uma forma de gerar renda, ampliar seu portfólio de soluções ou até construir um negócio próprio — e é exatamente isso que nosso programa oferece.
-A Cardápio Web é uma plataforma completa de cardápio digital, gestão do negócio e food marketing para restaurantes e deliveries. São mais de 17.000 negócios ativos no Brasil e nossos representantes ganham comissões recorrentes por cada cliente que indicam.
-
-Que tal agendarmos uma conversa rápida para eu te explicar como funciona? Me responde aqui.
-
-[nome_do_especialista]
-Cardápio Web
-
-## 2º Dia — Ligação de diagnóstico
-
-**Follow Up 1**
-Olá, [nome_do_lead]! Tudo certo? Aqui é o [nome_do_especialista], especialista de representantes da Cardápio Web.
-
-Como comentei, estamos lançando oficialmente o Programa de Representantes da Cardápio Web, com uma comissão bastante atrativa e modelo de receita recorrente.
-
-Antes de avançarmos, queria te apresentar o formato e entender seu momento.
-Qual melhor horário para conversarmos?
-
-## 4º Dia — Ligação de diagnóstico
-
-**Follow Up 2**
-Olá, [nome_do_lead]! Tudo certo?
-
-O programa de representantes é simples: você vende, oferece serviços adicionais, constrói carteira e recebe comissão recorrente todos os meses.
-
-Estamos abrindo poucas vagas agora porque queremos gente com perfil de execução.
-
-Se fizer sentido pra você gerar uma renda previsível com tecnologia para restaurantes, me diz que eu te explico como você pode começar ainda essa semana.
-
-**E-mail de follow up**
-Olá, [nome_do_lead]! Tudo bem?
-
-Entrei em contato recentemente e queria compartilhar mais detalhes sobre o nosso Programa de Representantes, porque acredito que você vai se identificar com o que temos a oferecer.
-
-Veja o que você tem acesso ao entrar para o programa:
-- ✅ Onboarding estruturado
-- ✅ Materiais e ativos comerciais
-- ✅ Acompanhamento estratégico
-- ✅ Modelo validado de vendas
-- ✅ Comissão recorrente
-- ✅ Mapa de oportunidades
-- ✅ Mentorias semanais com especialistas
-
-São mais de 17.000 negócios ativos na plataforma e esse mercado ainda tem muito espaço para crescer. Os representantes que entram agora estão saindo na frente.
-Posso te mostrar como tudo isso funciona em uma conversa rápida de 20 minutos. Qual o melhor horário para você?
-
-[nome_do_especialista]
-Cardápio Web
-
-## 6º Dia — Ligação de diagnóstico
-
-**Follow Up 3**
-Olá, [nome_do_lead]! Tudo certo?
-
-Você sabia que nossos representantes recebem comissões recorrentes sobre a carteira de clientes que constroem?
-
-A Cardápio Web possui um dos programas de representantes que mais cresce no Brasil, oferecendo suporte, treinamento e oportunidade de crescimento junto com a empresa.
-
-Faz sentido para você conhecer melhor essa oportunidade?
-
-## 8º Dia — Ligação de diagnóstico
-
-**Follow Up 4**
-Fala, [nome_do_lead]! Tudo certo?
-
-Passando para te avisar que estamos encerrando as vagas do Programa de Representantes da Cardápio Web agora em [mês atual].
-
-As próximas oportunidades só abrem na turma de [próximo_mês]. Essa é a chance de você já começar a gerar comissão recorrente, criando uma base de clientes que te paga todos os meses, além de ampliar seu portfólio com uma solução validada no mercado.
-
-Se ainda faz sentido para você, me responde agora para garantirmos sua vaga antes do fechamento.
-
-## 9º Dia — Break Up
-
-**Ligação**
-Fala, [nome_do_lead]! Passando para nossa última mensagem sobre o programa de representantes.
-
-Como não tivemos retorno, vou encerrar seu acompanhamento por aqui para não ficar insistindo 😄
-
-Mas deixo as portas abertas caso queira retomar futuramente. Acredito que sua região ainda tem bastante potencial para o projeto 🚀
-
-Obrigado pelo tempo e sucesso por aí!
-
-**E-mail de break up**
-Olá, [nome_do_lead]!
-
-Tentei entrar em contato algumas vezes nos últimos dias para te apresentar o Programa de Representantes da Cardápio Web, mas entendo que talvez não seja o momento certo para você.
-
-Não tem problema! Agradecer pelo seu interesse e pelo tempo dispensado já é mais do que suficiente para nós. Fico feliz que você tenha conhecido um pouco mais sobre a Cardápio Web.
-
-Quem sabe em uma outra oportunidade os caminhos se encontram, o programa continua aberto e o mercado de restaurantes só cresce.
-Se em algum momento quiser retomar essa conversa ou tiver alguma dúvida, é só nos chamar pelo WhatsApp de Parcerias: wa.me/558599826536
-
-Desejo muito sucesso na sua jornada. Conte com a Cardápio Web quando precisar!
-
-[nome_do_especialista]
-Cardápio Web`,
+    tag: "Dia 3",
+    title: "Métricas e cultura",
+    items: [
+      "Desenvolver senso analítico com foco em KPIs e frameworks de gestão de canais",
+      "Ler o artigo sobre cultura empresarial",
+      "Revisar o memorando interno",
+      "Discutir os aprendizados do dia com a liderança",
+    ],
   },
   {
-    id: "cadencia-pos-reuniao",
-    title: "Cadência: Follow-up (Pós-reunião)",
-    summary: "Fluxo de mensagens após a apresentação com o closer",
-    body: `Cadência responsável pelo time de representantes. O fluxo de ligações e mensagens é registrado aqui para maior controle.
-
-## 1º Dia — Ligação de diagnóstico
-
-**Mensagem de abertura**
-Oi, [nome_do_lead]!
-
-Foi ótimo conversar com você hoje. Fiquei animado com as possibilidades que discutimos e acredito que pode fazer bastante sentido para o seu momento atual.
-
-Fico no aguardo do seu retorno para entendermos os próximos passos. Qualquer dúvida que tenha surgido depois da nossa conversa, é só me chamar.
-
-## 3º Dia — Ligação de diagnóstico
-
-**Follow Up 1**
-Olá, [nome_do_lead]!
-
-Passando aqui porque não tive retorno sobre nossa conversa sobre o programa de representante. Sei que a rotina anda corrida, então queria saber se ainda faz sentido para você ou se ficou alguma dúvida que eu possa esclarecer.
-
-Fico à disposição para conversarmos novamente, se precisar.
-
-## 5º Dia — Ligação de diagnóstico
-
-**Follow Up 2**
-[nome_do_lead], essa é a minha última mensagem para encerrar a condição.
-
-A comissão do programa é *recorrente*. Isso significa que você vende uma vez e continua recebendo todo mês enquanto o cliente ficar ativo. Te ajudamos em toda a jornada do cliente, você trabalha com quem já está na sua região.
-
-Se não for o momento certo, tudo bem também, fica aqui o contato caso mude de ideia. 🤝`,
+    tag: "Dia 4-5",
+    title: "Imersão técnica (parte 1)",
+    items: [
+      "Escutar 5 episódios do Partner Cast com resumos",
+      "Estudar o CW Club",
+      "Revisar materiais sobre Modelos de Canais, Estruturação de Parcerias, Funções de Partner Manager e Metodologia de Programas de Canal",
+    ],
   },
   {
-    id: "cadencia-onboarding",
-    title: "Cadência: Follow-up (Onboarding)",
-    summary: "Fluxo de mensagens para agendar o onboarding do novo representante",
-    body: `Cadência responsável pelo time de representantes. O fluxo de ligações e mensagens é registrado aqui para maior controle.
-
-## 1º Dia — Ligação de diagnóstico
-
-**Mensagem de abertura**
-Oi, [nome_do_rep]! Seja bem-vindo(a) ao time! 🎉
-
-Fico muito feliz em ter você no nosso programa de representantes. A partir de agora, você passa a representar a Cardápio Web, sistema que já conta com mais de 17.000 clientes ativos em todo o Brasil.
-
-O próximo passo é simples: fazer seu *onboarding*. É nele que você recebe todo o material, aprende o processo de vendas e já sai pronto(a) para começar a fechar contratos.
-
-Quanto antes a gente agenda, mais rápido você começa a gerar comissão. 📅
-
-Qual o melhor dia pra você essa semana?
-
-## 3º Dia — Ligação de diagnóstico
-
-**Follow Up 1**
-Bom dia, [nome_do_rep]!
-
-Passando para saber se ficou alguma dúvida sobre o programa ou os próximos passos. 😊
-
-O onboarding é o momento em que você vai aprender a usar a plataforma na prática, entender como mapear e abordar prospects na sua região, e conhecer as estratégias que os representantes de melhor performance usam no dia a dia.
-Se fizer sentido para você, me avisa que já te passo os horários disponíveis para agendarmos.
-
-Fico à disposição para qualquer pergunta antes disso também!`,
+    tag: "Dia 6-7",
+    title: "Imersão técnica (parte 2)",
+    items: [
+      "Estudar o Playbook de Representantes",
+      "Revisar definições de onboarding e checklists de integração",
+      "Estudar estratégias de capacitação de parceiros (partner enablement)",
+      "Estudar SPIN Selling e escalabilidade de programas",
+    ],
   },
   {
-    id: "cadencia-1cliente",
-    title: "Cadência: Follow-up (1º Cliente)",
-    summary: "Fluxo de mensagens para apoiar o representante até o 1º cliente",
-    body: `Cadência responsável pelo time de representantes. O fluxo de ligações e mensagens é registrado aqui para maior controle.
-
-## 1º Dia — Ligação de diagnóstico
-
-**Mensagem de abertura**
-Oi, [nome_do_rep]! Onboarding feito, agora começa a parte boa. 🚀
-
-Você já tem acesso ao sistema de representante. O próximo passo é simples: abre agora o portal do representante, filtra os leads da *sua região* e veja quantos estabelecimentos estão disponíveis pra você abordar.
-
-Isso leva menos de 5 minutos e já te dá uma visão clara do seu potencial de ganho aqui.
-
-Me fala: quantos leads apareceram na sua região? 👇
-
-## 3º Dia — Follow Up 1
-
-Bom dia, [nome_do_rep]! 👋
-
-Dica de quem já viu muitos representantes fecharem o primeiro cliente rápido:
-
-*Não tente falar com todo mundo ao mesmo tempo.* Escolhe de 5 a 10 leads no sistema, de preferência restaurantes, lanchonetes ou bares que você já conhece ou que ficam perto de você, e foca neles primeiro.
-
-Familiaridade gera confiança, e confiança fecha venda.
-
-Você já abriu o sistema e deu uma olhada nos leads da sua região? Me conta como tá o cenário por aí.
-
-## 5º Dia — Ligação de diagnóstico
-
-**Follow Up 2**
-Oi, [nome_do_rep]! Hoje vou te passar algo que acelera muito o primeiro contato. 🎯
-
-Quando for abordar um lead, começa assim:
-
-*Oi, [nome do dono]! Trabalho com uma solução de cardápio digital que já é usada por mais de 17 mil estabelecimentos no Brasil. Muita gente aqui da região já usa. Posso te mostrar como funciona em 10 minutos?*
-
-Simples, direto e com prova social logo de cara. Não precisa explicar tudo no primeiro contato, o objetivo é só garantir uma conversa.
-
-Você já abordou algum lead? Me conta como foi! 💬`,
+    tag: "Dia 8",
+    title: "Modelo de parcerias e produto",
+    items: [
+      "Pesquisar 3 empresas com modelos de parceria diferentes",
+      "Documentar a contribuição da função de PSM no setor",
+      "Estudar a Central de Ajuda e realizar teste prático",
+      "Assistir vídeos sobre sistema, cardápio digital e gestão",
+    ],
   },
   {
-    id: "cadencia-2cliente",
-    title: "Cadência: Follow-up (2º Cliente)",
-    summary: "Fluxo de mensagens para apoiar o representante até o 2º cliente",
-    body: `Cadência responsável pelo time de representantes. O fluxo de ligações e mensagens é registrado aqui para maior controle.
-
-## 1º Dia — Ligação de diagnóstico
-
-**Mensagem de abertura**
-Parabéns, [nome_do_rep]! 🎉 Primeira venda feita!
-
-Sério, isso é maior do que parece. A maioria das pessoas trava antes de fechar o primeiro cliente, e você já passou dessa barreira.
-Como foi todo esse processo pra você? Teve algum momento mais desafiador ou algo que fluiu melhor do que esperava? Fico curioso(a) para saber como foi essa experiência na prática.
-
-Qualquer coisa que precisar, é só chamar!
-
-## 3º Dia — Follow Up 1
-
-Oi, [nome_do_rep]! Quero falar de uma coisa que derruba muita gente boa no meio do caminho: o *não*. 🚧
-
-Depois do primeiro cliente, a tendência é achar que todo lead vai virar venda. Aí vem uma semana de recusas e o desânimo bate.
-
-Então deixa eu te dar um novo ângulo:
-
-*Cada não que você recebe te aproxima do próximo sim.*
-
-Não é clichê, é matemática de vendas. Se a sua taxa de conversão é de 1 em 5, então cada *não* é 20% de um cliente fechado.
-
-Quando ouvir um *não* hoje, anota aqui pra mim. Vamos acompanhar juntos quantos *nãos* te custou o segundo cliente. 📊
-
-## 5º Dia — Ligação de diagnóstico
-
-**Follow Up 2**
-[nome_do_rep], passando para te falar o que importa de verdade. 🤝
-
-Você saiu do zero, fez o onboarding, fechou o primeiro cliente e está construindo uma carteira recorrente. Isso não é pouca coisa.
-
-O segundo cliente pode vir hoje, amanhã ou na semana que vem, mas vai vir. Desde que você não pare.
-
-Foco, sistema e consistência.
-
-Estou aqui pra qualquer dúvida, objeção travada ou lead que você queira trabalhar junto. Pode chamar quando quiser. 💪`,
+    tag: "Dia 9",
+    title: "Teste prático do sistema",
+    items: [
+      "Criar um cardápio no Sandbox",
+      "Configurar gestão de cupons e programa de fidelização",
+      "Simular disparos via WhatsApp e cadastrar áreas de entrega",
+      "Fazer roleplay sobre as funcionalidades do sistema",
+    ],
+  },
+  {
+    tag: "Dia 10",
+    title: "Plataformas utilizadas",
+    items: [
+      "Treinamento em Pipedrive",
+      "Acessar o Portal do Representante",
+      "Treinamento em Kommo",
+      "Acompanhar closer, channel acquisition, PSM, implementador e helpdesk por um dia",
+    ],
+  },
+  {
+    tag: "Dia 11-12",
+    title: "Apresentação final",
+    items: [
+      "Preparar apresentação: e-commerce para restaurantes, três pilares, jornada do representante",
+      "Incluir técnicas SPIN, métricas, planos e módulos",
+      "Incluir a definição de onboarding bem-sucedido",
+      "Apresentar para a liderança direta",
+    ],
+  },
+  {
+    tag: "Dia 13",
+    title: "Treinamento de atendimento",
+    items: ["Treinamento de atendimento supervisionado pela liderança direta"],
+  },
+  {
+    tag: "Dia 30",
+    title: "Apresentação do livro",
+    items: ['Apresentar os aprendizados de "Ecossistema de Parceiros"'],
   },
 ];
 
-export function Playbook() {
-  const [topics, setTopics] = useLocalStorageState<PlaybookTopic[]>(
-    "bibly-playbook-topics",
-    PLAYBOOK_TOPICS_PADRAO,
+const PRODUTO_PILLS = [
+  "Cardápio Digital",
+  "Food Marketing",
+  "Gestão do Negócio",
+  "ChatBot com IA",
+  "Programa de Fidelidade",
+  "Disparo via WhatsApp",
+  "Gestão de Entregas",
+  "Central de Ajuda",
+];
+
+const IPP_PILLS = [
+  "Experiência em vendas B2B",
+  "Prospecção ativa",
+  "Conhecimento de funil de vendas",
+  "Carteira na região",
+  "Mentalidade empreendedora",
+  "Organização de pipeline",
+  "CNPJ ativo (MEI+)",
+];
+
+const OBJECOES_PILLS = [
+  "Entendimento do programa",
+  "Prioridade",
+  "Perfil",
+  "Esforço operacional",
+  "Retorno financeiro",
+  "Confiança",
+  "Concorrência",
+  "Compromisso",
+  "Exclusividade",
+  "Deal breaker",
+  "Dispensa",
+];
+
+const JORNADA_STEPS = [
+  { title: "Prospecção", desc: "Identificação e primeiro contato com potenciais representantes, seguindo o funil de prospecção." },
+  {
+    title: "Mensagem de Confirmação de Apresentação",
+    desc: "Reforça o compromisso do lead e alinha dia, horário e formato — reduz o risco de no-show. Templates disponíveis na aba Templates.",
+  },
+  { title: "Apresentação e fechamento", desc: "Reunião de apresentação do programa e negociação com o lead." },
+  {
+    title: "Passagem de Bastão",
+    desc: "Momento crucial de conexão entre setores na transição do representante fechado para o acompanhamento.",
+  },
+  {
+    title: "Onboarding e acompanhamento",
+    desc: "Ativação do representante e acompanhamento contínuo pelo funil de acompanhamento.",
+  },
+];
+
+const SPIN_LETTERS = [
+  { letter: "S", title: "Situação", desc: "Perguntas para entender o contexto atual do parceiro." },
+  { letter: "P", title: "Problema", desc: "Perguntas para identificar dificuldades e dores." },
+  { letter: "I", title: "Implicação", desc: "Perguntas que exploram o impacto dessas dificuldades." },
+  { letter: "N", title: "Necessidade", desc: "Perguntas que conduzem o parceiro a enxergar valor na solução." },
+];
+
+const SPECIAL_WIDGET_IDS = new Set([
+  "onboarding",
+  "produto",
+  "ipp",
+  "matriz-objecoes",
+  "jornada-representante",
+  "spin-selling",
+]);
+
+function IconChip({ icon: Icon, size = 44, radius = 14 }: { icon: IconType; size?: number; radius?: number }) {
+  return (
+    <div
+      className="grid shrink-0 place-items-center text-white"
+      style={{ width: size, height: size, borderRadius: radius, backgroundImage: "var(--gradient-primary)" }}
+    >
+      <Icon className="h-[46%] w-[46%]" />
+    </div>
   );
-  const [activeId, setActiveId] = useState<string>(PLAYBOOK_TOPICS_PADRAO[0].id);
-  const [query, setQuery] = useState("");
+}
 
-  const active = topics.find((t) => t.id === activeId) ?? topics[0];
+function Pill({ children }: { children: React.ReactNode }) {
+  return (
+    <span
+      className="rounded-full border px-3.5 py-1.5 text-[13px] font-semibold"
+      style={{ borderColor: "var(--border)", background: "#faf3f9", color: "var(--secondary-foreground)" }}
+    >
+      {children}
+    </span>
+  );
+}
 
-  const filtered = useMemo(() => {
-    if (!query.trim()) return topics;
-    const q = query.toLowerCase();
-    return topics.filter(
-      (t) => t.title.toLowerCase().includes(q) || t.summary.toLowerCase().includes(q),
-    );
-  }, [topics, query]);
+function Callout({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      className="rounded-2xl border px-4.5 py-4 text-[13.5px] leading-relaxed"
+      style={{ borderColor: "var(--border)", backgroundImage: "var(--gradient-soft)", color: "var(--accent-foreground)" }}
+    >
+      {children}
+    </div>
+  );
+}
 
-  const updateBody = (id: string, body: string) => {
-    setTopics((prev) => prev.map((t) => (t.id === id ? { ...t, body } : t)));
-  };
+function TopicCard({ topic, onClick }: { topic: TopicMeta; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex flex-col gap-3 rounded-[22px] border border-border bg-card p-5 text-left"
+      style={{ boxShadow: "var(--shadow-card)" }}
+    >
+      <div className="flex items-start justify-between">
+        <IconChip icon={topic.icon} />
+        {topic.badge && (
+          <span
+            className="rounded-full px-2.5 py-1 text-[11px] font-bold"
+            style={{ background: BADGE_STYLE[topic.badge].bg, color: BADGE_STYLE[topic.badge].fg }}
+          >
+            {topic.badge}
+          </span>
+        )}
+      </div>
+      <div>
+        <div className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--category-label)" }}>
+          {topic.category}
+        </div>
+        <div className="mt-0.5 text-base font-bold text-foreground">{topic.title}</div>
+        <div className="mt-1 text-[13px] leading-relaxed text-muted-foreground">{topic.summary}</div>
+      </div>
+    </button>
+  );
+}
+
+function OnboardingChecklist() {
+  const [checks, setChecks] = useLocalStorageState<Record<string, boolean>>("bibly-onboarding-checks", {});
+
+  const toggle = (key: string) => setChecks((prev) => ({ ...prev, [key]: !prev[key] }));
 
   return (
-    <div className="flex h-screen min-w-0">
-      <nav className="hidden w-[280px] shrink-0 flex-col overflow-y-auto border-r border-border bg-card/40 py-6 lg:flex">
-        <div className="px-6 pb-4">
-          <h1 className="text-lg font-semibold text-foreground">Playbook</h1>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Material central de consulta do time de representantes.
-          </p>
-        </div>
-        <div className="px-4 pb-3">
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Buscar tópico..."
-              className="w-full rounded-xl border border-border bg-background py-1.5 pl-8 pr-3 text-xs outline-none focus:ring-2 focus:ring-ring"
-            />
+    <div className="flex flex-col gap-3.5">
+      {ONBOARDING_DAYS.map((group, gi) => (
+        <div
+          key={group.tag}
+          className="rounded-[20px] border border-border bg-card px-5 py-4.5"
+          style={{ boxShadow: "var(--shadow-card)" }}
+        >
+          <div className="mb-2.5 flex items-center gap-2.5">
+            <span className="rounded-full px-2.5 py-1 text-[11px] font-bold" style={{ background: "var(--secondary)", color: "var(--secondary-foreground)" }}>
+              {group.tag}
+            </span>
+            <span className="text-sm font-bold text-foreground">{group.title}</span>
+          </div>
+          <div className="flex flex-col">
+            {group.items.map((text, ii) => {
+              const key = `${gi}-${ii}`;
+              const checked = !!checks[key];
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => toggle(key)}
+                  className="flex w-full items-center gap-2.5 rounded-xl px-1 py-1.5 text-left transition-colors hover:bg-muted/60"
+                >
+                  {checked ? (
+                    <span
+                      className="grid h-[19px] w-[19px] shrink-0 place-items-center rounded-full text-white"
+                      style={{ backgroundImage: "var(--gradient-primary)" }}
+                    >
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M5 12l5 5L20 7" />
+                      </svg>
+                    </span>
+                  ) : (
+                    <span className="h-[19px] w-[19px] shrink-0 rounded-full border-2" style={{ borderColor: "#e8b4cf" }} />
+                  )}
+                  <span className={cn("text-[13.5px]", checked ? "text-muted-foreground line-through" : "text-foreground")}>
+                    {text}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
-        <div className="flex-1 space-y-0.5 px-3">
-          {filtered.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => setActiveId(t.id)}
-              className={cn(
-                "flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2 text-left text-sm transition-colors",
-                t.id === active?.id
-                  ? "bg-secondary font-medium text-primary"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
-              )}
-            >
-              <span className="truncate">{t.title}</span>
-              {t.id === active?.id && <ChevronRight className="h-3.5 w-3.5 shrink-0" />}
-            </button>
-          ))}
-          {filtered.length === 0 && (
-            <p className="px-3 py-4 text-xs text-muted-foreground">Nenhum tópico encontrado.</p>
-          )}
-        </div>
-      </nav>
+      ))}
+    </div>
+  );
+}
 
-      <div className="min-w-0 flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-3xl px-6 py-8 sm:px-8">
-          <div className="mb-4 lg:hidden">
-            <select
-              value={active?.id}
-              onChange={(e) => setActiveId(e.target.value)}
-              className="w-full rounded-xl border border-border bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-            >
-              {topics.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.title}
-                </option>
-              ))}
-            </select>
+function SpinOverview() {
+  return (
+    <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-4">
+      {SPIN_LETTERS.map((s) => (
+        <div key={s.letter} className="rounded-[18px] border border-border bg-card p-4" style={{ boxShadow: "var(--shadow-card)" }}>
+          <div
+            className="mb-2.5 grid h-9 w-9 place-items-center rounded-[11px] font-bold text-white"
+            style={{ backgroundImage: "var(--gradient-primary)" }}
+          >
+            {s.letter}
           </div>
+          <div className="text-sm font-bold text-foreground">{s.title}</div>
+          <div className="mt-1 text-[13px] leading-relaxed text-muted-foreground">{s.desc}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
-          {active && (
-            <>
-              <div className="mb-6 flex items-start justify-between gap-4">
-                <div>
-                  <div className="mb-1 flex items-center gap-2 text-xs font-medium text-primary">
-                    <BookOpen className="h-3.5 w-3.5" /> Playbook de Representantes
-                  </div>
-                  <h2 className="text-2xl font-semibold tracking-tight text-foreground">
-                    {active.title}
-                  </h2>
-                  <p className="mt-1 text-sm text-muted-foreground">{active.summary}</p>
+function NumberedSteps({ steps }: { steps: { title: string; desc: string }[] }) {
+  return (
+    <div className="flex flex-col gap-3">
+      {steps.map((s, i) => (
+        <div
+          key={s.title}
+          className="flex gap-3 rounded-2xl border border-border bg-card px-4.5 py-4"
+          style={{ boxShadow: "var(--shadow-card)" }}
+        >
+          <span
+            className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-bold"
+            style={{ background: "var(--secondary)", color: "var(--secondary-foreground)" }}
+          >
+            {i + 1}
+          </span>
+          <div>
+            <div className="text-sm font-bold text-foreground">{s.title}</div>
+            <div className="mt-0.5 text-[13px] leading-relaxed text-muted-foreground">{s.desc}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function Playbook() {
+  const [bodies, setBodies] = useLocalStorageState<Record<string, string>>("bibly-playbook-bodies", DEFAULT_BODIES);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [category, setCategory] = useState("Todos");
+
+  const categories = useMemo(() => ["Todos", ...Array.from(new Set(TOPICS.map((t) => t.category)))], []);
+  const filtered = category === "Todos" ? TOPICS : TOPICS.filter((t) => t.category === category);
+  const active = activeId ? TOPICS.find((t) => t.id === activeId) ?? null : null;
+
+  const updateBody = (id: string, body: string) => setBodies((prev) => ({ ...prev, [id]: body }));
+
+  if (active) {
+    const showBody = active.id !== "onboarding";
+    return (
+      <div className="h-screen overflow-y-auto">
+        <div className="mx-auto max-w-3xl px-6 py-8 sm:px-10">
+          <button
+            type="button"
+            onClick={() => setActiveId(null)}
+            className="mb-4.5 inline-flex items-center gap-1.5 text-[13px] font-semibold text-muted-foreground hover:text-foreground"
+          >
+            <ChevronLeft className="h-3.5 w-3.5" /> Voltar ao Playbook
+          </button>
+
+          <div className="mb-1.5 flex items-center gap-3.5">
+            <IconChip icon={active.icon} size={48} radius={14} />
+            <div>
+              <div className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--category-label)" }}>
+                {active.category}
+              </div>
+              <h1 className="text-2xl font-bold tracking-tight text-foreground">{active.title}</h1>
+            </div>
+          </div>
+          <p className="mb-7 mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground">{active.summary}</p>
+
+          <div className="flex flex-col gap-4">
+            {active.id === "onboarding" && <OnboardingChecklist />}
+
+            {active.id === "produto" && (
+              <div className="rounded-[20px] border border-border bg-card p-5" style={{ boxShadow: "var(--shadow-card)" }}>
+                <div className="mb-3 text-sm font-bold text-foreground">Principais frentes do produto</div>
+                <div className="flex flex-wrap gap-2">
+                  {PRODUTO_PILLS.map((p) => (
+                    <Pill key={p}>{p}</Pill>
+                  ))}
                 </div>
-                <MarkdownEditorDialog
-                  title={active.title}
-                  description="Edite o conteúdo em markdown simples (##, ###, ####, listas com -, tabelas com |, **negrito**)."
-                  value={active.body}
-                  onSave={(body) => updateBody(active.id, body)}
-                />
               </div>
-              <div
-                className="rounded-[20px] border border-border bg-card p-6"
-                style={{ boxShadow: "var(--shadow-card)" }}
-              >
-                <RichText text={active.body} />
+            )}
+
+            {active.id === "ipp" && (
+              <div className="rounded-[20px] border border-border bg-card p-5" style={{ boxShadow: "var(--shadow-card)" }}>
+                <div className="mb-3 text-sm font-bold text-foreground">Critérios do perfil ideal</div>
+                <div className="flex flex-wrap gap-2">
+                  {IPP_PILLS.map((p) => (
+                    <Pill key={p}>{p}</Pill>
+                  ))}
+                </div>
               </div>
-            </>
-          )}
+            )}
+
+            {active.id === "matriz-objecoes" && (
+              <div className="rounded-[20px] border border-border bg-card p-5" style={{ boxShadow: "var(--shadow-card)" }}>
+                <div className="mb-3 text-sm font-bold text-foreground">Categorias de objeção mapeadas</div>
+                <div className="flex flex-wrap gap-2">
+                  {OBJECOES_PILLS.map((p) => (
+                    <Pill key={p}>{p}</Pill>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {active.id === "jornada-representante" && <NumberedSteps steps={JORNADA_STEPS} />}
+
+            {active.id === "spin-selling" && <SpinOverview />}
+
+            {showBody && (
+              <div className="rounded-[20px] border border-border bg-card p-6" style={{ boxShadow: "var(--shadow-card)" }}>
+                <div className="mb-3 flex items-center justify-between">
+                  <div className="text-sm font-bold text-foreground">
+                    {SPECIAL_WIDGET_IDS.has(active.id) ? "Conteúdo completo" : "Detalhes"}
+                  </div>
+                  <MarkdownEditorDialog
+                    title={active.title}
+                    description="Edite o conteúdo em markdown simples (##, ###, ####, listas com -, tabelas com |, **negrito**)."
+                    value={bodies[active.id] ?? ""}
+                    onSave={(body) => updateBody(active.id, body)}
+                  />
+                </div>
+                <RichText text={bodies[active.id] ?? ""} />
+              </div>
+            )}
+          </div>
         </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-screen overflow-y-auto">
+      <header className="px-6 pb-2 pt-8 sm:px-10">
+        <h1 className="text-[26px] font-bold tracking-tight text-foreground">Playbook</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Nesse playbook você encontra os pontos centrais do time de representantes — consulte sempre que precisar.
+        </p>
+      </header>
+
+      <div className="flex flex-wrap gap-2 px-6 pb-1 pt-4 sm:px-10">
+        {categories.map((c) => {
+          const isActive = category === c;
+          return (
+            <button
+              key={c}
+              type="button"
+              onClick={() => setCategory(c)}
+              className={cn("rounded-full px-3.5 py-1.5 text-[13px] font-semibold transition-colors", isActive ? "text-white" : "border text-muted-foreground hover:text-foreground")}
+              style={isActive ? { backgroundImage: "var(--gradient-primary)" } : { borderColor: "var(--border)", background: "var(--card)" }}
+            >
+              {c}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 px-6 py-6 sm:grid-cols-2 sm:px-10 xl:grid-cols-3">
+        {filtered.map((topic) => (
+          <TopicCard key={topic.id} topic={topic} onClick={() => setActiveId(topic.id)} />
+        ))}
       </div>
     </div>
   );
