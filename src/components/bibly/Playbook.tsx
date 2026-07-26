@@ -1,20 +1,25 @@
 import { useMemo, useState, type ComponentType } from "react";
 import {
   Building2,
+  Check,
   ChevronLeft,
   Clock,
   Filter,
   IdCard,
+  Minus,
   MessageCircleQuestion,
   Package,
   Repeat2,
   Route,
+  Search,
   ShieldCheck,
   TrendingUp,
   UserCheck,
+  X,
 } from "lucide-react";
 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { useLocalStorageState } from "@/hooks/use-local-storage-state";
 import { MarkdownEditorDialog, RichText } from "@/components/bibly/editors";
@@ -125,69 +130,6 @@ const BADGE_STYLE: Record<Badge, { bg: string; fg: string }> = {
   Novo: { bg: "var(--badge-novo-bg)", fg: "var(--badge-novo-fg)" },
   Atualizado: { bg: "var(--badge-atualizado-bg)", fg: "var(--badge-atualizado-fg)" },
 };
-
-const CONCORRENTES_TABELA_COMPLETA = `Encontre a relação entre as funcionalidades do Cardápio Web e dos concorrentes. ✅ = tem · ⚠️ = parcial/limitado · ❌ = não tem.
-
-| Concorrente | Cardápio delivery | Cardápio mesas | ChatBot WhatsApp | Pagamento online | Disparador WhatsApp | Fidelidade | Fluxo de caixa | Módulo fiscal | Estoque produtos | Estoque insumos | Gestão financeira | Rotas de entrega | Totem |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Cardápio Web | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Anota ai | ✅ | ✅ | ✅ | ✅ | ⚠️ | ✅ | ✅ | ⚠️ | ⚠️ | ❌ | ⚠️ | ❌ | ❌ |
-| Brendi | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Saipos | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Instadelivery | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ |
-| Consumer (Menu Dino) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Goomer | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| Yooga | ✅ | ⚠️ | ✅ | ✅ | ❌ | ✅ | ✅ | ⚠️ | ⚠️ | ⚠️ | ⚠️ | ❌ | ❌ |
-| OlaClick | ✅ | ✅ | ✅ | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | ⚠️ | ✅ | ✅ | ❌ |
-| WhatsMenu | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ✅ | ⚠️ | ❌ | ⚠️ | ❌ |
-| Multipedidos | ✅ | ⚠️ | ⚠️ | ✅ | ✅ | ✅ | ⚠️ | ⚠️ | ⚠️ | ❌ | ❌ | ❌ | ❌ |
-| Delivery Direto | ✅ | ✅ | ⚠️ | ✅ | ⚠️ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ⚠️ | ❌ |
-| Linx | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Neemo | ✅ | ✅ | ✅ | ✅ | ⚠️ | ⚠️ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Alloy | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ |
-| Accon | ✅ | ❌ | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Takeat | ✅ | ✅ | ✅ | ✅ | ⚠️ | ✅ | ✅ | ⚠️ | ⚠️ | ⚠️ | ⚠️ | ❌ | ✅ |
-| EasyAssist | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| BigDim | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Ecta | ✅ | ✅ | ✅ | ✅ | ⚠️ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Suitable | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ❌ | ✅ |
-| BeeFood | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️ |
-| Cardápio Ai | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Omie | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
-| GrandChef | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Jotajá | ✅ | ❌ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
-| Sischef | ⚠️ | ⚠️ | ❌ | ⚠️ | ❌ | ❌ | ✅ | ✅ | ✅ | ⚠️ | ✅ | ⚠️ | ❌ |
-| Deli | ✅ | ⚠️ | ⚠️ | ✅ | ❌ | ❌ | ✅ | ⚠️ | ✅ | ⚠️ | ✅ | ❌ | ❌ |
-
-## Notas por concorrente
-
-- **Anota ai** (https://anota.ai/) — período promocional de R$ 59,90 nos primeiros meses; depois Plano Start R$ 279,99/mês ou Gestão Avançada R$ 399,99/mês. Cardápio digital comprado pelo iFood, chatbot multi-rede (WhatsApp, Facebook, Instagram), pouco foco em gestão, cresceu com promoções agressivas do iFood; suporte terceirizado sofreu com o crescimento.
-- **Brendi** (https://brendi.com.br/) — cobrança por faturamento: até R$1.500 = R$60/mês; R$1.500,01 a R$7.500 = 4% do faturado; acima de R$7.500 = R$300/mês. Foco em automação de delivery (não mesas), pouco foco em gestão, valor elevado pelo que oferece.
-- **Saipos** (https://saipos.com/) — R$ 219/mês (até R$40 mil de faturamento); implantação R$600 com 75% de desconto como gatilho de urgência. Sistema de gestão usado por franquias grandes, foco forte em gestão; temos integração com eles.
-- **Instadelivery** (https://instadelivery.com.br/) — grátis até R$2.000/mês faturado; R$69,90/mês até R$5.000; R$129,90/mês acima disso. Barato e completo, mas usabilidade ruim e pouco profissional; cresceu com programa de indicação agressivo, foca em preço baixo.
-- **Consumer (Menu Dino)** (https://consumer.com.br/) — grátis até 200 pedidos; Consumer 1 PC R$64,90/mês (1 computador); Consumer rede R$84,90/mês; cobram à parte por várias funcionalidades, incluindo o próprio Menu Dino. É um sistema de gestão com cardápio (Menu Dino) que exige instalação local, difícil de usar, com bugs para quem faz tráfego pago.
-- **Goomer** (https://goomer.com.br/) — grátis até 30 pedidos/mês via WhatsApp (R$1,39 por pedido extra); básico R$99,90/mês; automatizar R$184,90/mês; integrar R$299,90/mês + R$99,90/mês de implementação QR code/delivery. Muito conhecido, foco forte em totens de mesa, fluxo de pedido pouco fácil, falta ferramentas de marketing.
-- **Yooga** (https://yooga.com.br/) — planos anuais de R$211,65 a R$296,65 (12x); mensais de R$249 a R$349; Premium sob consulta. Foco em gestão mais que automação, bem feito mas pouco relevante no mercado; funcionalidades básicas presas a planos superiores.
-- **OlaClick** (https://olaclick.com/) — Advanced R$64/mês (~400 pedidos); Premium R$160/mês (~4.000 pedidos); Elite R$374/mês; Infinity R$928/mês (ilimitado). Preço acessível, mas parece incompleto e dependente do plano contratado.
-- **WhatsMenu** (https://whatsmenu.com.br/) — valor padrão R$97/mês; usa montagem gratuita de cardápio (100 itens) como gatilho de urgência para implementação. Barato, sem grandes ameaças ao nosso posicionamento.
-- **Multipedidos** (https://multipedidos.com.br/) — iniciante R$169,90/mês; profissional R$259,90/mês; implementação R$150. Relativamente completo e promissor, mas custo elevado ao somar módulos que já entregamos no plano (como o chatbot).
-- **Delivery Direto** (https://site.deliverydireto.com.br/) — comissão de 10% sobre vendas (teto R$699/mês) no iniciante; 5% (teto R$899/mês) no profissional; possui módulos à parte. Possivelmente o cardápio digital mais antigo da lista, perdendo mercado para concorrentes mais modernos.
-- **Linx** (https://www.linx.com.br/) — Essencial R$349/mês; Plus R$529/mês; Max R$779/mês. Foco em grandes empresas/franquias, dona da Neemo (posicionada como sistema de gestão); atendimento fica caro por depender da Neemo à parte.
-- **Neemo** (https://www.neemo.com.br/) — Start a partir de R$189/mês; Pro a partir de R$289/mês; franquia sob consulta. Cardápio digital comprado pela Linx, interface historicamente ruim, foco em franquias com ERP.
-- **Alloy** (https://www.alloy.al/) — Começar R$164,93 (até R$30 mil/mês); Crescer R$224,93 (até R$70 mil); Avançar R$284,93 (até R$110 mil); Evoluir R$359,93 (acima de R$110 mil). Pouca relevância de mercado hoje, mas ferramenta completa e bem feita.
-- **Accon** (https://accon.com.br/) — mensal completo R$349/mês; trimestral completo R$299/mês. Foco em atendimento e automação de delivery, deixa a gestão de lado, integra com outros PDVs.
-- **Takeat** (https://www.takeat.app/) — básico R$199/mês; inovação R$279/mês; profissional R$499/mês; enterprise sob consulta. Bom custo-benefício, cardápio com usabilidade ruim, mas sistema relativamente completo.
-- **EasyAssist** (https://easyassist.com.br/) — sem dado de preço coletado. Sistema de gestão simples, focado apenas em mesas, com controles básicos de estoque e pedidos.
-- **BigDim** (https://www.bigdim.com.br/) — Flex R$59,90/mês (até 150 pedidos); Basic R$89,90/mês; Pro R$159,90/mês; Prime R$189,90/mês. Preço acessível, sistema pequeno, parece ter muitas coisas mas incompletas.
-- **Ecta** (https://ecta.com.br/) — 1º mês no boleto R$350; demais meses R$200; no cartão, 6x de R$189. Foco em atendimento com custo-benefício mediano; disparador de mensagem via SMS (não WhatsApp), um pouco arcaico.
-- **Suitable** (https://suitable.com.br/) — Starter R$287/mês; Advanced R$386/mês; Premium R$479/mês; Ultra sob consulta. Sistema razoavelmente completo, compara-se diretamente com concorrentes no próprio site; layout de cardápio pouco atrativo.
-- **BeeFood** (https://beefood.com.br/) — grátis (histórico de 7 dias); Zangão R$200/mês; Rainha R$300/mês; BeeFood R$400/mês. Bastante completo, cardápio pouco intuitivo, preços não muito competitivos.
-- **Cardápio Ai** (https://cardapio.ai/) — PDV Básico R$49,90/mês; PDV + Robô R$64,90/mês; PDV Integrado R$99,90/mês. Custo baixo, focado em automação de atendimento, deixa gestão e marketing de lado.
-- **Omie** (https://www.omie.com.br/) — Omie ERP R$99/mês; Omie Multivarejo R$209/mês. Foco principal é ERP para vários segmentos; cardápio digital não é o foco.
-- **GrandChef** (https://www.grandchef.com.br/) — Starter 12x R$29,94; Lite 12x R$67,43 ou R$89,90/mês; Pro 12x R$97,43 ou R$129,90/mês. Relativamente completo e bem feito, bom posicionamento em gestão, cardápio digital com segurança percebida fraca.
-- **Jotajá** (https://www.site.jotaja.com/) — Start R$249/mês + R$300 de implantação; Advanced R$329/mês + R$300 de implantação; Franquias sob consulta. Cardápio simples, destaque pelo evento anual "Jotajá Summit"; pouca relevância atual.
-- **Sischef** (https://sischef.com/) — planos a partir de R$99,99/mês, com módulos à parte. Foco em gestão (não concorre diretamente com nosso posicionamento de cardápio digital); forte reconhecimento entre franquias; temos integração com eles.
-- **Deli** (https://deli.com.br/pt-br/) — Inicial R$83,90/mês; Avançado R$125,90/mês; Pro R$178,90/mês, com módulos à parte. Relativamente completo e promissor; custo sobe ao somar módulos que já entregamos no plano (como o chatbot).`;
 
 const DEFAULT_BODIES: Record<string, string> = {
   produto: `Todos os aspectos mais importantes do produto: funcionalidades, planos e integrações disponíveis.
@@ -854,28 +796,138 @@ const IPP_PILLS = [
   "CNPJ ativo (MEI+)",
 ];
 
-const OBJECOES_SIMPLES = [
-  { titulo: "Entendimento do programa", resposta: "Explique que não é revenda — é representação de uma empresa de tecnologia." },
-  { titulo: "Prioridade", resposta: "Mostre a relevância da parceria e o potencial de retorno." },
-  { titulo: "Perfil", resposta: "Explore o ICP junto com o parceiro e cite exemplos parecidos que já indicaram." },
-  { titulo: "Esforço operacional", resposta: "A comissão cresce conforme a responsabilidade assumida — não precisa fazer tudo sozinho." },
-  { titulo: "Retorno financeiro", resposta: "Reforce a progressão da comissão e a rapidez de recebimento." },
-  { titulo: "Confiança", resposta: "Mostre cases, volume de parceiros ativos e materiais de apoio." },
-  { titulo: "Concorrência", resposta: "Destaque os diferenciais do programa — não exige exclusividade." },
-  { titulo: "Compromisso", resposta: "Não há metas obrigatórias nem exclusividade forçada; o ritmo é do parceiro." },
-  { titulo: "Exclusividade", resposta: "Deixe claro que não exige exclusividade." },
-  { titulo: "Deal breaker", resposta: "Desqualifique com respeito e deixe a porta aberta para o futuro." },
-  { titulo: "Dispensa", resposta: "Peça um tempo para alinhar, evitando ter que retomar em outro horário." },
+const OBJECOES_TIPOS = ["Dispensa", "Confiança", "Perfil", "Compromisso", "Retorno", "Concorrência"] as const;
+
+const OBJECOES_SIMPLES: { titulo: string; resposta: string; tipo: (typeof OBJECOES_TIPOS)[number] }[] = [
+  { titulo: "Entendimento do programa", resposta: "Explique que não é revenda — é representação de uma empresa de tecnologia.", tipo: "Confiança" },
+  { titulo: "Prioridade", resposta: "Mostre a relevância da parceria e o potencial de retorno.", tipo: "Dispensa" },
+  { titulo: "Perfil", resposta: "Explore o ICP junto com o parceiro e cite exemplos parecidos que já indicaram.", tipo: "Perfil" },
+  { titulo: "Esforço operacional", resposta: "A comissão cresce conforme a responsabilidade assumida — não precisa fazer tudo sozinho.", tipo: "Retorno" },
+  { titulo: "Retorno financeiro", resposta: "Reforce a progressão da comissão e a rapidez de recebimento.", tipo: "Retorno" },
+  { titulo: "Confiança", resposta: "Mostre cases, volume de parceiros ativos e materiais de apoio.", tipo: "Confiança" },
+  { titulo: "Concorrência", resposta: "Destaque os diferenciais do programa — não exige exclusividade.", tipo: "Concorrência" },
+  { titulo: "Compromisso", resposta: "Não há metas obrigatórias nem exclusividade forçada; o ritmo é do parceiro.", tipo: "Compromisso" },
+  { titulo: "Exclusividade", resposta: "Deixe claro que não exige exclusividade.", tipo: "Compromisso" },
+  { titulo: "Deal breaker", resposta: "Desqualifique com respeito e deixe a porta aberta para o futuro.", tipo: "Compromisso" },
+  { titulo: "Dispensa", resposta: "Peça um tempo para alinhar, evitando ter que retomar em outro horário.", tipo: "Dispensa" },
 ];
 
-const CONCORRENTES_DESTAQUE = [
-  { nome: "Anota ai", preco: "a partir de R$ 279,99/mês", nota: "Comprado pelo iFood; pouco foco em gestão." },
-  { nome: "Saipos", preco: "R$ 219/mês", nota: "Foco em gestão para franquias grandes; temos integração com eles." },
-  { nome: "Goomer", preco: "grátis a R$ 299,90/mês", nota: "Forte em totens de mesa; falta ferramentas de marketing." },
-  { nome: "WhatsMenu", preco: "R$ 97/mês", nota: "Barato; sem grandes ameaças ao nosso posicionamento." },
-  { nome: "Consumer (Menu Dino)", preco: "grátis a R$ 84,90/mês", nota: "Exige instalação local; difícil de usar." },
-  { nome: "Sischef", preco: "a partir de R$ 99,99/mês", nota: "Foco em gestão para franquias; temos integração com eles." },
+// Matriz de concorrentes — funcionalidades comparadas com a Cardápio Web.
+// 1 = tem · 0.5 = parcial/limitado · 0 = não tem.
+type Nivel = 1 | 0.5 | 0;
+type FeatureKey =
+  | "delivery"
+  | "mesas"
+  | "chatbot"
+  | "pagamento"
+  | "disparador"
+  | "fidelidade"
+  | "caixa"
+  | "fiscal"
+  | "estoqueProdutos"
+  | "estoqueInsumos"
+  | "financeira"
+  | "rotas"
+  | "totem";
+
+type Concorrente = { nome: string; site?: string; preco: string; nota: string; valores: Record<FeatureKey, Nivel> };
+
+const FEATURE_LABELS: Record<FeatureKey, string> = {
+  delivery: "Cardápio delivery",
+  mesas: "Cardápio mesas",
+  chatbot: "ChatBot WhatsApp",
+  pagamento: "Pagamento online",
+  disparador: "Disparador WhatsApp",
+  fidelidade: "Fidelidade",
+  caixa: "Fluxo de caixa",
+  fiscal: "Módulo fiscal",
+  estoqueProdutos: "Estoque produtos",
+  estoqueInsumos: "Estoque insumos",
+  financeira: "Gestão financeira",
+  rotas: "Rotas de entrega",
+  totem: "Totem",
+};
+
+const FEATURE_CATEGORIAS: { label: string; keys: FeatureKey[] }[] = [
+  { label: "Cardápio Digital", keys: ["delivery", "mesas", "chatbot", "pagamento"] },
+  { label: "Food Marketing", keys: ["disparador", "fidelidade"] },
+  { label: "Gestão do Negócio", keys: ["caixa", "fiscal", "estoqueProdutos", "estoqueInsumos", "financeira", "rotas", "totem"] },
 ];
+
+function feat(delivery: Nivel, mesas: Nivel, chatbot: Nivel, pagamento: Nivel, disparador: Nivel, fidelidade: Nivel, caixa: Nivel, fiscal: Nivel, estoqueProdutos: Nivel, estoqueInsumos: Nivel, financeira: Nivel, rotas: Nivel, totem: Nivel): Record<FeatureKey, Nivel> {
+  return { delivery, mesas, chatbot, pagamento, disparador, fidelidade, caixa, fiscal, estoqueProdutos, estoqueInsumos, financeira, rotas, totem };
+}
+
+const CARDAPIO_WEB_FEATURES = feat(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0);
+
+const CONCORRENTES: Concorrente[] = [
+  { nome: "Anota ai", preco: "a partir de R$ 279,99/mês (promo R$ 59,90 iniciais)", nota: "Cardápio digital comprado pelo iFood, chatbot multi-rede (WhatsApp, Facebook, Instagram), pouco foco em gestão, cresceu com promoções agressivas do iFood; suporte terceirizado sofreu com o crescimento.", valores: feat(1, 1, 1, 1, 0.5, 1, 1, 0.5, 0.5, 0, 0.5, 0, 0) },
+  { nome: "Brendi", preco: "4% do faturamento (R$60 a R$300/mês)", nota: "Foco em automação de delivery (não mesas), pouco foco em gestão, valor elevado pelo que oferece.", valores: feat(1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0) },
+  { nome: "Saipos", preco: "R$ 219/mês", nota: "Sistema de gestão usado por franquias grandes, foco forte em gestão; temos integração com eles.", valores: feat(1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0) },
+  { nome: "Instadelivery", preco: "grátis a R$ 129,90/mês", nota: "Barato e completo, mas usabilidade ruim e pouco profissional; cresceu com programa de indicação agressivo, foca em preço baixo.", valores: feat(1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1) },
+  { nome: "Consumer (Menu Dino)", preco: "grátis a R$ 84,90/mês (+ módulos à parte)", nota: "Sistema de gestão com cardápio (Menu Dino) que exige instalação local, difícil de usar, com bugs para quem faz tráfego pago.", valores: feat(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) },
+  { nome: "Goomer", preco: "grátis a R$ 299,90/mês", nota: "Muito conhecido, foco forte em totens de mesa, fluxo de pedido pouco fácil, falta ferramentas de marketing.", valores: feat(1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1) },
+  { nome: "Yooga", preco: "R$ 211,65 a R$ 349/mês", nota: "Foco em gestão mais que automação, bem feito mas pouco relevante no mercado; funcionalidades básicas presas a planos superiores.", valores: feat(1, 0.5, 1, 1, 0, 1, 1, 0.5, 0.5, 0.5, 0.5, 0, 0) },
+  { nome: "OlaClick", preco: "R$ 64 a R$ 928/mês", nota: "Preço acessível, mas parece incompleto e dependente do plano contratado.", valores: feat(1, 1, 1, 1, 0.5, 1, 1, 1, 1, 0.5, 1, 1, 0) },
+  { nome: "WhatsMenu", preco: "R$ 97/mês", nota: "Barato, sem grandes ameaças ao nosso posicionamento.", valores: feat(1, 1, 1, 1, 0, 0, 1, 0, 1, 0.5, 0, 0.5, 0) },
+  { nome: "Multipedidos", preco: "R$ 169,90 a R$ 259,90/mês", nota: "Relativamente completo e promissor, mas custo elevado ao somar módulos que já entregamos no plano (como o chatbot).", valores: feat(1, 0.5, 0.5, 1, 1, 1, 0.5, 0.5, 0.5, 0, 0, 0, 0) },
+  { nome: "Delivery Direto", preco: "5% a 10% sobre vendas", nota: "Possivelmente o cardápio digital mais antigo da lista, perdendo mercado para concorrentes mais modernos.", valores: feat(1, 1, 0.5, 1, 0.5, 1, 0, 0, 0, 0, 0, 0.5, 0) },
+  { nome: "Linx", preco: "R$ 349 a R$ 779/mês", nota: "Foco em grandes empresas/franquias, dona da Neemo (posicionada como sistema de gestão); atendimento fica caro por depender da Neemo à parte.", valores: feat(0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1) },
+  { nome: "Neemo", preco: "a partir de R$ 189/mês", nota: "Cardápio digital comprado pela Linx, interface historicamente ruim, foco em franquias com ERP.", valores: feat(1, 1, 1, 1, 0.5, 0.5, 0, 0, 0, 0, 0, 0, 0) },
+  { nome: "Alloy", preco: "R$ 164,93 a R$ 359,93/mês", nota: "Pouca relevância de mercado hoje, mas ferramenta completa e bem feita.", valores: feat(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1) },
+  { nome: "Accon", preco: "R$ 299 a R$ 349/mês", nota: "Foco em atendimento e automação de delivery, deixa a gestão de lado, integra com outros PDVs.", valores: feat(1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0) },
+  { nome: "Takeat", preco: "R$ 199 a R$ 499/mês", nota: "Bom custo-benefício, cardápio com usabilidade ruim, mas sistema relativamente completo.", valores: feat(1, 1, 1, 1, 0.5, 1, 1, 0.5, 0.5, 0.5, 0.5, 0, 1) },
+  { nome: "EasyAssist", preco: "sob consulta", nota: "Sistema de gestão simples, focado apenas em mesas, com controles básicos de estoque e pedidos.", valores: feat(1, 1, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0) },
+  { nome: "BigDim", preco: "R$ 59,90 a R$ 189,90/mês", nota: "Preço acessível, sistema pequeno, parece ter muitas coisas mas incompletas.", valores: feat(1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0) },
+  { nome: "Ecta", preco: "R$ 189 a R$ 350/mês", nota: "Foco em atendimento com custo-benefício mediano; disparador de mensagem via SMS (não WhatsApp), um pouco arcaico.", valores: feat(1, 1, 1, 1, 0.5, 0, 1, 0, 0, 0, 0, 0, 0) },
+  { nome: "Suitable", preco: "R$ 287 a R$ 479/mês", nota: "Sistema razoavelmente completo, compara-se diretamente com concorrentes no próprio site; layout de cardápio pouco atrativo.", valores: feat(1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1) },
+  { nome: "BeeFood", preco: "grátis a R$ 400/mês", nota: "Bastante completo, cardápio pouco intuitivo, preços não muito competitivos.", valores: feat(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.5) },
+  { nome: "Cardápio Ai", preco: "R$ 49,90 a R$ 99,90/mês", nota: "Custo baixo, focado em automação de atendimento, deixa gestão e marketing de lado.", valores: feat(1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0) },
+  { nome: "Omie", preco: "R$ 99 a R$ 209/mês", nota: "Foco principal é ERP para vários segmentos; cardápio digital não é o foco.", valores: feat(1, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0) },
+  { nome: "GrandChef", preco: "R$ 29,94 a R$ 129,90/mês", nota: "Relativamente completo e bem feito, bom posicionamento em gestão, cardápio digital com segurança percebida fraca.", valores: feat(1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0) },
+  { nome: "Jotajá", preco: "R$ 249 a R$ 329/mês + implantação", nota: "Cardápio simples, destaque pelo evento anual \"Jotajá Summit\"; pouca relevância atual.", valores: feat(1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0) },
+  { nome: "Sischef", preco: "a partir de R$ 99,99/mês (+ módulos à parte)", nota: "Foco em gestão (não concorre diretamente com nosso posicionamento de cardápio digital); forte reconhecimento entre franquias; temos integração com eles.", valores: feat(0.5, 0.5, 0, 0.5, 0, 0, 1, 1, 1, 0.5, 1, 0.5, 0) },
+  { nome: "Deli", preco: "R$ 83,90 a R$ 178,90/mês (+ módulos à parte)", nota: "Relativamente completo e promissor; custo sobe ao somar módulos que já entregamos no plano (como o chatbot).", valores: feat(1, 0.5, 0.5, 1, 0, 0, 1, 0.5, 1, 0.5, 1, 0, 0) },
+];
+
+function diffVsCardapioWeb(c: Concorrente) {
+  const keys = Object.keys(FEATURE_LABELS) as FeatureKey[];
+  const soCW: FeatureKey[] = [];
+  const tambemTem: FeatureKey[] = [];
+  const parcial: FeatureKey[] = [];
+  const soConcorrente: FeatureKey[] = [];
+  for (const k of keys) {
+    const cw = CARDAPIO_WEB_FEATURES[k];
+    const v = c.valores[k];
+    if (v === 0.5) parcial.push(k);
+    else if (cw === 1 && v === 1) tambemTem.push(k);
+    else if (cw === 1 && v === 0) soCW.push(k);
+    else if (cw === 0 && v === 1) soConcorrente.push(k);
+  }
+  return { soCW, tambemTem, parcial, soConcorrente };
+}
+
+function gerarArgumentoFechamento(c: Concorrente): string {
+  const { soCW, tambemTem, soConcorrente } = diffVsCardapioWeb(c);
+  const partes: string[] = [];
+  if (soCW.length > 0) {
+    partes.push(
+      `A Cardápio Web se destaca em ${soCW.length} ponto${soCW.length > 1 ? "s" : ""} que a ${c.nome} não cobre: ${soCW
+        .map((k) => FEATURE_LABELS[k])
+        .join(", ")}.`,
+    );
+  } else {
+    partes.push(`A ${c.nome} cobre as mesmas funcionalidades essenciais que a Cardápio Web.`);
+  }
+  if (tambemTem.length > 0) {
+    partes.push(`As duas soluções já cobrem juntas ${tambemTem.length} funcionalidades em comum, então o cliente não perde nada ao migrar.`);
+  }
+  partes.push(c.nota);
+  if (soConcorrente.length > 0) {
+    partes.push(`Vale lembrar que a ${c.nome} ainda tem ${soConcorrente.map((k) => FEATURE_LABELS[k]).join(", ")}, que hoje não fazemos.`);
+  }
+  return partes.join(" ");
+}
 
 const JORNADA_STEPS = [
   { title: "Prospecção", desc: "Identificação e primeiro contato com potenciais representantes, seguindo o funil de prospecção." },
@@ -1072,58 +1124,305 @@ function NumberedSteps({ steps }: { steps: { title: string; desc: string }[] }) 
   );
 }
 
-function ObjecoesConcorrentes() {
+function Callout2({ icon: Icon, children }: { icon: IconType; children: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <div className="mb-2.5 text-sm font-bold text-foreground">Objeções mais comuns</div>
-        <p className="mb-3 text-[13px] text-muted-foreground">Toque em cada uma para ver a resposta rápida.</p>
-        <Accordion
-          type="single"
-          collapsible
-          className="rounded-[20px] border border-border bg-card px-5"
-          style={{ boxShadow: "var(--shadow-card)" }}
-        >
-          {OBJECOES_SIMPLES.map((o, i) => (
-            <AccordionItem key={o.titulo} value={o.titulo} className={i === OBJECOES_SIMPLES.length - 1 ? "border-b-0" : undefined}>
+    <div
+      className="mb-4 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide"
+      style={{ backgroundColor: "var(--accent)", color: "var(--accent-foreground)" }}
+    >
+      <Icon className="h-3.5 w-3.5" /> {children}
+    </div>
+  );
+}
+
+function SearchInput({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder: string }) {
+  return (
+    <div className="relative">
+      <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="h-10 w-full rounded-xl border border-border bg-card pl-10 pr-3 text-[13.5px] text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/30"
+      />
+    </div>
+  );
+}
+
+function ObjecoesTab() {
+  const [busca, setBusca] = useState("");
+  const [tipo, setTipo] = useState<string>("Todas");
+
+  const filtradas = OBJECOES_SIMPLES.filter((o) => {
+    const matchTipo = tipo === "Todas" || o.tipo === tipo;
+    const matchBusca = busca.trim() === "" || o.titulo.toLowerCase().includes(busca.toLowerCase()) || o.resposta.toLowerCase().includes(busca.toLowerCase());
+    return matchTipo && matchBusca;
+  });
+
+  return (
+    <div>
+      <Callout2 icon={ShieldCheck}>Contorno de Objeções</Callout2>
+      <p className="mb-4 text-[13px] text-muted-foreground">Base de objeções organizada por tipo — toque para ver a resposta rápida.</p>
+
+      <div className="mb-3">
+        <SearchInput value={busca} onChange={setBusca} placeholder="Buscar objeção..." />
+      </div>
+
+      <div className="mb-4 flex flex-wrap gap-2">
+        {["Todas", ...OBJECOES_TIPOS].map((t) => {
+          const active = tipo === t;
+          const count = t === "Todas" ? OBJECOES_SIMPLES.length : OBJECOES_SIMPLES.filter((o) => o.tipo === t).length;
+          return (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setTipo(t)}
+              className={cn(
+                "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12.5px] font-semibold transition-colors",
+                active ? "text-white" : "border text-muted-foreground hover:text-foreground",
+              )}
+              style={active ? { backgroundImage: "var(--gradient-primary)" } : { borderColor: "var(--border)", background: "var(--card)" }}
+            >
+              {t}
+              <span className="rounded-full px-1.5 text-[10px] font-bold" style={{ backgroundColor: active ? "rgba(255,255,255,0.25)" : "var(--secondary)" }}>
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      <p className="mb-2.5 text-[12px] font-medium text-muted-foreground">
+        {filtradas.length} de {OBJECOES_SIMPLES.length} objeções
+      </p>
+
+      {filtradas.length === 0 ? (
+        <p className="rounded-2xl border border-border bg-card py-8 text-center text-sm text-muted-foreground">Nenhuma objeção encontrada.</p>
+      ) : (
+        <Accordion type="single" collapsible className="rounded-[20px] border border-border bg-card px-5" style={{ boxShadow: "var(--shadow-card)" }}>
+          {filtradas.map((o, i) => (
+            <AccordionItem key={o.titulo} value={o.titulo} className={i === filtradas.length - 1 ? "border-b-0" : undefined}>
               <AccordionTrigger className="text-[13.5px] font-semibold text-foreground hover:no-underline">
-                {o.titulo}
+                <span className="flex items-center gap-2">
+                  {o.titulo}
+                  <span className="rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ backgroundColor: "var(--secondary)", color: "var(--secondary-foreground)" }}>
+                    {o.tipo}
+                  </span>
+                </span>
               </AccordionTrigger>
               <AccordionContent className="text-[13px] leading-relaxed text-muted-foreground">{o.resposta}</AccordionContent>
             </AccordionItem>
           ))}
         </Accordion>
+      )}
+    </div>
+  );
+}
+
+function NivelIcon({ v }: { v: Nivel }) {
+  if (v === 1) return <Check className="mx-auto h-4 w-4" style={{ color: "var(--badge-positive-fg)" }} />;
+  if (v === 0.5) return <Minus className="mx-auto h-4 w-4" style={{ color: "var(--badge-atualizado-fg)" }} />;
+  return <X className="mx-auto h-4 w-4 text-muted-foreground/50" />;
+}
+
+function ConcorrenteDetalheDialog({ concorrente, onClose }: { concorrente: Concorrente | null; onClose: () => void }) {
+  if (!concorrente) return null;
+  const { soCW, tambemTem, parcial } = diffVsCardapioWeb(concorrente);
+
+  return (
+    <Dialog open={concorrente !== null} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Cardápio Web vs. {concorrente.nome}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="text-[13px] text-muted-foreground">{concorrente.preco}</div>
+
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="rounded-xl bg-muted/60 py-3">
+              <div className="text-lg font-bold text-foreground">{tambemTem.length}</div>
+              <div className="text-[10.5px] text-muted-foreground">Também têm</div>
+            </div>
+            <div className="rounded-xl bg-muted/60 py-3">
+              <div className="text-lg font-bold text-foreground">{parcial.length}</div>
+              <div className="text-[10.5px] text-muted-foreground">Fazem parcial</div>
+            </div>
+            <div className="rounded-xl bg-muted/60 py-3">
+              <div className="text-lg font-bold" style={{ color: "var(--badge-positive-fg)" }}>
+                {soCW.length}
+              </div>
+              <div className="text-[10.5px] text-muted-foreground">Só a CW tem</div>
+            </div>
+          </div>
+
+          {soCW.length > 0 && (
+            <div>
+              <div className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Só a Cardápio Web tem</div>
+              <ul className="space-y-1.5">
+                {soCW.map((k) => (
+                  <li key={k} className="flex items-center gap-2 text-[13px] text-foreground">
+                    <Check className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--badge-positive-fg)" }} />
+                    {FEATURE_LABELS[k]}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {tambemTem.length > 0 && (
+            <div>
+              <div className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Funcionalidades em comum</div>
+              <div className="flex flex-wrap gap-1.5">
+                {tambemTem.map((k) => (
+                  <span key={k} className="rounded-full px-2.5 py-1 text-[11.5px] font-medium" style={{ backgroundColor: "var(--secondary)", color: "var(--secondary-foreground)" }}>
+                    {FEATURE_LABELS[k]}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div>
+            <div className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Argumento de fechamento</div>
+            <div className="rounded-2xl border px-4 py-3.5 text-[13px] leading-relaxed" style={{ borderColor: "var(--border)", backgroundImage: "var(--gradient-soft)", color: "var(--accent-foreground)" }}>
+              {gerarArgumentoFechamento(concorrente)}
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ConcorrentesTab() {
+  const [busca, setBusca] = useState("");
+  const [categoria, setCategoria] = useState(FEATURE_CATEGORIAS[0].label);
+  const [mostrarTodos, setMostrarTodos] = useState(false);
+  const [detalheAberto, setDetalheAberto] = useState<Concorrente | null>(null);
+
+  const filtrados = CONCORRENTES.filter((c) => c.nome.toLowerCase().includes(busca.toLowerCase()));
+  const pillsVisiveis = mostrarTodos ? filtrados : filtrados.slice(0, 10);
+  const colunas = FEATURE_CATEGORIAS.find((c) => c.label === categoria)!.keys;
+
+  return (
+    <div>
+      <Callout2 icon={Building2}>Matriz de Concorrentes</Callout2>
+      <p className="mb-4 text-[13px] text-muted-foreground">Comparativo com os principais concorrentes do mercado — clique num nome para ver o comparativo detalhado.</p>
+
+      <div className="mb-3">
+        <SearchInput value={busca} onChange={setBusca} placeholder="Buscar concorrente..." />
       </div>
 
-      <div>
-        <div className="mb-2.5 text-sm font-bold text-foreground">Principais concorrentes</div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {CONCORRENTES_DESTAQUE.map((c) => (
-            <div key={c.nome} className="rounded-2xl border border-border bg-card p-4" style={{ boxShadow: "var(--shadow-card)" }}>
-              <div className="text-sm font-bold text-foreground">{c.nome}</div>
-              <div className="mt-0.5 text-xs font-semibold" style={{ color: "var(--category-label)" }}>
-                {c.preco}
-              </div>
-              <div className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">{c.nota}</div>
-            </div>
-          ))}
-        </div>
-        <Accordion
-          type="single"
-          collapsible
-          className="mt-3 rounded-[20px] border border-border bg-card px-5"
-          style={{ boxShadow: "var(--shadow-card)" }}
-        >
-          <AccordionItem value="tabela-completa" className="border-b-0">
-            <AccordionTrigger className="text-[13.5px] font-semibold text-foreground hover:no-underline">
-              Ver comparativo completo (28 concorrentes)
-            </AccordionTrigger>
-            <AccordionContent>
-              <RichText text={CONCORRENTES_TABELA_COMPLETA} />
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
+      <div className="mb-4 flex flex-wrap gap-2">
+        {pillsVisiveis.map((c) => (
+          <button
+            key={c.nome}
+            type="button"
+            onClick={() => setDetalheAberto(c)}
+            className="rounded-full border px-3 py-1.5 text-[12.5px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
+            style={{ borderColor: "var(--border)", background: "var(--card)" }}
+          >
+            {c.nome}
+          </button>
+        ))}
+        {!mostrarTodos && filtrados.length > 10 && (
+          <button
+            type="button"
+            onClick={() => setMostrarTodos(true)}
+            className="rounded-full px-3 py-1.5 text-[12.5px] font-semibold text-primary hover:underline"
+          >
+            +{filtrados.length - 10} mais
+          </button>
+        )}
       </div>
+
+      <div className="mb-4 flex flex-wrap gap-1 rounded-full border border-border bg-card p-1" style={{ width: "fit-content" }}>
+        {FEATURE_CATEGORIAS.map((c) => {
+          const active = categoria === c.label;
+          return (
+            <button
+              key={c.label}
+              type="button"
+              onClick={() => setCategoria(c.label)}
+              className={cn("rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold transition-colors", active ? "text-white" : "text-muted-foreground hover:text-foreground")}
+              style={active ? { background: "var(--sidebar)" } : undefined}
+            >
+              {c.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="overflow-x-auto rounded-[20px] border border-border bg-card" style={{ boxShadow: "var(--shadow-card)" }}>
+        <table className="w-full min-w-[640px] border-collapse text-left text-xs">
+          <thead>
+            <tr className="bg-muted/60">
+              <th className="sticky left-0 whitespace-nowrap bg-muted/60 px-3 py-2.5 font-semibold text-foreground">Concorrente</th>
+              {colunas.map((k) => (
+                <th key={k} className="whitespace-nowrap px-3 py-2.5 text-center font-semibold text-foreground">
+                  {FEATURE_LABELS[k]}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="border-t border-border" style={{ backgroundColor: "var(--accent)" }}>
+              <td className="sticky left-0 whitespace-nowrap px-3 py-2.5 font-bold" style={{ backgroundColor: "var(--accent)", color: "var(--accent-foreground)" }}>
+                Cardápio Web
+              </td>
+              {colunas.map((k) => (
+                <td key={k} className="px-3 py-2.5">
+                  <NivelIcon v={CARDAPIO_WEB_FEATURES[k]} />
+                </td>
+              ))}
+            </tr>
+            {filtrados.map((c) => (
+              <tr key={c.nome} className="cursor-pointer border-t border-border hover:bg-muted/40" onClick={() => setDetalheAberto(c)}>
+                <td className="sticky left-0 whitespace-nowrap bg-card px-3 py-2.5 font-medium text-foreground hover:underline">{c.nome}</td>
+                {colunas.map((k) => (
+                  <td key={k} className="px-3 py-2.5">
+                    <NivelIcon v={c.valores[k]} />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <ConcorrenteDetalheDialog concorrente={detalheAberto} onClose={() => setDetalheAberto(null)} />
+    </div>
+  );
+}
+
+function ObjecoesConcorrentes() {
+  const [aba, setAba] = useState<"objecoes" | "concorrentes">("objecoes");
+
+  return (
+    <div>
+      <div className="mb-5 flex gap-1 rounded-full border border-border bg-card p-1" style={{ width: "fit-content" }}>
+        {(
+          [
+            { id: "objecoes", label: "Objeções" },
+            { id: "concorrentes", label: "Concorrentes" },
+          ] as const
+        ).map((t) => {
+          const active = aba === t.id;
+          return (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setAba(t.id)}
+              className={cn("rounded-full px-4 py-1.5 text-[13px] font-semibold transition-colors", active ? "text-white" : "text-muted-foreground hover:text-foreground")}
+              style={active ? { backgroundImage: "var(--gradient-primary)" } : undefined}
+            >
+              {t.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {aba === "objecoes" ? <ObjecoesTab /> : <ConcorrentesTab />}
     </div>
   );
 }

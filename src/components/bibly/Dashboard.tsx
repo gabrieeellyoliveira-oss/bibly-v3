@@ -9,8 +9,8 @@ import {
   CheckCircle2,
   ChevronDown,
   Download,
+  FileDown,
   LayoutDashboard,
-  LineChart as LineChartIcon,
   MessageSquareText,
   PhoneCall,
   Settings,
@@ -40,8 +40,10 @@ import { useLocalStorageState } from "@/hooks/use-local-storage-state";
 import { type Column, ObjectEditorDialog, Panel, RowsEditorDialog } from "@/components/bibly/editors";
 import { Playbook } from "@/components/bibly/Playbook";
 import { Templates } from "@/components/bibly/Templates";
-import { ContentPage } from "@/components/bibly/ContentPage";
 import { Metas } from "@/components/bibly/Metas";
+import { PlanosPrecos } from "@/components/bibly/PlanosPrecos";
+import { ProgressaoCarreira } from "@/components/bibly/ProgressaoCarreira";
+import { Materiais } from "@/components/bibly/Materiais";
 
 // ---------------------------------------------------------------------------
 // Aurora — PSM Command Center. Tudo editável pela engrenagem em cada painel;
@@ -229,46 +231,11 @@ const INSIGHTS_PADRAO: Insight[] = [
   { texto: "Hoje é um bom dia para realizar follow-ups." },
 ];
 
-const PLANOS_PRECOS_BODY = `Valores dos planos e módulos para a contratação da Cardápio Web, bem como os descontos disponíveis para negociações nas vendas.
-
-| Fidelidade | Plano Mesas — Valor total | Plano Mesas — Valor mensal | Plano Delivery — Valor total | Plano Delivery — Valor mensal | Plano Premium — Valor total | Plano Premium — Valor mensal | Módulo Marketplace — Valor total | Módulo Marketplace — Valor mensal | Módulo Estoque Avançado — Valor total | Módulo Estoque Avançado — Valor mensal | Módulo Cupom Fiscal — Valor total | Módulo Cupom Fiscal — Valor mensal | Módulo Entregadores — Valor total | Módulo Entregadores — Valor mensal | Entregadores — até 500 pedidos (por pedido) | Entregadores — 501 a 1500 pedidos (por pedido) | Entregadores — acima de 1500 pedidos (por pedido) | Módulo Financeiro — Valor total | Módulo Financeiro — Valor mensal | Módulo Totem — Valor total | Módulo Totem — Valor mensal |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Anual | R$ 1.679,88 | R$ 139,99 | R$ 2.159,88 | R$ 179,99 | R$ 2.879,88 | R$ 239,99 | R$ 359,88 | R$ 29,99 | R$ 359,88 | R$ 29,99 | R$ 839,88 | R$ 69,99 | R$ 659,88 | R$ 54,99 | 0% | 8% | 6% | R$ 839,88 | R$ 69,99 | R$ 1.199,88 | R$ 99,99 |
-| Semestral | R$ 899,94 | R$ 149,99 | R$ 1.139,94 | R$ 189,99 | R$ 1.499,94 | R$ 249,99 | R$ 179,94 | R$ 29,99 | R$ 179,94 | R$ 29,99 | R$ 419,94 | R$ 69,99 | R$ 329,94 | R$ 54,99 | 0% | 8% | 6% | R$ 419,94 | R$ 69,99 | R$ 599,94 | R$ 99,99 |
-| Trimestral | R$ 479,97 | R$ 159,99 | R$ 599,97 | R$ 199,99 | R$ 779,97 | R$ 259,99 | R$ 89,97 | R$ 29,99 | R$ 89,97 | R$ 29,99 | R$ 209,97 | R$ 69,99 | R$ 164,97 | R$ 54,99 | 0% | 8% | 6% | R$ 209,97 | R$ 69,99 | R$ 299,97 | R$ 99,99 |
-| Mensal | R$ 169,99 | R$ 169,99 | R$ 209,99 | R$ 209,99 | R$ 269,99 | R$ 269,99 | R$ 29,99 | R$ 29,99 | R$ 29,99 | R$ 29,99 | R$ 69,99 | R$ 69,99 | R$ 54,99 | R$ 54,99 | 0% | 8% | 6% | R$ 69,99 | R$ 69,99 | R$ 99,99 | R$ 99,99 |
-
-**Nota:** o módulo Entregadores combina uma mensalidade fixa com uma taxa por pedido, escalonada por volume (0% até 500 pedidos, 8% de 501 a 1500, 6% acima de 1500).`;
-
-const PROGRESSAO_CARREIRA_BODY = `A progressão de carreira por nível trata da evolução do agente de parcerias dentro do seu mesmo nível de senioridade, seja como Channel Hunter ou Channel Account Manager. O principal critério é a performance em relação às metas estipuladas para o canal, com benefício de aumento da taxa de comissionamento e maior protagonismo na gestão e desenvolvimento das parcerias.
-
-| Nível | Faixa | Base salarial | Comissão Meta 1 | Comissão Meta 2 | Comissão Meta 3 | Critérios de elegibilidade / desclassificação |
-|---|---|---|---|---|---|---|
-| JR 1 | Faixa 1 – Base | R$ 1.809,51 | 20% (OTE R$ 2.171,41) | 25% (OTE R$ 2.261,89) | 30% (OTE R$ 2.352,36) | Ramp-up concluído em caso de novato; Meta 3 nos últimos 2 meses |
-| JR 1 | Faixa 2 – Estrela |  | 30% (OTE R$ 2.352,36) | 35% (OTE R$ 2.442,84) | 40% (OTE R$ 2.533,31) | Meta 3 (1 mês, no mês vigente) / se não bater Meta 3 na faixa 2, desce para o nível anterior |
-| JR 2 | Faixa 1 – Base | R$ 1.988,48 | 20% (OTE R$ 2.386,18) | 25% (OTE R$ 2.485,60) | 30% (OTE R$ 2.585,02) | Ramp-up concluído em caso de novato; Meta 3 nos últimos 2 meses |
-| JR 2 | Faixa 2 – Estrela |  | 30% (OTE R$ 2.585,02) | 35% (OTE R$ 2.684,45) | 40% (OTE R$ 2.783,87) | Meta 3 (1 mês, no mês vigente) / se não bater Meta 3 na faixa 2, desce para o nível anterior |
-| JR 3 | Faixa 1 – Base | R$ 2.185,14 | 20% (OTE R$ 2.622,17) | 25% (OTE R$ 2.731,43) | 30% (OTE R$ 2.840,68) | Ramp-up concluído em caso de novato; Meta 3 nos últimos 2 meses |
-| JR 3 | Faixa 2 – Estrela |  | 30% (OTE R$ 2.840,68) | 35% (OTE R$ 2.949,94) | 40% (OTE R$ 3.059,20) | Meta 3 (1 mês, no mês vigente) / se não bater Meta 3 na faixa 2, desce para o nível anterior |
-| PL 1 | Faixa 1 – Base | R$ 2.401,25 | 25% (OTE R$ 3.001,56) | 30% (OTE R$ 3.121,62) | 45% (OTE R$ 3.481,81) | Ramp-up concluído em caso de novato; Meta 3 nos últimos 2 meses |
-| PL 1 | Faixa 2 – Estrela |  | 30% (OTE R$ 3.121,62) | 35% (OTE R$ 3.241,69) | 50% (OTE R$ 3.601,88) | Meta 3 (1 mês, no mês vigente) / se não bater Meta 3 na faixa 2, desce para o nível anterior |
-| PL 2 | Faixa 1 – Base | R$ 2.617,36 | 25% (OTE R$ 3.271,70) | 30% (OTE R$ 3.402,57) | 45% (OTE R$ 3.795,17) | Ramp-up concluído em caso de novato; Meta 3 nos últimos 2 meses |
-| PL 2 | Faixa 2 – Estrela |  | 30% (OTE R$ 3.402,57) | 35% (OTE R$ 3.533,44) | 50% (OTE R$ 3.926,04) | Meta 3 (1 mês, no mês vigente) / se não bater Meta 3 na faixa 2, desce para o nível anterior |
-| PL 3 | Faixa 1 – Base | R$ 2.852,93 | 25% (OTE R$ 3.566,16) | 30% (OTE R$ 3.708,81) | 45% (OTE R$ 4.136,75) | Ramp-up concluído em caso de novato; Meta 3 nos últimos 2 meses |
-| PL 3 | Faixa 2 – Estrela |  | 30% (OTE R$ 3.708,81) | 35% (OTE R$ 3.851,46) | 50% (OTE R$ 4.279,40) | Meta 3 (1 mês, no mês vigente) / se não bater Meta 3 na faixa 2, desce para o nível anterior |
-| SR 1 | Faixa 1 – Base | R$ 3.109,69 | 25% (OTE R$ 3.887,11) | 30% (OTE R$ 4.042,60) | 45% (OTE R$ 4.509,05) | Ramp-up concluído em caso de novato; Meta 3 nos últimos 2 meses |
-| SR 1 | Faixa 2 – Estrela |  | 30% (OTE R$ 4.042,60) | 35% (OTE R$ 4.198,08) | 50% (OTE R$ 4.664,53) | Meta 3 (1 mês, no mês vigente) / se não bater Meta 3 na faixa 2, desce para o nível anterior |
-| SR 2 | Faixa 1 – Base | R$ 3.389,56 | 25% (OTE R$ 4.236,95) | 30% (OTE R$ 4.406,43) | 45% (OTE R$ 4.914,86) | Ramp-up concluído em caso de novato; Meta 3 nos últimos 2 meses |
-| SR 2 | Faixa 2 – Estrela |  | 30% (OTE R$ 4.406,43) | 35% (OTE R$ 4.575,91) | 50% (OTE R$ 5.084,34) | Meta 3 (1 mês, no mês vigente) / se não bater Meta 3 na faixa 2, desce para o nível anterior |
-| SR 3 | Faixa 1 – Base | R$ 3.694,62 | 25% (OTE R$ 4.618,27) | 30% (OTE R$ 4.803,01) | 45% (OTE R$ 5.357,20) | Ramp-up concluído em caso de novato; Meta 3 nos últimos 2 meses |
-| SR 3 | Faixa 2 – Estrela |  | 30% (OTE R$ 4.803,01) | 35% (OTE R$ 4.987,74) | 50% (OTE R$ 5.541,93) | Meta 3 (1 mês, no mês vigente) / se não bater Meta 3 na faixa 2, desce para o nível anterior |
-
-**Nota:** as colunas originais "Meta de Clientes" e "Custo por Cliente (OTE)" estavam quebradas (#REF!) na planilha de origem para a maioria dos níveis e foram omitidas até serem corrigidas pela liderança.`;
-
 const NAV_ITEMS = [
   { id: "dashboard", label: "Visão Geral", icon: LayoutDashboard },
   { id: "playbook", label: "Playbook", icon: BookOpen },
   { id: "templates", label: "Follow-ups", icon: MessageSquareText },
+  { id: "materiais", label: "Materiais", icon: FileDown },
   { id: "carteira", label: "Carteira", icon: Briefcase },
   { id: "clientes", label: "Clientes", icon: Users },
   { id: "pipeline", label: "Pipeline", icon: Workflow },
@@ -276,10 +243,15 @@ const NAV_ITEMS = [
   { id: "planos-precos", label: "Planos e Preços", icon: Tag },
   { id: "progressao-carreira", label: "Progressão de Carreira", icon: Award },
   { id: "metas", label: "Metas", icon: Target },
-  { id: "relatorios", label: "Relatórios", icon: LineChartIcon },
-  { id: "insights", label: "Insights", icon: Sparkles },
   { id: "configuracoes", label: "Configurações", icon: Settings },
 ] as const;
+
+const NAV_SECTIONS: { label: string; ids: (typeof NAV_ITEMS)[number]["id"][] }[] = [
+  { label: "Principal", ids: ["dashboard", "playbook", "templates", "materiais"] },
+  { label: "Carteira", ids: ["carteira", "clientes", "pipeline", "agenda"] },
+  { label: "Institucional", ids: ["planos-precos", "progressao-carreira", "metas"] },
+  { label: "Sistema", ids: ["configuracoes"] },
+];
 
 const MOVIMENTACAO_META: Record<string, { label: string; icon: React.ComponentType<{ className?: string }>; className: string }> = {
   entrou: { label: "Cliente entrou", icon: UserPlus, className: "bg-emerald-100 text-emerald-600" },
@@ -396,21 +368,11 @@ export function Dashboard() {
           ) : secao === "metas" ? (
             <Metas />
           ) : secao === "planos-precos" ? (
-            <ContentPage
-              storageKey="bibly-content-planos-precos"
-              title="Planos e Preços"
-              summary="Valores oficiais dos planos e módulos, por fidelidade."
-              icon={Tag}
-              defaultBody={PLANOS_PRECOS_BODY}
-            />
+            <PlanosPrecos />
           ) : secao === "progressao-carreira" ? (
-            <ContentPage
-              storageKey="bibly-content-progressao-carreira"
-              title="Progressão de Carreira"
-              summary="Evolução salarial e de comissão por nível de senioridade."
-              icon={Award}
-              defaultBody={PROGRESSAO_CARREIRA_BODY}
-            />
+            <ProgressaoCarreira />
+          ) : secao === "materiais" ? (
+            <Materiais />
           ) : secao !== "dashboard" ? (
             <PlaceholderSection label={NAV_ITEMS.find((n) => n.id === secao)!.label} />
           ) : (
@@ -434,7 +396,7 @@ export function Dashboard() {
                             "rounded-full px-3.5 py-1.5 text-[13px] font-semibold transition-colors",
                             active ? "text-white" : "text-muted-foreground hover:text-foreground",
                           )}
-                          style={active ? { background: "var(--sidebar)" } : undefined}
+                          style={active ? { backgroundImage: "var(--gradient-primary)" } : undefined}
                         >
                           {opt.label}
                         </button>
@@ -771,80 +733,79 @@ function AuroraSidebar({
   onNavigate: (id: (typeof NAV_ITEMS)[number]["id"]) => void;
 }) {
   return (
-    <aside className="aurora-sidebar sticky top-0 h-screen w-[252px] shrink-0 flex-col bg-sidebar">
-      <div className="flex items-center gap-3 px-5 pb-6 pt-6">
-        <StarMark size={40} />
-        <div>
-          <div className="text-[17px] font-extrabold tracking-wide text-white">AURORA</div>
-          <div className="text-[10px] font-medium" style={{ color: "var(--sidebar-muted)" }}>
-            Clareza para agir
-          </div>
+    <aside
+      className="aurora-sidebar sticky top-0 h-screen w-[248px] shrink-0 flex-col border-r bg-sidebar"
+      style={{ borderColor: "var(--sidebar-border)" }}
+    >
+      <div className="flex flex-col items-center gap-2 px-5 pb-5 pt-7 text-center">
+        <div
+          className="grid h-14 w-14 place-items-center rounded-2xl"
+          style={{ backgroundImage: "var(--gradient-primary)" }}
+        >
+          <StarMark size={30} />
+        </div>
+        <div className="text-[15px] font-extrabold tracking-wide text-foreground">AURORA</div>
+        <div className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--sidebar-muted)" }}>
+          Clareza para agir
         </div>
       </div>
 
-      <nav className="flex-1 space-y-0.5 overflow-y-auto px-3">
-        {NAV_ITEMS.map((item) => {
-          const active = secao === item.id;
-          return (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => onNavigate(item.id)}
-              className={cn(
-                "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[13.5px] font-medium transition-colors",
-                active ? "font-semibold text-white" : "hover:bg-white/5 hover:text-white",
-              )}
-              style={{
-                background: active ? "var(--sidebar-accent)" : undefined,
-                color: active ? "#ffffff" : "var(--sidebar-muted)",
-              }}
+      <nav className="flex-1 space-y-5 overflow-y-auto px-3 pt-2">
+        {NAV_SECTIONS.map((section) => (
+          <div key={section.label}>
+            <div
+              className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-widest"
+              style={{ color: "var(--sidebar-muted)" }}
             >
-              <item.icon className="h-[17px] w-[17px] shrink-0" />
-              <span className="truncate">{item.label}</span>
-            </button>
-          );
-        })}
+              {section.label}
+            </div>
+            <div className="space-y-0.5">
+              {section.ids.map((id) => {
+                const item = NAV_ITEMS.find((n) => n.id === id)!;
+                const active = secao === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => onNavigate(item.id)}
+                    className={cn(
+                      "flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13.5px] font-medium transition-colors",
+                      active ? "font-semibold" : "text-foreground/70 hover:bg-muted/70 hover:text-foreground",
+                    )}
+                    style={{
+                      background: active ? "var(--sidebar-accent)" : undefined,
+                      color: active ? "var(--sidebar-accent-foreground)" : undefined,
+                    }}
+                  >
+                    <item.icon className="h-[17px] w-[17px] shrink-0" />
+                    <span className="truncate">{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
 
-      <div className="px-5 pb-5 pt-4">
-        <div
-          className="flex flex-col items-center gap-2 rounded-2xl border px-4 py-4 text-center"
-          style={{ borderColor: "var(--sidebar-border)" }}
-        >
-          <div className="h-14 w-14 overflow-hidden rounded-2xl">
-            <img
-              src="/squad-onca.png"
-              alt="Squad Onça"
-              className="h-full w-full object-cover"
-              style={{ objectPosition: "72% 42%" }}
-            />
-          </div>
-          <div>
-            <div className="text-xs font-bold" style={{ color: "#ff6fb0" }}>
-              SQUAD ONÇA
-            </div>
-            <div className="mt-0.5 text-[9px] font-semibold uppercase tracking-widest" style={{ color: "var(--sidebar-muted)" }}>
-              Foco • Garra • Resultado
-            </div>
-          </div>
-        </div>
-
+      <div className="px-3 pb-5 pt-3">
         <button
           type="button"
-          className="mt-4 flex w-full items-center gap-2.5 border-t pt-4 text-left"
+          className="flex w-full items-center gap-2.5 rounded-xl border-t px-2.5 pt-4 text-left"
           style={{ borderColor: "var(--sidebar-border)" }}
         >
-          <img src="/gabrielly-avatar.jpg" alt="Gabrielly Oliveira" className="h-9 w-9 shrink-0 rounded-full object-cover" />
+          <img
+            src="/gabrielly-avatar.jpg"
+            alt="Gabrielly Oliveira"
+            className="h-9 w-9 shrink-0 rounded-full object-cover"
+          />
           <div className="min-w-0 flex-1">
-            <div className="truncate text-[10px] font-bold uppercase tracking-wide" style={{ color: "#ff6fb0" }}>
+            <div className="truncate text-[10px] font-bold uppercase tracking-wide" style={{ color: "var(--category-label)" }}>
               PSM JR III
             </div>
-            <div className="truncate text-[13px] font-semibold text-white">Gabrielly Oliveira</div>
-            <div className="truncate text-[11px]" style={{ color: "var(--sidebar-muted)" }}>
-              PSM Representantes
-            </div>
+            <div className="truncate text-[13px] font-semibold text-foreground">Gabrielly Oliveira</div>
+            <div className="truncate text-[11px] text-muted-foreground">PSM Representantes</div>
           </div>
-          <ChevronDown className="h-4 w-4 shrink-0" style={{ color: "var(--sidebar-muted)" }} />
+          <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
         </button>
       </div>
     </aside>

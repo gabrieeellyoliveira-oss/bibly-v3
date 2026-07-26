@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Check, Copy, MessageSquareText } from "lucide-react";
+import { Check, Copy, MessageSquareText, Star } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { useLocalStorageState } from "@/hooks/use-local-storage-state";
 
 // ---------------------------------------------------------------------------
 // Templates — mensagens prontas para copiar e colar no WhatsApp/Kommo,
@@ -322,7 +323,15 @@ Estou aqui pra qualquer dúvida, objeção travada ou lead que você queira trab
   },
 ];
 
-function TemplateCard({ template }: { template: Template }) {
+function TemplateCard({
+  template,
+  favorito,
+  onToggleFavorito,
+}: {
+  template: Template;
+  favorito: boolean;
+  onToggleFavorito: () => void;
+}) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -337,11 +346,21 @@ function TemplateCard({ template }: { template: Template }) {
 
   return (
     <div className="flex flex-col gap-3 rounded-[20px] border border-border bg-card p-5" style={{ boxShadow: "var(--shadow-card)" }}>
-      <div>
-        <div className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--category-label)" }}>
-          {template.category}
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <div className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--category-label)" }}>
+            {template.category}
+          </div>
+          <div className="mt-0.5 text-[15px] font-bold text-foreground">{template.title}</div>
         </div>
-        <div className="mt-0.5 text-[15px] font-bold text-foreground">{template.title}</div>
+        <button
+          type="button"
+          onClick={onToggleFavorito}
+          aria-label={favorito ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+          className="shrink-0 text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <Star className={cn("h-[18px] w-[18px]", favorito && "fill-current")} style={favorito ? { color: "#c7930a" } : undefined} />
+        </button>
       </div>
 
       <div className="max-h-32 overflow-y-auto rounded-xl border border-border bg-muted/50 p-3 text-[12.5px] leading-relaxed whitespace-pre-line text-foreground/80">
@@ -363,7 +382,7 @@ function TemplateCard({ template }: { template: Template }) {
           </>
         ) : (
           <>
-            <Copy className="h-3.5 w-3.5" /> Copiar mensagem
+            <Copy className="h-3.5 w-3.5" /> Copiar
           </>
         )}
       </button>
@@ -371,44 +390,76 @@ function TemplateCard({ template }: { template: Template }) {
   );
 }
 
+export const TEMPLATES_COUNT = TEMPLATES.length;
+
 export function Templates() {
   const [category, setCategory] = useState("Todas");
+  const [favoritos, setFavoritos] = useLocalStorageState<string[]>("bibly-templates-favoritos", []);
 
-  const filtered = category === "Todas" ? TEMPLATES : TEMPLATES.filter((t) => t.category === category);
+  const toggleFavorito = (id: string) =>
+    setFavoritos((prev) => (prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id]));
+
+  const filtered =
+    category === "Todas"
+      ? TEMPLATES
+      : category === "Favoritos"
+        ? TEMPLATES.filter((t) => favoritos.includes(t.id))
+        : TEMPLATES.filter((t) => t.category === category);
 
   return (
     <div className="h-screen overflow-y-auto">
       <header className="px-6 pb-2 pt-8 sm:px-10">
-        <div className="mb-1 flex items-center gap-2 text-xs font-semibold text-primary">
-          <MessageSquareText className="h-3.5 w-3.5" /> Atalhos do Kommo
+        <div
+          className="mb-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide"
+          style={{ backgroundColor: "var(--accent)", color: "var(--accent-foreground)" }}
+        >
+          <MessageSquareText className="h-3.5 w-3.5" /> Arsenal de Mensagens
         </div>
         <h1 className="text-[26px] font-bold tracking-tight text-foreground">Follow-ups</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Copie a mensagem e cole direto no chat do Kommo pra disparar o atendimento.
+          Mensagens prontas para copiar e fechar negócios mais rápido — cole direto no chat do Kommo.
         </p>
       </header>
 
       <div className="flex flex-wrap gap-2 px-6 pb-1 pt-4 sm:px-10">
-        {["Todas", ...CATEGORIES].map((c) => {
+        {["Todas", ...CATEGORIES, "Favoritos"].map((c) => {
           const isActive = category === c;
           return (
             <button
               key={c}
               type="button"
               onClick={() => setCategory(c)}
-              className={cn("rounded-full px-3.5 py-1.5 text-[13px] font-semibold transition-colors", isActive ? "text-white" : "border text-muted-foreground hover:text-foreground")}
+              className={cn(
+                "flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[13px] font-semibold transition-colors",
+                isActive ? "text-white" : "border text-muted-foreground hover:text-foreground",
+              )}
               style={isActive ? { backgroundImage: "var(--gradient-primary)" } : { borderColor: "var(--border)", background: "var(--card)" }}
             >
+              {c === "Favoritos" && <Star className="h-3.5 w-3.5" />}
               {c}
+              {c === "Favoritos" && favoritos.length > 0 && (
+                <span
+                  className="rounded-full px-1.5 text-[10px] font-bold"
+                  style={{ backgroundColor: isActive ? "rgba(255,255,255,0.25)" : "var(--secondary)" }}
+                >
+                  {favoritos.length}
+                </span>
+              )}
             </button>
           );
         })}
       </div>
 
       <div className="grid grid-cols-1 gap-4 px-6 py-6 sm:grid-cols-2 sm:px-10 xl:grid-cols-3">
-        {filtered.map((t) => (
-          <TemplateCard key={t.id} template={t} />
-        ))}
+        {filtered.length === 0 ? (
+          <p className="col-span-full py-10 text-center text-sm text-muted-foreground">
+            Nenhum favorito ainda — clique na estrela de um template para guardá-lo aqui.
+          </p>
+        ) : (
+          filtered.map((t) => (
+            <TemplateCard key={t.id} template={t} favorito={favoritos.includes(t.id)} onToggleFavorito={() => toggleFavorito(t.id)} />
+          ))
+        )}
       </div>
     </div>
   );
