@@ -755,12 +755,12 @@ export function Dashboard() {
 
 function StarMark({ size = 22 }: { size?: number }) {
   return (
-    <div
-      className="grid shrink-0 place-items-center rounded-lg text-white"
-      style={{ width: size, height: size, backgroundImage: "var(--gradient-primary)" }}
-    >
-      <Sparkles style={{ width: size * 0.6, height: size * 0.6 }} />
-    </div>
+    <img
+      src="/aurora-star-cutout.png"
+      alt="Aurora"
+      className="shrink-0 object-contain"
+      style={{ width: size, height: size }}
+    />
   );
 }
 
@@ -773,12 +773,12 @@ function AuroraSidebar({
 }) {
   return (
     <aside className="aurora-sidebar sticky top-0 h-screen w-[252px] shrink-0 flex-col bg-sidebar">
-      <div className="flex items-center gap-2.5 px-5 pb-6 pt-6">
-        <StarMark size={28} />
+      <div className="flex items-center gap-3 px-5 pb-6 pt-6">
+        <StarMark size={40} />
         <div>
-          <div className="text-[15px] font-extrabold tracking-wide text-white">AURORA</div>
-          <div className="text-[9px] font-semibold uppercase tracking-widest" style={{ color: "var(--sidebar-muted)" }}>
-            PSM Command Center
+          <div className="text-[17px] font-extrabold tracking-wide text-white">AURORA</div>
+          <div className="text-[10px] font-medium" style={{ color: "var(--sidebar-muted)" }}>
+            Clareza para agir
           </div>
         </div>
       </div>
@@ -835,8 +835,11 @@ function AuroraSidebar({
           className="mt-4 flex w-full items-center gap-2.5 border-t pt-4 text-left"
           style={{ borderColor: "var(--sidebar-border)" }}
         >
-          <img src="/bibly-mascot.png" alt="Gabrielly Oliveira" className="h-9 w-9 shrink-0 rounded-full object-cover" />
+          <img src="/gabrielly-avatar.jpg" alt="Gabrielly Oliveira" className="h-9 w-9 shrink-0 rounded-full object-cover" />
           <div className="min-w-0 flex-1">
+            <div className="truncate text-[10px] font-bold uppercase tracking-wide" style={{ color: "#ff6fb0" }}>
+              PSM JR III
+            </div>
             <div className="truncate text-[13px] font-semibold text-white">Gabrielly Oliveira</div>
             <div className="truncate text-[11px]" style={{ color: "var(--sidebar-muted)" }}>
               PSM Representantes

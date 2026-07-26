@@ -4,7 +4,7 @@ import { Dashboard } from "@/components/bibly/Dashboard";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Aurora — PSM Command Center" },
+      { title: "Aurora" },
       {
         name: "description",
         content: "Aurora: PSM Command Center — carteira, funil, comissões, planos vendidos e projeções.",
