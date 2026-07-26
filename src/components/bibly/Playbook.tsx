@@ -925,7 +925,7 @@ function Pill({ children }: { children: React.ReactNode }) {
   return (
     <span
       className="rounded-full border px-3.5 py-1.5 text-[13px] font-semibold"
-      style={{ borderColor: "var(--border)", background: "#faf3f9", color: "var(--secondary-foreground)" }}
+      style={{ borderColor: "var(--border)", background: "var(--muted)", color: "var(--secondary-foreground)" }}
     >
       {children}
     </span>

@@ -14,6 +14,31 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
+export function Panel({
+  title,
+  subtitle,
+  children,
+  actions,
+}: {
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+  actions?: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-[20px] border border-border bg-card p-5" style={{ boxShadow: "var(--shadow-card)" }}>
+      <div className="mb-4 flex items-start justify-between gap-2">
+        <div>
+          <div className="text-sm font-semibold text-foreground">{title}</div>
+          {subtitle && <div className="text-xs text-muted-foreground">{subtitle}</div>}
+        </div>
+        {actions}
+      </div>
+      {children}
+    </div>
+  );
+}
+
 export const GearButton = forwardRef<
   HTMLButtonElement,
   React.ComponentPropsWithoutRef<"button"> & { label?: string }

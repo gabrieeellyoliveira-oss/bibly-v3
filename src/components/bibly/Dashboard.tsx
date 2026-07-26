@@ -1,21 +1,19 @@
 import { useMemo, useState } from "react";
 import {
   AlertTriangle,
-  ArrowDownRight,
-  ArrowUpRight,
   Award,
-  BarChart3,
   Bell,
   BookOpen,
   Briefcase,
   Calendar,
   CheckCircle2,
-  ChevronsLeft,
-  ChevronsRight,
+  ChevronDown,
   Download,
+  LayoutDashboard,
   LineChart as LineChartIcon,
   MessageSquareText,
   PhoneCall,
+  Settings,
   Sparkles,
   Star,
   Tag,
@@ -37,17 +35,17 @@ import {
 } from "recharts";
 
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useLocalStorageState } from "@/hooks/use-local-storage-state";
-import { type Column, ObjectEditorDialog, RowsEditorDialog } from "@/components/bibly/editors";
+import { type Column, ObjectEditorDialog, Panel, RowsEditorDialog } from "@/components/bibly/editors";
 import { Playbook } from "@/components/bibly/Playbook";
 import { Templates } from "@/components/bibly/Templates";
 import { ContentPage } from "@/components/bibly/ContentPage";
+import { Metas } from "@/components/bibly/Metas";
 
 // ---------------------------------------------------------------------------
-// Dados de exemplo — dashboard pessoal do PSM. Tudo editável pela engrenagem
-// em cada painel; persiste no navegador (localStorage).
+// Aurora — PSM Command Center. Tudo editável pela engrenagem em cada painel;
+// persiste no navegador (localStorage).
 // ---------------------------------------------------------------------------
 
 type Kpis = {
@@ -197,35 +195,17 @@ const ACOES_PADRAO: Acao[] = [
   { horario: "16:30", descricao: "Revisar contrato Sabor & Cia" },
 ];
 
-type MetaItem = { metrica: string; valor: string; contexto: string };
-const METAS_COLUMNS: Column<MetaItem>[] = [
-  { key: "metrica", label: "Métrica" },
-  { key: "valor", label: "Valor atual" },
-  { key: "contexto", label: "Contexto / meta" },
+type Objetivo = { label: string; atual: number; meta: number };
+const OBJETIVOS_COLUMNS: Column<Objetivo>[] = [
+  { key: "label", label: "Objetivo" },
+  { key: "atual", label: "Atual", type: "number" },
+  { key: "meta", label: "Meta", type: "number" },
 ];
-
-const METAS_ATIVACAO_PADRAO: MetaItem[] = [
-  { metrica: "Tempo médio de onboarding", valor: "9 dias", contexto: "meta: até 10 dias" },
-  { metrica: "% do canal treinado", valor: "78%", contexto: "meta: 90%" },
-  { metrica: "Taxa de acesso ao portal", valor: "64%", contexto: "dos representantes ativos" },
-  { metrica: "Consumo de materiais de capacitação", valor: "52%", contexto: "dos módulos concluídos" },
-  { metrica: "Ações de co-marketing realizadas", valor: "3", contexto: "no período" },
-];
-
-const METAS_COMERCIAL_PADRAO: MetaItem[] = [
-  { metrica: "Volume de leads indicados", valor: "27", contexto: "no período" },
-  { metrica: "Taxa de conversão por etapa", valor: "18%", contexto: "lead → cliente" },
-  { metrica: "Valor total de vendas", valor: "R$ 42.300", contexto: "no período" },
-  { metrica: "Ticket médio das oportunidades", valor: "R$ 1.567", contexto: "por venda fechada" },
-  { metrica: "Ciclo de vendas no canal", valor: "14 dias", contexto: "média do funil" },
-];
-
-const METAS_FINANCEIRO_PADRAO: MetaItem[] = [
-  { metrica: "Receita recorrente gerada", valor: "R$ 63.510", contexto: "MRR da carteira" },
-  { metrica: "Comissões pagas", valor: "R$ 8.240", contexto: "no período" },
-  { metrica: "Margem gerada por canal", valor: "34%", contexto: "sobre a receita" },
-  { metrica: "Taxa de churn dos clientes do parceiro", valor: "3,2%", contexto: "mensal" },
-  { metrica: "CLV por canal", valor: "R$ 4.980", contexto: "médio por cliente" },
+const OBJETIVOS_PADRAO: Objetivo[] = [
+  { label: "Follow-ups", atual: 11, meta: 16 },
+  { label: "Clientes recuperados", atual: 2, meta: 4 },
+  { label: "Upsell", atual: 3, meta: 5 },
+  { label: "Visitas", atual: 4, meta: 6 },
 ];
 
 type Movimentacao = { tipo: string; cliente: string; tempo: string };
@@ -286,15 +266,19 @@ const PROGRESSAO_CARREIRA_BODY = `A progressão de carreira por nível trata da 
 **Nota:** as colunas originais "Meta de Clientes" e "Custo por Cliente (OTE)" estavam quebradas (#REF!) na planilha de origem para a maioria dos níveis e foram omitidas até serem corrigidas pela liderança.`;
 
 const NAV_ITEMS = [
-  { id: "dashboard", label: "Dashboard", icon: BarChart3 },
+  { id: "dashboard", label: "Visão Geral", icon: LayoutDashboard },
   { id: "playbook", label: "Playbook", icon: BookOpen },
-  { id: "templates", label: "Templates", icon: MessageSquareText },
-  { id: "planos-precos", label: "Planos e Preços", icon: Tag },
-  { id: "progressao-carreira", label: "Progressão de Carreira", icon: Award },
-  { id: "carteira", label: "Minha Carteira", icon: Briefcase },
+  { id: "templates", label: "Follow-ups", icon: MessageSquareText },
+  { id: "carteira", label: "Carteira", icon: Briefcase },
+  { id: "clientes", label: "Clientes", icon: Users },
   { id: "pipeline", label: "Pipeline", icon: Workflow },
   { id: "agenda", label: "Agenda", icon: Calendar },
+  { id: "planos-precos", label: "Planos e Preços", icon: Tag },
+  { id: "progressao-carreira", label: "Progressão de Carreira", icon: Award },
+  { id: "metas", label: "Metas", icon: Target },
   { id: "relatorios", label: "Relatórios", icon: LineChartIcon },
+  { id: "insights", label: "Insights", icon: Sparkles },
+  { id: "configuracoes", label: "Configurações", icon: Settings },
 ] as const;
 
 const MOVIMENTACAO_META: Record<string, { label: string; icon: React.ComponentType<{ className?: string }>; className: string }> = {
@@ -312,9 +296,22 @@ const PERIODO_OPTIONS: { value: Periodo; label: string }[] = [
   { value: "semestre", label: "Semestre" },
 ];
 
-function trend(delta: string): "up" | "down" {
-  return delta.trim().startsWith("-") ? "down" : "up";
-}
+const KPI_SPARKLINES: Record<string, number[]> = {
+  clientes: [76, 78, 79, 80, 81, 83, 84],
+  pendencias: [10, 14, 9, 12, 15, 11, 16],
+  risco: [10, 9, 9, 8, 8, 7, 7],
+  receita: [48, 52, 55, 58, 60, 61, 63.5],
+  meta: [55, 58, 62, 65, 68, 71, 73],
+  health: [80, 81, 82, 83, 84, 85, 86],
+};
+
+const KPI_TINTS = {
+  purple: { bg: "#f0ebff", fg: "#6d4cff" },
+  magenta: { bg: "#fdeaf3", fg: "#d9468f" },
+  red: { bg: "#fdecea", fg: "#e5484d" },
+  green: { bg: "#e9f9ef", fg: "#16a34a" },
+  gold: { bg: "#fef6e7", fg: "#c7930a" },
+} as const;
 
 function downloadCsv(filename: string, rows: string[][]) {
   const csv = rows.map((r) => r.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
@@ -332,7 +329,6 @@ function downloadCsv(filename: string, rows: string[][]) {
 export function Dashboard() {
   const [secao, setSecao] = useState<(typeof NAV_ITEMS)[number]["id"]>("dashboard");
   const [periodo, setPeriodo] = useState<Periodo>("mes");
-  const [menuAberto, setMenuAberto] = useLocalStorageState("bibly-menu-aberto", false);
 
   const [kpisPorPeriodo, setKpisPorPeriodo] = useLocalStorageState<Record<Periodo, Kpis>>(
     "bibly-kpis-por-periodo",
@@ -349,18 +345,7 @@ export function Dashboard() {
 
   const [evolucao, setEvolucao] = useLocalStorageState<EvolucaoPonto[]>("bibly-evolucao", EVOLUCAO_PADRAO);
   const [acoes, setAcoes] = useLocalStorageState<Acao[]>("bibly-acoes", ACOES_PADRAO);
-  const [metasAtivacao, setMetasAtivacao] = useLocalStorageState<MetaItem[]>(
-    "bibly-metas-ativacao",
-    METAS_ATIVACAO_PADRAO,
-  );
-  const [metasComercial, setMetasComercial] = useLocalStorageState<MetaItem[]>(
-    "bibly-metas-comercial",
-    METAS_COMERCIAL_PADRAO,
-  );
-  const [metasFinanceiro, setMetasFinanceiro] = useLocalStorageState<MetaItem[]>(
-    "bibly-metas-financeiro",
-    METAS_FINANCEIRO_PADRAO,
-  );
+  const [objetivos, setObjetivos] = useLocalStorageState<Objetivo[]>("bibly-objetivos", OBJETIVOS_PADRAO);
   const [movimentacoes, setMovimentacoes] = useLocalStorageState<Movimentacao[]>(
     "bibly-movimentacoes",
     MOVIMENTACOES_PADRAO,
@@ -375,11 +360,19 @@ export function Dashboard() {
     ],
     [saude],
   );
+  const saudeTotal = saude.saudaveis + saude.atencao + saude.criticos;
+
+  const progressoSemanal = useMemo(() => {
+    if (objetivos.length === 0) return 0;
+    const media =
+      objetivos.reduce((acc, o) => acc + Math.min(o.atual / Math.max(o.meta, 1), 1), 0) / objetivos.length;
+    return Math.round(media * 100);
+  }, [objetivos]);
 
   const periodoLabel = PERIODO_OPTIONS.find((o) => o.value === periodo)?.label ?? periodo;
 
   const handleExport = () => {
-    downloadCsv("bibly-resumo.csv", [
+    downloadCsv("aurora-resumo.csv", [
       ["Indicador", "Valor", "Variação"],
       ["Minha carteira (clientes)", String(kpis.totalClientes), kpis.deltaClientes],
       ["Pendências", String(kpis.pendenciasHoje), kpis.deltaPendencias],
@@ -391,397 +384,500 @@ export function Dashboard() {
   };
 
   return (
-    <TooltipProvider delayDuration={200}>
-      <div className="min-h-screen bg-background">
-        <div className="flex">
-          {/* Sidebar retrátil — recolhida mostra só ícones, expandida mostra ícone + label */}
-          <aside
-            className={cn(
-              "bibly-sidebar sticky top-0 h-screen shrink-0 flex-col gap-1 border-r border-sidebar-border bg-sidebar py-6 transition-[width] duration-200",
-              menuAberto ? "w-[220px] items-stretch px-3" : "w-[72px] items-center",
-            )}
-          >
-            <div
-              className={cn(
-                "mb-6 flex items-center gap-2",
-                menuAberto ? "px-1" : "flex-col",
-              )}
-            >
-              <img
-                src="/bibly-mascot.png"
-                alt="Bibly"
-                className="h-11 w-11 shrink-0 rounded-2xl object-cover shadow-[var(--shadow-soft)]"
-              />
-              {menuAberto && <span className="text-sm font-semibold text-foreground">Bibly</span>}
-            </div>
+    <div className="min-h-screen bg-background">
+      <div className="flex">
+        <AuroraSidebar secao={secao} onNavigate={setSecao} />
 
-            {NAV_ITEMS.map((item) => {
-              const active = secao === item.id;
-              const button = (
-                <button
-                  type="button"
-                  onClick={() => setSecao(item.id)}
-                  aria-label={item.label}
-                  className={cn(
-                    "grid place-items-center rounded-2xl text-muted-foreground transition-colors",
-                    menuAberto
-                      ? "h-11 w-full grid-cols-[auto_1fr] grid-flow-col justify-start gap-3 px-3"
-                      : "h-11 w-11",
-                    active
-                      ? "bg-secondary text-primary"
-                      : "hover:bg-muted hover:text-foreground",
-                  )}
-                >
-                  <item.icon className="h-[18px] w-[18px] shrink-0" />
-                  {menuAberto && <span className="justify-self-start text-sm font-medium">{item.label}</span>}
-                </button>
-              );
-
-              if (menuAberto) {
-                return <div key={item.id}>{button}</div>;
-              }
-
-              return (
-                <Tooltip key={item.id}>
-                  <TooltipTrigger asChild>{button}</TooltipTrigger>
-                  <TooltipContent side="right">{item.label}</TooltipContent>
-                </Tooltip>
-              );
-            })}
-
-            <div className="mt-auto pt-4">
-              <Tooltip>
-                <TooltipTrigger asChild>
+        <main className="min-w-0 flex-1">
+          {secao === "playbook" ? (
+            <Playbook />
+          ) : secao === "templates" ? (
+            <Templates />
+          ) : secao === "metas" ? (
+            <Metas />
+          ) : secao === "planos-precos" ? (
+            <ContentPage
+              storageKey="bibly-content-planos-precos"
+              title="Planos e Preços"
+              summary="Valores oficiais dos planos e módulos, por fidelidade."
+              icon={Tag}
+              defaultBody={PLANOS_PRECOS_BODY}
+            />
+          ) : secao === "progressao-carreira" ? (
+            <ContentPage
+              storageKey="bibly-content-progressao-carreira"
+              title="Progressão de Carreira"
+              summary="Evolução salarial e de comissão por nível de senioridade."
+              icon={Award}
+              defaultBody={PROGRESSAO_CARREIRA_BODY}
+            />
+          ) : secao !== "dashboard" ? (
+            <PlaceholderSection label={NAV_ITEMS.find((n) => n.id === secao)!.label} />
+          ) : (
+            <>
+              {/* Header */}
+              <header className="flex flex-wrap items-center justify-between gap-4 px-8 pb-6 pt-8">
+                <div>
+                  <h1 className="text-[26px] font-bold tracking-tight text-foreground">Olá, Gabrielly! 👋</h1>
+                  <p className="mt-1 text-sm text-muted-foreground">Aqui está o resumo da sua carteira.</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex gap-1 rounded-full border border-border bg-card p-1">
+                    {PERIODO_OPTIONS.map((opt) => {
+                      const active = periodo === opt.value;
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => setPeriodo(opt.value)}
+                          className={cn(
+                            "rounded-full px-3.5 py-1.5 text-[13px] font-semibold transition-colors",
+                            active ? "text-white" : "text-muted-foreground hover:text-foreground",
+                          )}
+                          style={active ? { background: "var(--sidebar)" } : undefined}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="h-9 rounded-xl border-border bg-card text-sm"
+                    onClick={handleExport}
+                  >
+                    <Download className="h-4 w-4" /> Exportar
+                  </Button>
                   <button
                     type="button"
-                    onClick={() => setMenuAberto((v) => !v)}
-                    aria-label={menuAberto ? "Recolher menu" : "Expandir menu"}
-                    className={cn(
-                      "grid place-items-center rounded-2xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
-                      menuAberto ? "h-11 w-full" : "h-11 w-11",
-                    )}
+                    aria-label="Notificações"
+                    className="relative grid h-9 w-9 place-items-center rounded-xl border border-border bg-card text-muted-foreground transition-colors hover:text-foreground"
                   >
-                    {menuAberto ? (
-                      <ChevronsLeft className="h-[18px] w-[18px]" />
-                    ) : (
-                      <ChevronsRight className="h-[18px] w-[18px]" />
-                    )}
+                    <Bell className="h-4 w-4" />
+                    <span
+                      className="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full text-[10px] font-bold text-white"
+                      style={{ backgroundImage: "var(--gradient-primary)" }}
+                    >
+                      3
+                    </span>
                   </button>
-                </TooltipTrigger>
-                <TooltipContent side="right">{menuAberto ? "Recolher menu" : "Expandir menu"}</TooltipContent>
-              </Tooltip>
-            </div>
-          </aside>
+                </div>
+              </header>
 
-          <main className="flex-1 min-w-0">
-            {secao === "playbook" ? (
-              <Playbook />
-            ) : secao === "templates" ? (
-              <Templates />
-            ) : secao === "planos-precos" ? (
-              <ContentPage
-                storageKey="bibly-content-planos-precos"
-                title="Planos e Preços"
-                summary="Valores oficiais dos planos e módulos, por fidelidade."
-                icon={Tag}
-                defaultBody={PLANOS_PRECOS_BODY}
-              />
-            ) : secao === "progressao-carreira" ? (
-              <ContentPage
-                storageKey="bibly-content-progressao-carreira"
-                title="Progressão de Carreira"
-                summary="Evolução salarial e de comissão por nível de senioridade."
-                icon={Award}
-                defaultBody={PROGRESSAO_CARREIRA_BODY}
-              />
-            ) : secao !== "dashboard" ? (
-              <PlaceholderSection label={NAV_ITEMS.find((n) => n.id === secao)!.label} />
-            ) : (
-              <>
-                {/* Header */}
-                <header className="flex flex-wrap items-center justify-between gap-4 px-8 pb-6 pt-8">
-                  <div>
-                    <h1 className="text-[26px] font-semibold tracking-tight text-foreground">
-                      Olá, Gabrielly 👋
-                    </h1>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Aqui está um resumo da sua carteira hoje.
-                    </p>
+              <div className="space-y-4 px-8 pb-10">
+                {/* KPIs */}
+                <section className="relative grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-6">
+                  <div className="absolute -top-2 right-0 xl:-top-9">
+                    <ObjectEditorDialog title={`indicadores — ${periodoLabel}`} fields={KPIS_FIELDS} value={kpis} onSave={setKpis} />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="flex gap-1.5 rounded-full border border-border bg-card p-1"
-                      style={{ boxShadow: "0 1px 2px rgba(43,37,48,0.04)" }}
-                    >
-                      {PERIODO_OPTIONS.map((opt) => {
-                        const active = periodo === opt.value;
-                        return (
-                          <button
-                            key={opt.value}
-                            type="button"
-                            onClick={() => setPeriodo(opt.value)}
-                            className={cn(
-                              "rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
-                              active ? "text-white" : "text-muted-foreground hover:text-foreground",
-                            )}
-                            style={active ? { backgroundImage: "var(--gradient-primary)" } : undefined}
-                          >
-                            {opt.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <Button
-                      variant="outline"
-                      className="h-9 rounded-xl border-border bg-card text-sm"
-                      onClick={handleExport}
-                    >
-                      <Download className="h-4 w-4" /> Exportar
-                    </Button>
-                  </div>
-                </header>
+                  <StatCard
+                    icon={Users}
+                    tint="purple"
+                    label="Clientes"
+                    value={`${kpis.totalClientes}`}
+                    delta={kpis.deltaClientes}
+                    spark={KPI_SPARKLINES.clientes}
+                  />
+                  <StatCard
+                    icon={PhoneCall}
+                    tint="magenta"
+                    label="Follow-ups"
+                    value={`${kpis.pendenciasHoje}`}
+                    delta={kpis.deltaPendencias}
+                    spark={KPI_SPARKLINES.pendencias}
+                  />
+                  <StatCard
+                    icon={AlertTriangle}
+                    tint="red"
+                    label="Clientes em risco"
+                    value={`${kpis.clientesRisco}`}
+                    delta={kpis.deltaRisco}
+                    invert
+                    spark={KPI_SPARKLINES.risco}
+                  />
+                  <StatCard
+                    icon={Sparkles}
+                    tint="green"
+                    label="Receita da carteira"
+                    value={kpis.receitaCarteira.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })}
+                    delta={kpis.deltaReceita}
+                    spark={KPI_SPARKLINES.receita}
+                  />
+                  <StatCard
+                    icon={Target}
+                    tint="purple"
+                    label="Meta do período"
+                    value={`${kpis.metaMesPercent}%`}
+                    delta={kpis.deltaMeta}
+                    spark={KPI_SPARKLINES.meta}
+                  />
+                  <StatCard
+                    icon={Star}
+                    tint="gold"
+                    label="Health Score"
+                    value={`${kpis.healthScore}`}
+                    delta={kpis.deltaHealth}
+                    spark={KPI_SPARKLINES.health}
+                  />
+                </section>
 
-                <div className="space-y-6 px-8 pb-10">
-                  {/* KPIs */}
-                  <section className="relative grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-6">
-                    <div className="absolute -top-2 right-0 xl:-top-9">
-                      <ObjectEditorDialog title={`indicadores — ${periodoLabel}`} fields={KPIS_FIELDS} value={kpis} onSave={setKpis} />
-                    </div>
-                    <StatCard icon={Users} label="Minha carteira" value={`${kpis.totalClientes}`} unit="clientes" delta={kpis.deltaClientes} />
-                    <StatCard icon={Bell} label="Pendências" value={`${kpis.pendenciasHoje}`} unit="follow-ups" delta={kpis.deltaPendencias} />
-                    <StatCard icon={AlertTriangle} label="Clientes em risco" value={`${kpis.clientesRisco}`} unit="clientes" delta={kpis.deltaRisco} invert />
-                    <StatCard
-                      icon={Sparkles}
-                      label="Receita da carteira"
-                      value={kpis.receitaCarteira.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })}
-                      delta={kpis.deltaReceita}
-                    />
-                    <StatCard icon={Target} label="Meta do período" value={`${kpis.metaMesPercent}%`} delta={kpis.deltaMeta} />
-                    <StatCard icon={Star} label="Health Score" value={`${kpis.healthScore}`} delta={kpis.deltaHealth} />
-                  </section>
-
-                  {/* Corpo: duas colunas */}
-                  <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-                    <div className="space-y-4 lg:col-span-7">
-                      <Panel
-                        title="Saúde da carteira"
-                        subtitle={periodoLabel}
-                        actions={
-                          <ObjectEditorDialog title={`saúde da carteira — ${periodoLabel}`} fields={SAUDE_FIELDS} value={saude} onSave={setSaude} />
-                        }
-                      >
-                        <div className="flex flex-col items-center gap-4 sm:flex-row">
-                          <ResponsiveContainer width={180} height={180}>
-                            <PieChart>
-                              <Pie data={saudeData} dataKey="value" nameKey="name" innerRadius={58} outerRadius={82} paddingAngle={3} strokeWidth={0}>
-                                {saudeData.map((d, i) => (
-                                  <Cell key={i} fill={d.color} />
-                                ))}
-                              </Pie>
-                              <RTooltip content={<DonutTooltip />} />
-                            </PieChart>
-                          </ResponsiveContainer>
-                          <ul className="flex-1 space-y-2.5 text-sm">
-                            {saudeData.map((d) => (
-                              <li key={d.name} className="flex items-center justify-between rounded-xl bg-muted/60 px-3 py-2">
-                                <span className="flex items-center gap-2 text-muted-foreground">
-                                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: d.color }} />
-                                  {d.name}
-                                </span>
-                                <span className="font-semibold text-foreground">{d.value}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      </Panel>
-
-                      <Panel
-                        title="Evolução da carteira"
-                        subtitle="Clientes ativos ao longo do tempo"
-                        actions={
-                          <RowsEditorDialog
-                            title="evolução da carteira"
-                            columns={EVOLUCAO_COLUMNS}
-                            rows={evolucao}
-                            emptyRow={() => ({ mes: "Novo mês", valor: 0 })}
-                            onSave={setEvolucao}
-                          />
-                        }
-                      >
-                        <ResponsiveContainer width="100%" height={220}>
-                          <AreaChart data={evolucao} margin={{ left: -20, right: 8, top: 8 }}>
-                            <defs>
-                              <linearGradient id="evolucaoGrad" x1="0" x2="0" y1="0" y2="1">
-                                <stop offset="0%" stopColor="#e87db0" stopOpacity={0.35} />
-                                <stop offset="100%" stopColor="#e87db0" stopOpacity={0} />
-                              </linearGradient>
-                            </defs>
-                            <XAxis dataKey="mes" stroke="#b7b0bf" fontSize={12} tickLine={false} axisLine={false} />
-                            <YAxis stroke="#b7b0bf" fontSize={12} tickLine={false} axisLine={false} width={30} />
-                            <RTooltip content={<DonutTooltip />} />
-                            <Area type="monotone" dataKey="valor" stroke="#e87db0" strokeWidth={2.5} fill="url(#evolucaoGrad)" />
-                          </AreaChart>
+                {/* Saúde | Próximas ações | Banner institucional */}
+                <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                  <Panel
+                    title="Saúde da carteira"
+                    subtitle={periodoLabel}
+                    actions={
+                      <ObjectEditorDialog title={`saúde da carteira — ${periodoLabel}`} fields={SAUDE_FIELDS} value={saude} onSave={setSaude} />
+                    }
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="relative shrink-0" style={{ width: 148, height: 148 }}>
+                        <ResponsiveContainer width={148} height={148}>
+                          <PieChart>
+                            <Pie data={saudeData} dataKey="value" nameKey="name" innerRadius={50} outerRadius={70} paddingAngle={3} strokeWidth={0}>
+                              {saudeData.map((d, i) => (
+                                <Cell key={i} fill={d.color} />
+                              ))}
+                            </Pie>
+                            <RTooltip content={<AuroraTooltip />} />
+                          </PieChart>
                         </ResponsiveContainer>
-                      </Panel>
+                        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                          <div className="text-xl font-bold text-foreground">{saudeTotal}</div>
+                          <div className="text-[10px] text-muted-foreground">Clientes</div>
+                        </div>
+                      </div>
+                      <ul className="flex-1 space-y-2 text-sm">
+                        {saudeData.map((d) => (
+                          <li key={d.name} className="flex items-center justify-between rounded-xl bg-muted/60 px-3 py-2">
+                            <span className="flex items-center gap-2 text-muted-foreground">
+                              <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: d.color }} />
+                              {d.name}
+                            </span>
+                            <span className="font-semibold text-foreground">{d.value}</span>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
+                  </Panel>
 
-                    <div className="space-y-4 lg:col-span-5">
-                      <Panel
-                        title="Próximas ações"
-                        actions={
-                          <RowsEditorDialog
-                            title="próximas ações"
-                            columns={ACOES_COLUMNS}
-                            rows={acoes}
-                            emptyRow={() => ({ horario: "00:00", descricao: "Nova ação" })}
-                            onSave={setAcoes}
-                          />
-                        }
-                      >
-                        <ul className="space-y-1">
-                          {acoes.map((a, i) => (
-                            <li
-                              key={i}
-                              className="flex items-center gap-3 rounded-xl px-2 py-2.5 text-sm transition-colors hover:bg-muted/60"
-                            >
-                              <span className="w-14 shrink-0 rounded-lg bg-secondary px-2 py-1 text-center text-xs font-medium text-secondary-foreground">
-                                {a.horario}
-                              </span>
-                              <span className="text-foreground">{a.descricao}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </Panel>
+                  <Panel
+                    title="Próximas ações"
+                    actions={
+                      <RowsEditorDialog
+                        title="próximas ações"
+                        columns={ACOES_COLUMNS}
+                        rows={acoes}
+                        emptyRow={() => ({ horario: "00:00", descricao: "Nova ação" })}
+                        onSave={setAcoes}
+                      />
+                    }
+                  >
+                    <ul className="space-y-1">
+                      {acoes.map((a, i) => (
+                        <li key={i} className="flex items-center gap-3 rounded-xl px-2 py-2.5 text-sm transition-colors hover:bg-muted/60">
+                          <span className="w-14 shrink-0 rounded-lg bg-secondary px-2 py-1 text-center text-xs font-medium text-secondary-foreground">
+                            {a.horario}
+                          </span>
+                          <span className="text-foreground">{a.descricao}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </Panel>
 
-                    </div>
-                  </section>
+                  <SquadOncaBanner />
+                </section>
 
-                  {/* Minhas metas — Ativação/Engajamento, Performance Comercial, Financeiro/Retenção */}
-                  <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                {/* Evolução | Objetivos da semana */}
+                <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+                  <div className="lg:col-span-7">
                     <Panel
-                      title="Ativação e engajamento"
+                      title="Evolução da carteira"
+                      subtitle="Clientes ativos ao longo do tempo"
                       actions={
                         <RowsEditorDialog
-                          title="ativação e engajamento"
-                          columns={METAS_COLUMNS}
-                          rows={metasAtivacao}
-                          emptyRow={() => ({ metrica: "Nova métrica", valor: "—", contexto: "" })}
-                          onSave={setMetasAtivacao}
+                          title="evolução da carteira"
+                          columns={EVOLUCAO_COLUMNS}
+                          rows={evolucao}
+                          emptyRow={() => ({ mes: "Novo mês", valor: 0 })}
+                          onSave={setEvolucao}
                         />
                       }
                     >
-                      <MetaLista itens={metasAtivacao} />
+                      <ResponsiveContainer width="100%" height={220}>
+                        <AreaChart data={evolucao} margin={{ left: -20, right: 8, top: 8 }}>
+                          <defs>
+                            <linearGradient id="evolucaoGrad" x1="0" x2="0" y1="0" y2="1">
+                              <stop offset="0%" stopColor="#6d4cff" stopOpacity={0.28} />
+                              <stop offset="100%" stopColor="#6d4cff" stopOpacity={0} />
+                            </linearGradient>
+                          </defs>
+                          <XAxis dataKey="mes" stroke="#9aa0b4" fontSize={12} tickLine={false} axisLine={false} />
+                          <YAxis stroke="#9aa0b4" fontSize={12} tickLine={false} axisLine={false} width={30} />
+                          <RTooltip content={<AuroraTooltip />} />
+                          <Area type="monotone" dataKey="valor" stroke="#6d4cff" strokeWidth={2.5} fill="url(#evolucaoGrad)" />
+                        </AreaChart>
+                      </ResponsiveContainer>
                     </Panel>
+                  </div>
 
+                  <div className="lg:col-span-5">
                     <Panel
-                      title="Performance comercial"
+                      title="Objetivos da semana"
                       actions={
                         <RowsEditorDialog
-                          title="performance comercial"
-                          columns={METAS_COLUMNS}
-                          rows={metasComercial}
-                          emptyRow={() => ({ metrica: "Nova métrica", valor: "—", contexto: "" })}
-                          onSave={setMetasComercial}
+                          title="objetivos da semana"
+                          columns={OBJETIVOS_COLUMNS}
+                          rows={objetivos}
+                          emptyRow={() => ({ label: "Novo objetivo", atual: 0, meta: 1 })}
+                          onSave={setObjetivos}
                         />
                       }
                     >
-                      <MetaLista itens={metasComercial} />
-                    </Panel>
-
-                    <Panel
-                      title="Indicadores financeiros e de retenção"
-                      actions={
-                        <RowsEditorDialog
-                          title="indicadores financeiros e de retenção"
-                          columns={METAS_COLUMNS}
-                          rows={metasFinanceiro}
-                          emptyRow={() => ({ metrica: "Nova métrica", valor: "—", contexto: "" })}
-                          onSave={setMetasFinanceiro}
-                        />
-                      }
-                    >
-                      <MetaLista itens={metasFinanceiro} />
-                    </Panel>
-                  </section>
-
-                  {/* Rodapé: duas colunas */}
-                  <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-                    <div className="lg:col-span-7">
-                      <Panel
-                        title="Últimas movimentações"
-                        actions={
-                          <RowsEditorDialog
-                            title="últimas movimentações"
-                            description="Tipos aceitos: entrou, recuperado, followup, risco."
-                            columns={MOVIMENTACOES_COLUMNS}
-                            rows={movimentacoes}
-                            emptyRow={() => ({ tipo: "entrou", cliente: "Novo cliente", tempo: "agora" })}
-                            onSave={setMovimentacoes}
-                          />
-                        }
-                      >
-                        <ol className="relative space-y-5 pl-1">
-                          {movimentacoes.map((m, i) => {
-                            const meta = MOVIMENTACAO_META[m.tipo] ?? {
-                              label: m.tipo,
-                              icon: CheckCircle2,
-                              className: "bg-muted text-muted-foreground",
-                            };
-                            return (
-                              <li key={i} className="flex gap-3">
-                                <div className="flex flex-col items-center">
-                                  <span className={cn("grid h-8 w-8 shrink-0 place-items-center rounded-full", meta.className)}>
-                                    <meta.icon className="h-4 w-4" />
-                                  </span>
-                                  {i < movimentacoes.length - 1 && <span className="mt-1 h-full w-px flex-1 bg-border" />}
-                                </div>
-                                <div className="pb-1">
-                                  <div className="text-sm font-medium text-foreground">
-                                    {meta.label} · {m.cliente}
-                                  </div>
-                                  <div className="text-xs text-muted-foreground">{m.tempo}</div>
-                                </div>
-                              </li>
-                            );
-                          })}
-                        </ol>
-                      </Panel>
-                    </div>
-
-                    <div className="lg:col-span-5">
-                      <Panel
-                        title="Insights rápidos"
-                        actions={
-                          <RowsEditorDialog
-                            title="insights rápidos"
-                            columns={INSIGHTS_COLUMNS}
-                            rows={insights}
-                            emptyRow={() => ({ texto: "Novo insight" })}
-                            onSave={setInsights}
-                          />
-                        }
-                      >
-                        <div className="space-y-3">
-                          {insights.map((ins, i) => (
-                            <div
-                              key={i}
-                              className="flex items-start gap-2.5 rounded-xl border border-border bg-[var(--gradient-soft)] px-3 py-2.5 text-sm text-foreground"
-                            >
-                              <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                              {ins.texto}
+                      <div className="flex items-center gap-4">
+                        <div className="flex-1 space-y-3.5">
+                          {objetivos.map((o) => (
+                            <div key={o.label} className="space-y-1.5">
+                              <div className="flex items-center justify-between text-[13px]">
+                                <span className="font-medium text-foreground">{o.label}</span>
+                                <span className="text-muted-foreground">
+                                  {o.atual}/{o.meta}
+                                </span>
+                              </div>
+                              <div className="h-1.5 rounded-full bg-muted">
+                                <div
+                                  className="h-full rounded-full"
+                                  style={{
+                                    width: `${Math.min((o.atual / Math.max(o.meta, 1)) * 100, 100)}%`,
+                                    backgroundImage: "var(--gradient-primary)",
+                                  }}
+                                />
+                              </div>
                             </div>
                           ))}
                         </div>
-                      </Panel>
-                    </div>
-                  </section>
-                </div>
-              </>
-            )}
-          </main>
+                        <div
+                          className="relative grid h-24 w-24 shrink-0 place-items-center rounded-full"
+                          style={{ background: `conic-gradient(#6d4cff ${progressoSemanal * 3.6}deg, var(--muted) 0deg)` }}
+                        >
+                          <div className="grid h-[72px] w-[72px] place-items-center rounded-full bg-card text-center">
+                            <div>
+                              <div className="text-base font-bold text-foreground">{progressoSemanal}%</div>
+                              <div className="text-[9px] leading-tight text-muted-foreground">
+                                Progresso
+                                <br />
+                                geral
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </Panel>
+                  </div>
+                </section>
+
+                {/* Movimentações | Insights */}
+                <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+                  <div className="lg:col-span-7">
+                    <Panel
+                      title="Últimas movimentações"
+                      actions={
+                        <RowsEditorDialog
+                          title="últimas movimentações"
+                          description="Tipos aceitos: entrou, recuperado, followup, risco."
+                          columns={MOVIMENTACOES_COLUMNS}
+                          rows={movimentacoes}
+                          emptyRow={() => ({ tipo: "entrou", cliente: "Novo cliente", tempo: "agora" })}
+                          onSave={setMovimentacoes}
+                        />
+                      }
+                    >
+                      <ol className="relative space-y-5 pl-1">
+                        {movimentacoes.map((m, i) => {
+                          const meta = MOVIMENTACAO_META[m.tipo] ?? {
+                            label: m.tipo,
+                            icon: CheckCircle2,
+                            className: "bg-muted text-muted-foreground",
+                          };
+                          return (
+                            <li key={i} className="flex gap-3">
+                              <div className="flex flex-col items-center">
+                                <span className={cn("grid h-8 w-8 shrink-0 place-items-center rounded-full", meta.className)}>
+                                  <meta.icon className="h-4 w-4" />
+                                </span>
+                                {i < movimentacoes.length - 1 && <span className="mt-1 h-full w-px flex-1 bg-border" />}
+                              </div>
+                              <div className="pb-1">
+                                <div className="text-sm font-medium text-foreground">
+                                  {meta.label} · {m.cliente}
+                                </div>
+                                <div className="text-xs text-muted-foreground">{m.tempo}</div>
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ol>
+                    </Panel>
+                  </div>
+
+                  <div className="lg:col-span-5">
+                    <Panel
+                      title="Insights rápidos"
+                      actions={
+                        <RowsEditorDialog
+                          title="insights rápidos"
+                          columns={INSIGHTS_COLUMNS}
+                          rows={insights}
+                          emptyRow={() => ({ texto: "Novo insight" })}
+                          onSave={setInsights}
+                        />
+                      }
+                    >
+                      <div className="space-y-2.5">
+                        {insights.map((ins, i) => (
+                          <div key={i} className="flex items-start gap-2.5 rounded-xl border border-border bg-muted/40 px-3 py-2.5 text-sm text-foreground">
+                            <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                            {ins.texto}
+                          </div>
+                        ))}
+                      </div>
+                    </Panel>
+                  </div>
+                </section>
+              </div>
+            </>
+          )}
+        </main>
+      </div>
+    </div>
+  );
+}
+
+function StarMark({ size = 22 }: { size?: number }) {
+  return (
+    <div
+      className="grid shrink-0 place-items-center rounded-lg text-white"
+      style={{ width: size, height: size, backgroundImage: "var(--gradient-primary)" }}
+    >
+      <Sparkles style={{ width: size * 0.6, height: size * 0.6 }} />
+    </div>
+  );
+}
+
+function AuroraSidebar({
+  secao,
+  onNavigate,
+}: {
+  secao: (typeof NAV_ITEMS)[number]["id"];
+  onNavigate: (id: (typeof NAV_ITEMS)[number]["id"]) => void;
+}) {
+  return (
+    <aside className="aurora-sidebar sticky top-0 h-screen w-[252px] shrink-0 flex-col bg-sidebar">
+      <div className="flex items-center gap-2.5 px-5 pb-6 pt-6">
+        <StarMark size={28} />
+        <div>
+          <div className="text-[15px] font-extrabold tracking-wide text-white">AURORA</div>
+          <div className="text-[9px] font-semibold uppercase tracking-widest" style={{ color: "var(--sidebar-muted)" }}>
+            PSM Command Center
+          </div>
         </div>
       </div>
-    </TooltipProvider>
+
+      <nav className="flex-1 space-y-0.5 overflow-y-auto px-3">
+        {NAV_ITEMS.map((item) => {
+          const active = secao === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => onNavigate(item.id)}
+              className={cn(
+                "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[13.5px] font-medium transition-colors",
+                active ? "font-semibold text-white" : "hover:bg-white/5 hover:text-white",
+              )}
+              style={{
+                background: active ? "var(--sidebar-accent)" : undefined,
+                color: active ? "#ffffff" : "var(--sidebar-muted)",
+              }}
+            >
+              <item.icon className="h-[17px] w-[17px] shrink-0" />
+              <span className="truncate">{item.label}</span>
+            </button>
+          );
+        })}
+      </nav>
+
+      <div className="px-5 pb-5 pt-4">
+        <div
+          className="flex flex-col items-center gap-2 rounded-2xl border px-4 py-4 text-center"
+          style={{ borderColor: "var(--sidebar-border)" }}
+        >
+          <div className="h-14 w-14 overflow-hidden rounded-2xl">
+            <img
+              src="/squad-onca.png"
+              alt="Squad Onça"
+              className="h-full w-full object-cover"
+              style={{ objectPosition: "72% 42%" }}
+            />
+          </div>
+          <div>
+            <div className="text-xs font-bold" style={{ color: "#ff6fb0" }}>
+              SQUAD ONÇA
+            </div>
+            <div className="mt-0.5 text-[9px] font-semibold uppercase tracking-widest" style={{ color: "var(--sidebar-muted)" }}>
+              Foco • Garra • Resultado
+            </div>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          className="mt-4 flex w-full items-center gap-2.5 border-t pt-4 text-left"
+          style={{ borderColor: "var(--sidebar-border)" }}
+        >
+          <img src="/bibly-mascot.png" alt="Gabrielly Oliveira" className="h-9 w-9 shrink-0 rounded-full object-cover" />
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-[13px] font-semibold text-white">Gabrielly Oliveira</div>
+            <div className="truncate text-[11px]" style={{ color: "var(--sidebar-muted)" }}>
+              PSM Representantes
+            </div>
+          </div>
+          <ChevronDown className="h-4 w-4 shrink-0" style={{ color: "var(--sidebar-muted)" }} />
+        </button>
+      </div>
+    </aside>
+  );
+}
+
+function SquadOncaBanner() {
+  return (
+    <div className="relative min-h-[210px] overflow-hidden rounded-[20px]" style={{ background: "#0d0b14" }}>
+      <img
+        src="/squad-onca.png"
+        alt=""
+        className="absolute inset-0 h-full w-full object-cover opacity-90"
+        style={{ objectPosition: "68% 45%" }}
+      />
+      <div
+        className="absolute inset-0"
+        style={{ background: "linear-gradient(100deg, rgba(10,8,20,0.94) 0%, rgba(10,8,20,0.6) 55%, rgba(10,8,20,0.1) 100%)" }}
+      />
+      <div className="relative z-10 flex h-full min-h-[210px] flex-col justify-between p-5">
+        <div className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#ff6fb0" }}>
+          Squad Onça
+        </div>
+        <div className="text-lg font-bold leading-snug text-white">
+          Precisão.
+          <br />
+          Estratégia.
+          <br />
+          <span style={{ color: "#ff6fb0" }}>Excelência.</span>
+          <br />
+          <span style={{ color: "#ff6fb0" }}>Resultado.</span>
+        </div>
+        <div className="text-[10px] font-semibold uppercase tracking-widest text-white/50">Foco • Garra • Resultado</div>
+      </div>
+    </div>
   );
 }
 
@@ -797,99 +893,80 @@ function PlaceholderSection({ label }: { label: string }) {
   );
 }
 
+function Sparkline({ data, color = "#6d4cff" }: { data: number[]; color?: string }) {
+  const w = 100;
+  const h = 28;
+  const pad = 2;
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+  const points = data
+    .map((v, i) => {
+      const x = (i / (data.length - 1)) * (w - pad * 2) + pad;
+      const y = h - pad - ((v - min) / range) * (h - pad * 2);
+      return `${x},${y}`;
+    })
+    .join(" ");
+  const areaPoints = `${pad},${h} ${points} ${w - pad},${h}`;
+
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} className="h-7 w-full" preserveAspectRatio="none">
+      <polyline points={areaPoints} fill={color} opacity={0.08} stroke="none" />
+      <polyline points={points} fill="none" stroke={color} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function StatCard({
   icon: Icon,
+  tint,
   label,
   value,
-  unit,
   delta,
   invert = false,
+  spark,
 }: {
   icon: React.ComponentType<{ className?: string }>;
+  tint: keyof typeof KPI_TINTS;
   label: string;
   value: string;
-  unit?: string;
   delta: string;
   invert?: boolean;
+  spark: number[];
 }) {
-  const dir = trend(delta);
-  const positive = invert ? dir === "down" : dir === "up";
-  const TrendIcon = dir === "up" ? ArrowUpRight : ArrowDownRight;
+  const isDown = delta.trim().startsWith("-");
+  const positive = invert ? isDown : !isDown;
+  const { bg, fg } = KPI_TINTS[tint];
 
   return (
-    <div
-      className="rounded-[22px] border border-border bg-card p-5"
-      style={{ boxShadow: "var(--shadow-card)" }}
-    >
-      <div
-        className="grid h-11 w-11 place-items-center rounded-[14px] text-white"
-        style={{ backgroundImage: "var(--gradient-primary)" }}
-      >
-        <Icon className="h-[18px] w-[18px]" />
+    <div className="rounded-[18px] border border-border bg-card p-4" style={{ boxShadow: "var(--shadow-card)" }}>
+      <div className="flex items-center gap-2">
+        <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full" style={{ backgroundColor: bg, color: fg }}>
+          <Icon className="h-4 w-4" />
+        </div>
+        <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</div>
       </div>
-      <div className="mt-3 flex items-baseline gap-1">
-        <span className="text-2xl font-semibold tracking-tight text-foreground">{value}</span>
-        {unit && <span className="text-xs text-muted-foreground">{unit}</span>}
-      </div>
-      <div className="mt-0.5 text-xs font-medium text-muted-foreground">{label}</div>
+      <div className="mt-3 text-2xl font-bold tracking-tight text-foreground">{value}</div>
       <div
         className={cn(
-          "mt-2 inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[11px] font-medium",
-          positive ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-600",
+          "mt-1.5 inline-flex items-center rounded-full px-2 py-0.5 text-[10.5px] font-semibold",
+          positive ? "text-[var(--badge-positive-fg)]" : "text-[var(--badge-negative-fg)]",
         )}
+        style={{ backgroundColor: positive ? "var(--badge-positive-bg)" : "var(--badge-negative-bg)" }}
       >
-        <TrendIcon className="h-3 w-3" />
-        {delta}
+        {isDown ? "↓" : "↑"} {delta}
+      </div>
+      <div className="mt-2">
+        <Sparkline data={spark} color={fg === KPI_TINTS.gold.fg ? "#c7930a" : "#6d4cff"} />
       </div>
     </div>
   );
 }
 
-function Panel({
-  title,
-  subtitle,
-  children,
-  actions,
-}: {
-  title: string;
-  subtitle?: string;
-  children: React.ReactNode;
-  actions?: React.ReactNode;
-}) {
-  return (
-    <div className="rounded-[22px] border border-border bg-card p-5" style={{ boxShadow: "var(--shadow-card)" }}>
-      <div className="mb-4 flex items-start justify-between gap-2">
-        <div>
-          <div className="text-sm font-semibold text-foreground">{title}</div>
-          {subtitle && <div className="text-xs text-muted-foreground">{subtitle}</div>}
-        </div>
-        {actions}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function MetaLista({ itens }: { itens: MetaItem[] }) {
-  return (
-    <ul className="space-y-3">
-      {itens.map((m) => (
-        <li key={m.metrica} className="flex items-start justify-between gap-3 text-sm">
-          <div>
-            <div className="font-medium text-foreground">{m.metrica}</div>
-            {m.contexto && <div className="text-xs text-muted-foreground">{m.contexto}</div>}
-          </div>
-          <span className="shrink-0 font-semibold text-foreground">{m.valor}</span>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function DonutTooltip({ active, payload, label }: any) {
+function AuroraTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-xl border border-border bg-card px-3 py-2 text-xs shadow-[var(--shadow-soft)]">
+    <div className="rounded-xl border border-border bg-card px-3 py-2 text-xs" style={{ boxShadow: "var(--shadow-soft)" }}>
       {label !== undefined && <div className="font-medium text-foreground">{label}</div>}
       {payload.map((p: any) => (
         <div key={p.dataKey ?? p.name} className="flex items-center gap-2 text-muted-foreground">

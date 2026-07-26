@@ -63,54 +63,55 @@
 
 :root {
   --radius: 0.75rem;
-  --radius-card: 1.375rem;
+  --radius-card: 1.25rem;
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
-  /* Bibly — premium pastel pink SaaS design system */
-  --background: #faf3f9;
-  --foreground: #2b2530;
+  /* Aurora — premium B2B command-center design system (Linear/Stripe/Vercel-inspired) */
+  --background: #f7f8fc;
+  --foreground: #20242f;
   --card: #ffffff;
-  --card-foreground: #2b2530;
+  --card-foreground: #20242f;
   --popover: #ffffff;
-  --popover-foreground: #2b2530;
-  --primary: #e87db0;
+  --popover-foreground: #20242f;
+  --primary: #6d4cff;
   --primary-foreground: #ffffff;
-  --secondary: #f8d7e8;
-  --secondary-foreground: #7a3a5c;
-  --muted: #f6f5f8;
-  --muted-foreground: #8a8594;
-  --accent: #ece3f9;
-  --accent-foreground: #4a3b66;
+  --secondary: #eceef5;
+  --secondary-foreground: #4c3a9e;
+  --muted: #eceef5;
+  --muted-foreground: #6b7280;
+  --accent: #fdeef5;
+  --accent-foreground: #9b2c6f;
   --destructive: #e5484d;
   --destructive-foreground: #ffffff;
-  --border: #f1e4ee;
-  --input: #f1e4ee;
-  --ring: #e87db0;
-  --chart-1: #e87db0;
-  --chart-2: #c9a6e8;
-  --chart-3: #f3b8d6;
-  --chart-4: #b98bd1;
-  --chart-5: #f0c4dd;
-  --sidebar: #ffffff;
-  --sidebar-foreground: #2b2530;
-  --sidebar-primary: #e87db0;
+  --border: #e7e9f2;
+  --input: #e7e9f2;
+  --ring: #6d4cff;
+  --chart-1: #6d4cff;
+  --chart-2: #d9468f;
+  --chart-3: #9b7bff;
+  --chart-4: #f2a6ce;
+  --chart-5: #b98fff;
+  --sidebar: #151823;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #6d4cff;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f8d7e8;
-  --sidebar-accent-foreground: #7a3a5c;
-  --sidebar-border: #f1e4ee;
-  --sidebar-ring: #e87db0;
-  --gradient-soft: linear-gradient(135deg, #fdf2f8, #f3e8fb);
-  --gradient-primary: linear-gradient(135deg, #ec4899, #fb7185);
-  --shadow-soft: 0 12px 32px -16px rgba(232, 125, 176, 0.28);
-  --shadow-card: 0 1px 2px rgba(43, 37, 48, 0.04), 0 16px 32px -20px rgba(232, 125, 176, 0.25);
-  --category-label: #c25187;
+  --sidebar-accent: #23263a;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-muted: #8b90a6;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-ring: #6d4cff;
+  --gradient-soft: linear-gradient(135deg, #f4f1ff, #fdf0f7);
+  --gradient-primary: linear-gradient(135deg, #6d4cff, #d9468f);
+  --shadow-soft: 0 16px 40px -20px rgba(32, 36, 47, 0.22);
+  --shadow-card: 0 1px 2px rgba(32, 36, 47, 0.04), 0 12px 24px -18px rgba(32, 36, 47, 0.1);
+  --category-label: #b23d82;
   --badge-novo-bg: #dbeafe;
   --badge-novo-fg: #1d4ed8;
   --badge-atualizado-bg: #fef3c7;
   --badge-atualizado-fg: #92400e;
-  --badge-positive-bg: #d1fae5;
-  --badge-positive-fg: #047857;
-  --badge-negative-bg: #fee2e2;
-  --badge-negative-fg: #dc2626;
+  --badge-positive-bg: #e7f8ef;
+  --badge-positive-fg: #0f9d58;
+  --badge-negative-bg: #fdeceb;
+  --badge-negative-fg: #d0453f;
 }
 
 .dark {
@@ -167,11 +168,11 @@
  * Tailwind v4 build (base .hidden winning over the md: breakpoint override),
  * so visibility here is a single unambiguous rule instead.
  */
-.bibly-sidebar {
+.aurora-sidebar {
   display: none;
 }
 @media (min-width: 768px) {
-  .bibly-sidebar {
+  .aurora-sidebar {
     display: flex;
   }
 }

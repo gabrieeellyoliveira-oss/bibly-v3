@@ -344,7 +344,7 @@ function TemplateCard({ template }: { template: Template }) {
         <div className="mt-0.5 text-[15px] font-bold text-foreground">{template.title}</div>
       </div>
 
-      <div className="max-h-32 overflow-y-auto rounded-xl border border-border bg-[#faf3f9] p-3 text-[12.5px] leading-relaxed whitespace-pre-line text-foreground/80">
+      <div className="max-h-32 overflow-y-auto rounded-xl border border-border bg-muted/50 p-3 text-[12.5px] leading-relaxed whitespace-pre-line text-foreground/80">
         {template.message}
       </div>
 
@@ -382,7 +382,7 @@ export function Templates() {
         <div className="mb-1 flex items-center gap-2 text-xs font-semibold text-primary">
           <MessageSquareText className="h-3.5 w-3.5" /> Atalhos do Kommo
         </div>
-        <h1 className="text-[26px] font-bold tracking-tight text-foreground">Templates</h1>
+        <h1 className="text-[26px] font-bold tracking-tight text-foreground">Follow-ups</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Copie a mensagem e cole direto no chat do Kommo pra disparar o atendimento.
         </p>
