@@ -525,7 +525,6 @@ export function Dashboard() {
                 <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
                   <Panel
                     title="Saúde da carteira"
-                    subtitle={periodoLabel}
                     actions={
                       <ObjectEditorDialog title={`saúde da carteira — ${periodoLabel}`} fields={SAUDE_FIELDS} value={saude} onSave={setSaude} />
                     }
@@ -605,7 +604,7 @@ export function Dashboard() {
                       }
                     >
                       <ResponsiveContainer width="100%" height={220}>
-                        <AreaChart data={evolucao} margin={{ left: -20, right: 8, top: 8 }}>
+                        <AreaChart data={evolucao} margin={{ left: 0, right: 8, top: 8 }}>
                           <defs>
                             <linearGradient id="evolucaoGrad" x1="0" x2="0" y1="0" y2="1">
                               <stop offset="0%" stopColor="#6d4cff" stopOpacity={0.28} />
@@ -613,7 +612,7 @@ export function Dashboard() {
                             </linearGradient>
                           </defs>
                           <XAxis dataKey="mes" stroke="#9aa0b4" fontSize={12} tickLine={false} axisLine={false} />
-                          <YAxis stroke="#9aa0b4" fontSize={12} tickLine={false} axisLine={false} width={30} />
+                          <YAxis stroke="#9aa0b4" fontSize={12} tickLine={false} axisLine={false} width={36} />
                           <RTooltip content={<AuroraTooltip />} />
                           <Area type="monotone" dataKey="valor" stroke="#6d4cff" strokeWidth={2.5} fill="url(#evolucaoGrad)" />
                         </AreaChart>
