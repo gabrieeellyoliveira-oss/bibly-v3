@@ -10,6 +10,8 @@ import {
 import { type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
+import { AppSidebar } from "@/components/bibly/AppSidebar";
+import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
   return (
@@ -73,11 +75,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Aurora" },
-      { name: "description", content: "Aurora: PSM Command Center." },
-      { name: "author", content: "Aurora" },
-      { property: "og:title", content: "Aurora" },
-      { property: "og:description", content: "Aurora: PSM Command Center." },
+      { title: "Aurora — Painel PSM Squad Onça" },
+      { name: "description", content: "Dashboard interno de Partner Success Manager do time de Representantes Cardápio Web." },
+      { property: "og:title", content: "Aurora — Painel PSM Squad Onça" },
+      { property: "og:description", content: "Clareza para agir: KPIs, playbook, follow-ups e materiais em um só lugar." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -121,8 +122,15 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <div className="min-h-screen bg-background">
+        <AppSidebar />
+        <main className="aurora-main min-h-screen">
+          <div className="max-w-[1500px] mx-auto p-6 md:p-8">
+            <Outlet />
+          </div>
+        </main>
+        <Toaster position="top-right" />
+      </div>
     </QueryClientProvider>
   );
 }
